@@ -20,9 +20,10 @@ import (
 // Pipe is buffered version of net.Pipe. Reads
 // will block until data is available.
 type Pipe struct {
-	b buffer
-	c sync.Cond
-	m sync.Mutex
+	b       buffer
+	c       sync.Cond
+	m       sync.Mutex
+	Flushed chan bool
 }
 
 // NewPipe must be given a buf of
@@ -31,7 +32,8 @@ type Pipe struct {
 // and writes.
 func NewPipe(buf []byte) *Pipe {
 	p := &Pipe{
-		b: buffer{buf: buf},
+		b:       buffer{buf: buf},
+		Flushed: make(chan bool, 1),
 	}
 	p.c = *sync.NewCond(&p.m)
 	return p
@@ -54,6 +56,7 @@ func (w *Pipe) Write(p []byte) (n int, err error) {
 	w.c.L.Lock()
 	defer w.c.L.Unlock()
 	defer w.c.Signal()
+	defer w.flush()
 	return w.b.Write(p)
 }
 
@@ -79,3 +82,9 @@ func (c *Pipe) RemoteAddr() net.Addr               { return nil }
 func (c *Pipe) SetDeadline(t time.Time) error      { return nil }
 func (c *Pipe) SetReadDeadline(t time.Time) error  { return nil }
 func (c *Pipe) SetWriteDeadline(t time.Time) error { return nil }
+
+func (c *Pipe) flush() {
+	if len(c.Flushed) == 0 {
+		c.Flushed <- true
+	}
+}

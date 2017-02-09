@@ -77,6 +77,7 @@ type Server struct {
 	grRunning     bool
 	grWG          sync.WaitGroup // to wait on various go routines
 	cproto        int64          // number of clients supporting async INFO
+	membership    *groupmember   // group membership/health checks.
 }
 
 // Make sure all are 64bits for atomic use
@@ -266,6 +267,8 @@ func (s *Server) Start() {
 	if s.opts.ProfPort != 0 {
 		s.StartProfiler()
 	}
+
+	s.CreateInternalMembershipClient(s.info.MaxPayload, clientListenReady)
 
 	// Wait for clients.
 	s.AcceptLoop(clientListenReady)
