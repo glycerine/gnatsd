@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"github.com/nats-io/gnatsd/auth"
+	"github.com/nats-io/gnatsd/health"
 	"github.com/nats-io/gnatsd/logger"
 	"github.com/nats-io/gnatsd/server"
 )
@@ -51,7 +52,8 @@ Cluster Options:
         --cluster <cluster-url>      Cluster URL for solicited routes
         --no_advertise <bool>        Advertise known cluster IPs to clients
         --connect_retries <number>   For implicit routes, number of connect retries
-
+        --health                     Run the health monitoring/leader election agent
+        --rank <number>              Smaller rank gives priority in leader election
 
 Common Options:
     -h, --help                       Show this message
@@ -118,6 +120,8 @@ func main() {
 	flag.StringVar(&opts.TLSCert, "tlscert", "", "Server certificate file.")
 	flag.StringVar(&opts.TLSKey, "tlskey", "", "Private key for server certificate.")
 	flag.StringVar(&opts.TLSCaCert, "tlscacert", "", "Client certificate CA for verification.")
+	flag.BoolVar(&opts.HealthAgent, "health", false, "Run the health agent, elect a leader.")
+	flag.IntVar(&opts.ServerRank, "rank", 7, "leader election priority: the smaller the rank, the more preferred the server is as a leader. Negative ranks are allowed. Ties are broken by the randomized ServerId.")
 
 	flag.Usage = func() {
 		fmt.Printf("%s\n", usageStr)
@@ -173,6 +177,10 @@ func main() {
 	err = configureClusterOpts(&opts)
 	if err != nil {
 		server.PrintAndDie(err.Error())
+	}
+
+	if opts.HealthAgent {
+		opts.InternalCli = append(opts.InternalCli, health.NewAgent(&opts))
 	}
 
 	// Create the server with appropriate options.

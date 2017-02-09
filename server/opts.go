@@ -71,10 +71,10 @@ type Options struct {
 	ProfPort       int           `json:"-"`
 	PidFile        string        `json:"-"`
 	LogFile        string        `json:"-"`
-	Syslog         bool          `json:"-"`
 	RemoteSyslog   string        `json:"-"`
 	Routes         []*url.URL    `json:"-"`
 	RoutesStr      string        `json:"-"`
+	Syslog         bool          `json:"-"`
 	TLSTimeout     float64       `json:"tls_timeout"`
 	TLS            bool          `json:"-"`
 	TLSVerify      bool          `json:"-"`
@@ -83,6 +83,10 @@ type Options struct {
 	TLSCaCert      string        `json:"-"`
 	TLSConfig      *tls.Config   `json:"-"`
 	WriteDeadline  time.Duration `json:"-"`
+
+	InternalCli []InternalClient `json:"-"`
+	HealthAgent bool             `json:"health_agent"`
+	ServerRank  int              `json:"server_rank"`
 }
 
 // Configuration file authorization section.
@@ -225,6 +229,8 @@ func ProcessConfigFile(configFile string) (*Options, error) {
 			opts.PingInterval = time.Duration(int(v.(int64))) * time.Second
 		case "ping_max":
 			opts.MaxPingsOut = int(v.(int64))
+		case "rank":
+			opts.ServerRank = int(v.(int64))
 		case "tls":
 			tlsm := v.(map[string]interface{})
 			tc, err := parseTLS(tlsm)
