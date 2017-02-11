@@ -22,6 +22,7 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/nats-io/gnatsd/server/health"
+	"github.com/nats-io/gnatsd/server/lcon"
 	"github.com/nats-io/gnatsd/util"
 )
 
@@ -77,9 +78,56 @@ type Server struct {
 	grMu          sync.Mutex
 	grTmpClients  map[uint64]*client
 	grRunning     bool
-	grWG          sync.WaitGroup     // to wait on various go routines
-	cproto        int64              // number of clients supporting async INFO
-	healthClient  *health.Membership // leader election and cluster membership monitoring
+	grWG          sync.WaitGroup   // to wait on various go routines
+	cproto        int64            // number of clients supporting async INFO
+	icli          []internalClient // in-process internal clients
+}
+
+// InternalClient provides an interface
+// to internal clients that live
+// in-process with the Server
+// on their own goroutines.
+//
+// An example of an internal client
+// is the health monitoring client.
+// In order to be effective, its lifetime
+// must exactly match that of the
+// server it monitors.
+//
+type InternalClient interface {
+
+	// Start should run the client on
+	// a background goroutine.
+	//
+	// The Server s will invoke Start()
+	// as a part of its own init and setup.
+	//
+	// The s pointer will be passed already locked,
+	// and must not be unlocked during Start().
+	//
+	// The lsnReady channel
+	// will be closed by the Server once the
+	// accept loop has spun up.
+	//
+	// Before exiting, the client should
+	// call back on register(nc)
+	// to provide the server with
+	// a net.Conn for communication.
+	//
+	// Any returned error will be logged and
+	// will prevent the Server from calling
+	// Stop() on termination. If nil is
+	// returned then Stop() should function
+	// correctly and not block.
+	//
+	Start(s *Server, lsnReady chan struct{}, register func(nc net.Conn)) error
+
+	// Stop should shutdown the internal client.
+	// The Server will invoke Stop() as a part
+	// of its own shutdown process, so long as
+	// Start() did not return an error.
+	//
+	Stop()
 }
 
 // Make sure all are 64bits for atomic use
@@ -539,6 +587,11 @@ func (s *Server) startMonitoring(secure bool) {
 func (s *Server) createClient(conn net.Conn) *client {
 	c := &client{srv: s, nc: conn, opts: defaultOpts, mpay: s.info.MaxPayload, start: time.Now()}
 
+	_, isInternal := conn.(*lcon.Bidir)
+	if isInternal {
+		c.typ = HEALTH
+	}
+
 	// Grab JSON info string
 	s.mu.Lock()
 	info := s.infoJSON
@@ -556,7 +609,7 @@ func (s *Server) createClient(conn net.Conn) *client {
 	c.Debugf("Client connection created")
 
 	// Check for Auth
-	if authRequired {
+	if !isInternal && authRequired {
 		c.setAuthTimer(secondsToDuration(s.opts.AuthTimeout))
 	}
 
@@ -590,7 +643,7 @@ func (s *Server) createClient(conn net.Conn) *client {
 	c.mu.Lock()
 
 	// Check for TLS
-	if tlsRequired {
+	if !isInternal && tlsRequired {
 		c.Debugf("Starting TLS client connection handshake")
 		c.nc = tls.Server(c.nc, s.opts.TLSConfig)
 		conn := c.nc.(*tls.Conn)
@@ -621,7 +674,7 @@ func (s *Server) createClient(conn net.Conn) *client {
 		return c
 	}
 
-	if tlsRequired {
+	if !isInternal && tlsRequired {
 		// Rewrap bw
 		c.bw = bufio.NewWriterSize(c.nc, startBufSize)
 	}
@@ -629,14 +682,14 @@ func (s *Server) createClient(conn net.Conn) *client {
 	// Do final client initialization
 
 	// Set the Ping timer
-	if c.typ != HEALTH {
+	if !isInternal {
 		c.setPingTimer()
 	}
 
 	// Spin up the read loop.
 	s.startGoRoutine(func() { c.readLoop() })
 
-	if tlsRequired {
+	if !isInternal && tlsRequired {
 		c.Debugf("TLS handshake complete")
 		cs := c.nc.(*tls.Conn).ConnectionState()
 		c.Debugf("TLS version %s, cipher suite %s", tlsVersion(cs.Version), tlsCipher(cs.CipherSuite))

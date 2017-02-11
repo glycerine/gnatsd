@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"github.com/nats-io/gnatsd/server/health"
 	"github.com/nats-io/gnatsd/server/lcon"
 	"time"
@@ -24,8 +23,6 @@ func (s *Server) CreateInternalHealthClient(
 	// in-memory version of a TCP stream.
 	cli, srv := lcon.NewBidir(s.info.MaxPayload * 2)
 
-	host := s.info.Host
-	port := s.info.Port
 	rank := s.info.ServerRank
 	beat := s.opts.PingInterval
 
@@ -34,7 +31,6 @@ func (s *Server) CreateInternalHealthClient(
 		BeatDur:      beat,
 		MyRank:       rank,
 		CliConn:      cli,
-		SrvConn:      srv,
 	}
 	mship := health.NewMembership(cfg)
 	s.healthClient = mship
@@ -51,4 +47,9 @@ func (s *Server) CreateInternalHealthClient(
 		case <-s.rcQuit:
 		}
 	}()
+
+	s.startGoRoutine(func() {
+		s.createClient(srv)
+		s.grWG.Done()
+	})
 }

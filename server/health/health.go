@@ -496,7 +496,12 @@ func (m *Membership) setupNatsClient() (*nats.Conn, error) {
 	}
 	optrecon := nats.ReconnectHandler(recon)
 
-	nc, err := nats.Connect(m.Cfg.NatsUrl, optdis, optrecon, norand)
+	opts := []nats.Option{optdis, optrecon, norand}
+	if m.Cfg.CliConn != nil {
+		opts = append(opts, nats.Dialer(&m.Cfg))
+	}
+
+	nc, err := nats.Connect(m.Cfg.NatsUrl, opts...)
 	if err != nil {
 		log.Fatalf("Can't connect: %v\n", err)
 	}

@@ -31,10 +31,6 @@ type MembershipCfg struct {
 	// optional, if provided we will use this connection on
 	// the client side.
 	CliConn net.Conn
-
-	// optional, if provided we will use this connection on
-	// the server side.
-	SrvConn net.Conn
 }
 
 func (cfg *MembershipCfg) SetDefaults() {
@@ -53,4 +49,8 @@ func (cfg *MembershipCfg) SetDefaults() {
 	if cfg.NatsUrl == "" {
 		cfg.NatsUrl = "nats://127.0.0.1:4222"
 	}
+}
+
+func (cfg *MembershipCfg) Dial(network, address string) (net.Conn, error) {
+	return cfg.CliConn, nil
 }
