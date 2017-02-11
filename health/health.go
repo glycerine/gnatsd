@@ -2,12 +2,9 @@ package health
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
-	"os"
 	"sort"
-	"strconv"
 	"sync"
 	"time"
 
@@ -93,6 +90,11 @@ type Membership struct {
 	subjMemberLost  string
 	subjMemberAdded string
 	subjMembership  string
+
+	rcQuit   chan bool
+	done     chan bool
+	mu       sync.Mutex
+	stopping bool
 }
 
 type MembershipCfg struct {
@@ -142,6 +144,9 @@ func NewMembership(cfg *MembershipCfg) *Membership {
 		Cfg:      *cfg,
 		CurLead:  *NewBchan(1),
 		CurGroup: *NewBchan(1),
+
+		rcQuit: make(chan bool),
+		done:   make(chan bool),
 	}
 }
 
@@ -177,37 +182,21 @@ func (e *leadHolder) getLeaderAsBytes() []byte {
 	return by
 }
 
-func main() {
-	log.SetFlags(0)
-	flag.Usage = usage
-	flag.Parse()
-
-	args := flag.Args()
-	if len(args) < 1 {
-		usage()
+// Stop blocks until the Membership goroutine
+// acknowledges the shutdown request.
+func (m *Membership) Stop() {
+	m.mu.Lock()
+	if m.stopping {
+		m.mu.Unlock()
+		return
 	}
-
-	rank := 0
-	var err error
-	if len(args) >= 2 {
-		rank, err = strconv.Atoi(args[1])
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "2nd arg should be our numeric rank")
-		}
-	}
-
-	cfg := &MembershipCfg{
-		MaxClockSkew: time.Second,
-		BeatDur:      100 * time.Millisecond,
-		NatsUrl:      "nats://" + args[0], // "nats://127.0.0.1:4222"
-		MyRank:       rank,
-	}
-	m := NewMembership(cfg)
-	panicOn(m.Start())
+	m.stopping = true
+	m.mu.Unlock()
+	close(m.rcQuit)
+	<-m.done
 }
 
 func (m *Membership) Start() error {
-
 	m.Cfg.SetDefaults()
 
 	nc, err := m.setupNatsClient()
@@ -215,6 +204,11 @@ func (m *Membership) Start() error {
 		return err
 	}
 	m.nc = nc
+	go m.start(nc)
+	return nil
+}
+
+func (m *Membership) start(nc *nats.Conn) {
 
 	// history
 	history := NewRingBuf(10)
@@ -230,7 +224,7 @@ func (m *Membership) Start() error {
 	// do an initial allcall() to discover any
 	// current leader.
 	log.Printf("init: doing initial allcall to discover any existing leader...")
-	prev, err = allcall(nc, m.subjAllCall, &m.elec)
+	prev, err := allcall(nc, m.subjAllCall, &m.elec)
 	panicOn(err)
 
 	time.Sleep(m.Cfg.BeatDur)
@@ -264,8 +258,12 @@ func (m *Membership) Start() error {
 		cur, err = allcall(nc, m.subjAllCall, &m.elec)
 		panicOn(err)
 
-		time.Sleep(m.Cfg.BeatDur)
-
+		select {
+		case <-time.After(m.Cfg.BeatDur):
+		case <-m.rcQuit:
+			close(m.done)
+			return
+		}
 		lastSeenLead := m.elec.getLeader()
 
 		// cur responses should be back by now
@@ -304,9 +302,8 @@ func (m *Membership) Start() error {
 		same := setsEqual(prevMember, curMember)
 
 		if same {
-			// nothing more to do. common case when nothing changes.
-			//log.Printf("\n\n\n no change in Group membership; pr=%v, cr=%v. curLead is '%s'", pr, cr, curLead)
-
+			// nothing more to do.
+			// This is the common case when nothing changes.
 		} else {
 			lostBytes := lost.mustJsonBytes()
 			if !lost.setEmpty() {
@@ -338,7 +335,6 @@ func (m *Membership) Start() error {
 		prevMember = curMember
 		prevLead = curLead
 	}
-	return nil
 }
 
 func pong(nc *nats.Conn, subj string, msg []byte) {

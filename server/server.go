@@ -21,6 +21,7 @@ import (
 	// Allow dynamic profiling.
 	_ "net/http/pprof"
 
+	"github.com/nats-io/gnatsd/health"
 	"github.com/nats-io/gnatsd/util"
 )
 
@@ -39,6 +40,7 @@ type Info struct {
 	MaxPayload        int      `json:"max_payload"`
 	IP                string   `json:"ip,omitempty"`
 	ClientConnectURLs []string `json:"connect_urls,omitempty"` // Contains URLs a client can connect to.
+	ServerRank        int      `json:"server_rank"`            // lowest rank wins leader election.
 
 	// Used internally for quick look-ups.
 	clientConnectURLs map[string]struct{}
@@ -77,7 +79,8 @@ type Server struct {
 	grRunning     bool
 	grWG          sync.WaitGroup // to wait on various go routines
 	cproto        int64          // number of clients supporting async INFO
-	membership    *groupmember   // group membership/health checks.
+
+	clusterhealth *health.Membership // group membership/gnatsd cluster health checks.
 }
 
 // Make sure all are 64bits for atomic use
@@ -268,7 +271,7 @@ func (s *Server) Start() {
 		s.StartProfiler()
 	}
 
-	s.CreateInternalMembershipClient(s.info.MaxPayload, clientListenReady)
+	s.CreateInternalHealthCheckClient(clientListenReady)
 
 	// Wait for clients.
 	s.AcceptLoop(clientListenReady)
