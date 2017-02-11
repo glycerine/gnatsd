@@ -21,7 +21,6 @@ import (
 	// Allow dynamic profiling.
 	_ "net/http/pprof"
 
-	"github.com/nats-io/gnatsd/server/health"
 	"github.com/nats-io/gnatsd/server/lcon"
 	"github.com/nats-io/gnatsd/util"
 )
@@ -78,9 +77,9 @@ type Server struct {
 	grMu          sync.Mutex
 	grTmpClients  map[uint64]*client
 	grRunning     bool
-	grWG          sync.WaitGroup   // to wait on various go routines
-	cproto        int64            // number of clients supporting async INFO
-	icli          []internalClient // in-process internal clients
+	grWG          sync.WaitGroup // to wait on various go routines
+	cproto        int64          // number of clients supporting async INFO
+	icli          iCli           // in-process internal clients
 }
 
 // Make sure all are 64bits for atomic use
@@ -271,10 +270,31 @@ func (s *Server) Start() {
 		s.StartProfiler()
 	}
 
-	s.CreateInternalHealthClient(clientListenReady)
+	// Run the internal clients in
+	// s.icli.configured.
+	//
+	// Retain only those started
+	// successfully in s.icli.running.
+	//
+	for _, ic := range s.icli.configured {
+		err := ic.Start(s.info, *s.opts, clientListenReady, s.iCliRegisterCallback)
+
+		if err == nil {
+			s.icli.running = append(s.icli.running, ic)
+		} else {
+			Errorf("InternalClient ['%s'] failed to Start(): %s", ic.Name(), err)
+		}
+	}
 
 	// Wait for clients.
 	s.AcceptLoop(clientListenReady)
+}
+
+func (s *Server) iCliRegisterCallback(srv net.Conn) {
+	s.startGoRoutine(func() {
+		s.createClient(srv)
+		s.grWG.Done()
+	})
 }
 
 // Shutdown will shutdown the server instance by kicking out the AcceptLoop
@@ -338,8 +358,10 @@ func (s *Server) Shutdown() {
 	// Release the solicited routes connect go routines.
 	close(s.rcQuit)
 
-	// stop health monitoring
-	s.healthClient.Stop()
+	// stop any internal clients
+	for _, ic := range s.icli.running {
+		ic.Stop()
+	}
 
 	s.mu.Unlock()
 
