@@ -57,42 +57,67 @@ func (r *Pipe) Read(p []byte) (n int, err error) {
 		if dur <= 0 {
 			return 0, ErrDeadline
 		}
+		nextReadDone := make(chan struct{})
+		defer close(nextReadDone)
 		go func(dur time.Duration) {
-			time.Sleep(dur)
-			r.rc.L.Lock()
-			r.b.late = true
-			r.rc.L.Unlock()
-			r.rc.Broadcast()
+			select {
+			case <-time.After(dur):
+				r.rc.L.Lock()
+				r.b.late = true
+				r.rc.L.Unlock()
+				r.rc.Broadcast()
+			case <-nextReadDone:
+			}
 		}(dur)
 	}
 	for r.b.Len() == 0 && !r.b.closed && !r.b.late {
 		r.rc.Wait()
 	}
+	defer func() {
+		// we already hold the lock
+		r.b.late = false
+		r.readDeadline = time.Time{}
+	}()
 	return r.b.Read(p)
 }
 
 // Write copies bytes from p into the buffer and wakes a reader.
 // It is an error to write more data than the buffer can hold.
-func (w *Pipe) Write(p []byte) (n int, err error) {
-	w.rc.L.Lock()
-	defer w.rc.L.Unlock()
-	if !w.writeDeadline.IsZero() {
+func (r *Pipe) Write(p []byte) (n int, err error) {
+	r.rc.L.Lock()
+	defer r.rc.L.Unlock()
+	if !r.writeDeadline.IsZero() {
 		now := time.Now()
-		dur := w.writeDeadline.Sub(now)
+		dur := r.writeDeadline.Sub(now)
 		if dur <= 0 {
 			return 0, ErrDeadline
 		}
+		nextWriteDone := make(chan struct{})
+		defer close(nextWriteDone)
 		go func(dur time.Duration) {
-			time.Sleep(dur)
-			w.rc.L.Lock()
-			w.b.late = true
-			w.rc.L.Unlock()
-			w.rc.Broadcast()
+			select {
+			case <-time.After(dur):
+				r.rc.L.Lock()
+				r.b.late = true
+				r.rc.L.Unlock()
+				r.rc.Broadcast()
+			case <-nextWriteDone:
+			}
 		}(dur)
 	}
-	defer w.rc.Signal()
-	defer w.flush()
-	return w.b.Write(p)
+	defer r.rc.Broadcast()
+	defer r.flush()
+
+	for r.b.freeBytes() < len(p) && !r.b.closed && !r.b.late {
+		r.rc.Wait()
+	}
+	defer func() {
+		// we already hold the lock
+		r.b.late = false
+		r.writeDeadline = time.Time{}
+	}()
+
+	return r.b.Write(p)
 }
 
 var ErrLconPipeClosed = fmt.Errorf("lcon pipe closed")
@@ -102,21 +127,21 @@ func (c *Pipe) Close() error {
 	return nil
 }
 
-func (c *Pipe) SetErrorAndClose(err error) {
-	c.rc.L.Lock()
-	defer c.rc.L.Unlock()
-	defer c.rc.Signal()
-	c.b.Close(err)
+func (r *Pipe) SetErrorAndClose(err error) {
+	r.rc.L.Lock()
+	defer r.rc.L.Unlock()
+	defer r.rc.Broadcast()
+	r.b.Close(err)
 }
 
 // Pipe technically fullfills the net.Conn interface
 
-func (c *Pipe) LocalAddr() net.Addr  { return addr{} }
-func (c *Pipe) RemoteAddr() net.Addr { return addr{} }
+func (r *Pipe) LocalAddr() net.Addr  { return addr{} }
+func (r *Pipe) RemoteAddr() net.Addr { return addr{} }
 
-func (c *Pipe) flush() {
-	if len(c.Flushed) == 0 {
-		c.Flushed <- true
+func (r *Pipe) flush() {
+	if len(r.Flushed) == 0 {
+		r.Flushed <- true
 	}
 }
 
@@ -126,9 +151,9 @@ func (a addr) String() string  { return "memory.pipe:0" }
 func (a addr) Network() string { return "in-process-internal" }
 
 // SetDeadline implements the net.Conn method
-func (c *Pipe) SetDeadline(t time.Time) error {
-	err := c.SetReadDeadline(t)
-	err2 := c.SetWriteDeadline(t)
+func (r *Pipe) SetDeadline(t time.Time) error {
+	err := r.SetReadDeadline(t)
+	err2 := r.SetWriteDeadline(t)
 	if err != nil {
 		return err
 	}
@@ -136,17 +161,17 @@ func (c *Pipe) SetDeadline(t time.Time) error {
 }
 
 // SetWriteDeadline implements the net.Conn method
-func (c *Pipe) SetWriteDeadline(t time.Time) error {
-	c.rc.L.Lock()
-	c.writeDeadline = t
-	c.rc.L.Unlock()
+func (r *Pipe) SetWriteDeadline(t time.Time) error {
+	r.rc.L.Lock()
+	r.writeDeadline = t
+	r.rc.L.Unlock()
 	return nil
 }
 
 // SetReadDeadline implements the net.Conn method
-func (c *Pipe) SetReadDeadline(t time.Time) error {
-	c.rc.L.Lock()
-	c.readDeadline = t
-	c.rc.L.Unlock()
+func (r *Pipe) SetReadDeadline(t time.Time) error {
+	r.rc.L.Lock()
+	r.readDeadline = t
+	r.rc.L.Unlock()
 	return nil
 }

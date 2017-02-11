@@ -189,14 +189,29 @@ func TestReadDeadlinesWork(t *testing.T) {
 		t.Fatalf("Read returned before deadline timeout")
 	}
 	fmt.Printf("good, err = '%v' after %s.\n", err, elap)
+
+	// and should be able to read successfully after timeout:
+	msg := []byte("jabber")
+	_, err = nc.Write(msg)
+	if err != nil {
+		t.Fatalf("should have been able to write")
+	}
+	nr, err := nc.Read(readbuf4)
+	if nr != len(msg) {
+		t.Fatalf("should have been able to read all of msg")
+	}
+	if err != nil {
+		t.Fatalf("should have been able to read after previous read-deadline timeout: '%s'", err)
+	}
 }
 
 func TestWriteDeadlinesWork(t *testing.T) {
 
-	var nc net.Conn = NewPipe(make([]byte, 100))
+	var nc net.Conn = NewPipe(make([]byte, 10))
 
-	// deadlines should work
-	readbuf4 := make([]byte, 100)
+	// deadlines should work, trying to write more
+	// than we have space for...
+	writebuf := make([]byte, 100)
 
 	timeout := 50 * time.Millisecond
 	err := nc.SetWriteDeadline(time.Now().Add(timeout))
@@ -220,7 +235,7 @@ func TestWriteDeadlinesWork(t *testing.T) {
 	}()
 
 	t0 := time.Now()
-	_, err = nc.Write(readbuf4)
+	_, err = nc.Write(writebuf)
 	elap := time.Since(t0)
 	close(deadlineFired)
 	<-checkDone
@@ -231,4 +246,10 @@ func TestWriteDeadlinesWork(t *testing.T) {
 		t.Fatalf("Write returned before deadline timeout")
 	}
 	fmt.Printf("good, err = '%v' after %s.\n", err, elap)
+
+	// should be able to write small ok...
+	_, err = nc.Write(writebuf[:5])
+	if err != nil {
+		t.Fatalf("small write of 5 to a capacity 10 buffer should work fine: '%s'", err)
+	}
 }
