@@ -270,14 +270,20 @@ func (s *Server) Start() {
 		s.StartProfiler()
 	}
 
-	Debugf("Starting the %v internal client(s).", len(s.icli.configured))
 	// Run the internal clients in
 	// s.icli.configured.
 	//
 	// Retain only those started
 	// successfully in s.icli.running.
 	//
+	s.icli.mu.Lock()
 	go func(info Info, opts Options) {
+		defer s.icli.mu.Unlock()
+		n := len(s.icli.configured)
+		if n == 0 {
+			return
+		}
+		Debugf("Starting the %v internal client(s).", n)
 		for _, ic := range s.icli.configured {
 			err := ic.Start(info, opts, clientListenReady, s.iCliRegisterCallback)
 

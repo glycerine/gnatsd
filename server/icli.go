@@ -2,6 +2,7 @@ package server
 
 import (
 	"net"
+	"sync"
 )
 
 // LocalInternalClient is a trait interface.
@@ -27,6 +28,7 @@ type LocalInternalClient interface {
 type iCli struct {
 	configured []InternalClient
 	running    []InternalClient
+	mu         sync.Mutex
 }
 
 // InternalClient provides

@@ -187,7 +187,6 @@ func (m *Membership) start(nc *nats.Conn) {
 	prev, err := allcall(nc, m.subjAllCall, &m.elec)
 	panicOn(err)
 
-	p("m.Cfg.BeatDur = '%v'", m.Cfg.BeatDur)
 	select {
 	case <-time.After(m.Cfg.BeatDur):
 	case <-m.rcQuit:

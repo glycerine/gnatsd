@@ -74,7 +74,6 @@ type Options struct {
 	RemoteSyslog   string        `json:"-"`
 	Routes         []*url.URL    `json:"-"`
 	RoutesStr      string        `json:"-"`
-	ServerRank     int           `json:"server_rank"`
 	Syslog         bool          `json:"-"`
 	TLSTimeout     float64       `json:"tls_timeout"`
 	TLS            bool          `json:"-"`
@@ -86,6 +85,8 @@ type Options struct {
 	WriteDeadline  time.Duration `json:"-"`
 
 	InternalCli []InternalClient `json:"-"`
+	HealthAgent bool             `json:"health_agent"`
+	ServerRank  int              `json:"server_rank"`
 }
 
 // Configuration file authorization section.
