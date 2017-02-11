@@ -149,37 +149,86 @@ func TestPipeAsNetConn(t *testing.T) {
 
 }
 
-func TestDeadlinesWork(t *testing.T) {
+func TestReadDeadlinesWork(t *testing.T) {
 
 	var nc net.Conn = NewPipe(make([]byte, 100))
 
 	// deadlines should work
 	readbuf4 := make([]byte, 100)
 
-	err := nc.SetReadDeadline(time.Now().Add(50 * time.Millisecond))
+	timeout := 50 * time.Millisecond
+	err := nc.SetReadDeadline(time.Now().Add(timeout))
 	if err != nil {
 		t.Fatalf("must be able to SetReadDeadline")
 	}
 	deadlineFired, checkDone := make(chan bool), make(chan bool)
 	go func() {
 		select {
-		case <-time.After(300 * time.Millisecond):
+		case <-time.After(6 * timeout):
 
 			buf := make([]byte, 1<<20)
 			stacklen := runtime.Stack(buf, true)
 			fmt.Printf("\n%s\n\n", buf[:stacklen])
 
-			panic("50 msec deadline didn't fire after 300 msec")
+			panic(fmt.Sprintf("%v deadline didn't fire after %v",
+				timeout, 6*timeout))
 		case <-deadlineFired:
 			close(checkDone)
 		}
 	}()
 
+	t0 := time.Now()
 	_, err = nc.Read(readbuf4)
+	elap := time.Since(t0)
 	close(deadlineFired)
 	<-checkDone
 	if err == nil {
 		t.Fatalf("Read beyond deadline should have returned an error")
 	}
-	fmt.Printf("good, err = '%v'.\n", err)
+	if elap < timeout {
+		t.Fatalf("Read returned before deadline timeout")
+	}
+	fmt.Printf("good, err = '%v' after %s.\n", err, elap)
+}
+
+func TestWriteDeadlinesWork(t *testing.T) {
+
+	var nc net.Conn = NewPipe(make([]byte, 100))
+
+	// deadlines should work
+	readbuf4 := make([]byte, 100)
+
+	timeout := 50 * time.Millisecond
+	err := nc.SetWriteDeadline(time.Now().Add(timeout))
+	if err != nil {
+		t.Fatalf("must be able to SetWriteDeadline")
+	}
+	deadlineFired, checkDone := make(chan bool), make(chan bool)
+	go func() {
+		select {
+		case <-time.After(6 * timeout):
+
+			buf := make([]byte, 1<<20)
+			stacklen := runtime.Stack(buf, true)
+			fmt.Printf("\n%s\n\n", buf[:stacklen])
+
+			panic(fmt.Sprintf("%v deadline didn't fire after %v",
+				timeout, 6*timeout))
+		case <-deadlineFired:
+			close(checkDone)
+		}
+	}()
+
+	t0 := time.Now()
+	_, err = nc.Write(readbuf4)
+	elap := time.Since(t0)
+	close(deadlineFired)
+	<-checkDone
+	if err == nil {
+		t.Fatalf("Write beyond deadline should have returned an error")
+	}
+	if elap < timeout {
+		t.Fatalf("Write returned before deadline timeout")
+	}
+	fmt.Printf("good, err = '%v' after %s.\n", err, elap)
 }
