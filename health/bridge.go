@@ -48,6 +48,7 @@ func (h *Agent) Start(
 		BeatDur:      beat,
 		MyRank:       rank,
 		CliConn:      cli,
+		SrvConn:      srv,
 	}
 	h.mship = NewMembership(cfg)
 

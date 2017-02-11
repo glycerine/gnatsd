@@ -120,6 +120,7 @@ func New(opts *Options) *Server {
 		trace: opts.Trace,
 		done:  make(chan bool, 1),
 		start: time.Now(),
+		icli:  iCli{configured: opts.InternalCli},
 	}
 
 	s.mu.Lock()
@@ -269,27 +270,32 @@ func (s *Server) Start() {
 		s.StartProfiler()
 	}
 
+	Debugf("starting the %v internal client(s).", len(s.icli.configured))
 	// Run the internal clients in
 	// s.icli.configured.
 	//
 	// Retain only those started
 	// successfully in s.icli.running.
 	//
-	for _, ic := range s.icli.configured {
-		err := ic.Start(s.info, *s.opts, clientListenReady, s.iCliRegisterCallback)
+	go func(info Info, opts Options) {
+		for _, ic := range s.icli.configured {
+			err := ic.Start(info, opts, clientListenReady, s.iCliRegisterCallback)
 
-		if err == nil {
-			s.icli.running = append(s.icli.running, ic)
-		} else {
-			Errorf("InternalClient ['%s'] failed to Start(): %s", ic.Name(), err)
+			if err == nil {
+				s.icli.running = append(s.icli.running, ic)
+				Noticef("InternalClient ['%s'] started successfully.", ic.Name())
+			} else {
+				Errorf("InternalClient ['%s'] failed to Start(): %s", ic.Name(), err)
+			}
 		}
-	}
+	}(s.info, *s.opts)
 
 	// Wait for clients.
 	s.AcceptLoop(clientListenReady)
 }
 
 func (s *Server) iCliRegisterCallback(srv net.Conn) {
+	fmt.Printf("in iCliRegisterCallback srv = %#v\n", srv)
 	s.startGoRoutine(func() {
 		s.createClient(srv)
 		s.grWG.Done()

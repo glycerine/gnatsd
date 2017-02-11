@@ -48,6 +48,8 @@ var ErrDeadline = fmt.Errorf("deadline exceeded")
 // Read waits until data is available and copies bytes
 // from the buffer into p.
 func (r *Pipe) Read(p []byte) (n int, err error) {
+	fmt.Printf("\nPipe.Read sees p of len %v\n", len(p))
+
 	r.rc.L.Lock()
 	defer r.rc.L.Unlock()
 	if !r.readDeadline.IsZero() {
@@ -83,6 +85,7 @@ func (r *Pipe) Read(p []byte) (n int, err error) {
 // Write copies bytes from p into the buffer and wakes a reader.
 // It is an error to write more data than the buffer can hold.
 func (r *Pipe) Write(p []byte) (n int, err error) {
+	fmt.Printf("\nPipe.Write sees '%s'\n", string(p))
 	r.rc.L.Lock()
 	defer r.rc.L.Unlock()
 	if !r.writeDeadline.IsZero() {
