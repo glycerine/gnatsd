@@ -20,6 +20,8 @@ const (
 	CLIENT = iota
 	// ROUTER is another router in the cluster.
 	ROUTER
+	// HEALTH is the internal client that monitors cluster membership.
+	HEALTH
 )
 
 const (
@@ -216,6 +218,8 @@ func (c *client) initClient() {
 		c.ncs = fmt.Sprintf("%s - cid:%d", conn, c.cid)
 	case ROUTER:
 		c.ncs = fmt.Sprintf("%s - rid:%d", conn, c.cid)
+	case HEALTH:
+		c.ncs = fmt.Sprintf("internal:0 - hid:%d", c.cid)
 	}
 }
 
@@ -407,6 +411,8 @@ func (c *client) processErr(errStr string) {
 		c.Errorf("Client Error %s", errStr)
 	case ROUTER:
 		c.Errorf("Route Error %s", errStr)
+	case HEALTH:
+		c.Errorf("Health Error %s", errStr)
 	}
 	c.closeConnection()
 }

@@ -77,10 +77,9 @@ type Server struct {
 	grMu          sync.Mutex
 	grTmpClients  map[uint64]*client
 	grRunning     bool
-	grWG          sync.WaitGroup // to wait on various go routines
-	cproto        int64          // number of clients supporting async INFO
-
-	clusterhealth *health.Membership // group membership/gnatsd cluster health checks.
+	grWG          sync.WaitGroup     // to wait on various go routines
+	cproto        int64              // number of clients supporting async INFO
+	healthClient  *health.Membership // leader election and cluster membership monitoring
 }
 
 // Make sure all are 64bits for atomic use
@@ -271,7 +270,7 @@ func (s *Server) Start() {
 		s.StartProfiler()
 	}
 
-	s.CreateInternalHealthCheckClient(clientListenReady)
+	s.CreateInternalHealthClient(clientListenReady)
 
 	// Wait for clients.
 	s.AcceptLoop(clientListenReady)
@@ -339,7 +338,7 @@ func (s *Server) Shutdown() {
 	close(s.rcQuit)
 
 	// stop health monitoring
-	s.clusterhealth.Stop()
+	s.healthClient.Stop()
 
 	s.mu.Unlock()
 
@@ -630,7 +629,9 @@ func (s *Server) createClient(conn net.Conn) *client {
 	// Do final client initialization
 
 	// Set the Ping timer
-	c.setPingTimer()
+	if c.typ != HEALTH {
+		c.setPingTimer()
+	}
 
 	// Spin up the read loop.
 	s.startGoRoutine(func() { c.readLoop() })
