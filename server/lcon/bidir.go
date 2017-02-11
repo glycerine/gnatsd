@@ -18,6 +18,9 @@ type Bidir struct {
 	Recv *Pipe
 }
 
+// satify LocalInternalClient interface
+func (r *Bidir) InMemory() {}
+
 // NewBidir returns a pair of Bidir,
 // each of which can be treated as
 // a net.Conn in order to communicate

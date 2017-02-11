@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"github.com/nats-io/gnatsd/auth"
+	"github.com/nats-io/gnatsd/health"
 	"github.com/nats-io/gnatsd/logger"
 	"github.com/nats-io/gnatsd/server"
 )
@@ -174,6 +175,8 @@ func main() {
 	if err != nil {
 		server.PrintAndDie(err.Error())
 	}
+
+	opts.InternalCli = append(opts.InternalCli, health.NewAgent(&opts))
 
 	// Create the server with appropriate options.
 	s := server.New(&opts)

@@ -21,7 +21,6 @@ import (
 	// Allow dynamic profiling.
 	_ "net/http/pprof"
 
-	"github.com/nats-io/gnatsd/server/lcon"
 	"github.com/nats-io/gnatsd/util"
 )
 
@@ -562,7 +561,7 @@ func (s *Server) startMonitoring(secure bool) {
 func (s *Server) createClient(conn net.Conn) *client {
 	c := &client{srv: s, nc: conn, opts: defaultOpts, mpay: s.info.MaxPayload, start: time.Now()}
 
-	_, isInternal := conn.(*lcon.Bidir)
+	_, isInternal := conn.(LocalInternalClient)
 	if isInternal {
 		c.typ = HEALTH
 	}

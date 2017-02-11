@@ -4,6 +4,17 @@ import (
 	"net"
 )
 
+// LocalInternalClient is a trait interface.
+// The net.Conn implementations of
+// internal clients provided over
+// the accept() callback (see Start below)
+// should implement it to tell the server to ignore
+// TLS and auth for internal clients.
+//
+type LocalInternalClient interface {
+	InMemory()
+}
+
 // iCli tracks which internal
 // clients were succesfully Start()-ed
 // in the running slice. The

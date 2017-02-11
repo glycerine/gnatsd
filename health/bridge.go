@@ -7,9 +7,18 @@ import (
 	"time"
 )
 
-type Health struct{}
+type Agent struct {
+	opts  *server.Options
+	mship *Membership
+}
 
-func (h *Health) Name() string {
+func NewAgent(opts *server.Options) *Agent {
+	return &Agent{
+		opts: opts,
+	}
+}
+
+func (h *Agent) Name() string {
 	return "health-agent"
 }
 
@@ -18,9 +27,9 @@ func (h *Health) Name() string {
 // cluster health and manages group
 // membership functions.
 //
-func (h *Health) Start(
-	info *server.Info,
-	opts *server.Options,
+func (h *Agent) Start(
+	info server.Info,
+	opts server.Options,
 	lsnReady chan struct{},
 	accept func(nc net.Conn),
 
@@ -34,21 +43,23 @@ func (h *Health) Start(
 	rank := info.ServerRank
 	beat := opts.PingInterval
 
-	cfg := &health.MembershipCfg{
+	cfg := &MembershipCfg{
 		MaxClockSkew: time.Second,
 		BeatDur:      beat,
 		MyRank:       rank,
 		CliConn:      cli,
 	}
-	mship := health.NewMembership(cfg)
+	h.mship = NewMembership(cfg)
 
 	go func() {
 		select {
 		case <-lsnReady:
 			accept(srv)
-
-		case <-s.rcQuit:
 		}
 	}()
+	return h.mship.Start()
+}
 
+func (h *Agent) Stop() {
+	h.mship.Stop()
 }

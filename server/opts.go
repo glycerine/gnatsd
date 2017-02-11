@@ -84,6 +84,8 @@ type Options struct {
 	TLSCaCert      string        `json:"-"`
 	TLSConfig      *tls.Config   `json:"-"`
 	WriteDeadline  time.Duration `json:"-"`
+
+	InternalCli []InternalClient `json:"-"`
 }
 
 // Configuration file authorization section.
