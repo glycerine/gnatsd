@@ -13,13 +13,14 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"runtime"
 	"testing"
 	"time"
 )
 
 func TestPipeClose(t *testing.T) {
 	var p Pipe
-	p.c.L = &p.m
+	p.rc.L = &p.rm
 	a := errors.New("a")
 	b := errors.New("b")
 	p.SetErrorAndClose(a)
@@ -163,6 +164,11 @@ func TestDeadlinesWork(t *testing.T) {
 	go func() {
 		select {
 		case <-time.After(300 * time.Millisecond):
+
+			buf := make([]byte, 1<<20)
+			stacklen := runtime.Stack(buf, true)
+			fmt.Printf("\n%s\n\n", buf[:stacklen])
+
 			panic("50 msec deadline didn't fire after 300 msec")
 		case <-deadlineFired:
 			close(checkDone)

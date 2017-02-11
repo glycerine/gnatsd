@@ -21,6 +21,7 @@ type buffer struct {
 	r, w   int
 	closed bool
 	err    error // err to return to reader
+	late   bool
 }
 
 var (
