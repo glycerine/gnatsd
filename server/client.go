@@ -514,6 +514,7 @@ func (c *client) authViolation() {
 		c.Errorf(ErrAuthorization.Error())
 	}
 	c.sendErr("Authorization Violation")
+	panic("wat?")
 	c.closeConnection()
 }
 

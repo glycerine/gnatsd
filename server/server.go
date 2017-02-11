@@ -798,6 +798,8 @@ func (s *Server) checkAuth(c *client) bool {
 		return s.checkClientAuth(c)
 	case ROUTER:
 		return s.checkRouterAuth(c)
+	case HEALTH:
+		return true
 	default:
 		return false
 	}
