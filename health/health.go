@@ -257,12 +257,12 @@ func (m *Membership) start(nc *nats.Conn) {
 			if loc.Id == curLead.Id {
 				if now.After(nextLeadReportTm) || prevLead == nil || prevLead.Id != curLead.Id {
 					left := curLead.LeaseExpires.Sub(now)
-					log.Printf("I am LEAD, my Id: '%s', rank %v. lease expires:'%s' in '%s'", loc.Id, loc.Rank, curLead.LeaseExpires, left)
+					log.Printf("I am LEAD, my Id: '%s', rank %v. lease expires in '%s'", loc.Id, loc.Rank, left)
 					nextLeadReportTm = now.Add(left).Add(time.Second)
 				}
 			} else {
 				if prevLead != nil && prevLead.Id == loc.Id {
-					log.Printf("I am no longer lead, new LEAD is '%s', rank %v. lease expires:'%s' in '%s'", curLead.Id, curLead.Rank, curLead.LeaseExpires, curLead.LeaseExpires.Sub(now))
+					log.Printf("I am no longer lead, new LEAD is '%s', rank %v. lease expires in '%s'", curLead.Id, curLead.Rank, curLead.LeaseExpires.Sub(now))
 
 				}
 			}
