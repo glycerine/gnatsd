@@ -270,7 +270,7 @@ func (s *Server) Start() {
 		s.StartProfiler()
 	}
 
-	Debugf("starting the %v internal client(s).", len(s.icli.configured))
+	Debugf("Starting the %v internal client(s).", len(s.icli.configured))
 	// Run the internal clients in
 	// s.icli.configured.
 	//
@@ -283,7 +283,7 @@ func (s *Server) Start() {
 
 			if err == nil {
 				s.icli.running = append(s.icli.running, ic)
-				Noticef("InternalClient ['%s'] started successfully.", ic.Name())
+				Noticef("InternalClient ['%s'] started.", ic.Name())
 			} else {
 				Errorf("InternalClient ['%s'] failed to Start(): %s", ic.Name(), err)
 			}
@@ -295,7 +295,6 @@ func (s *Server) Start() {
 }
 
 func (s *Server) iCliRegisterCallback(srv net.Conn) {
-	fmt.Printf("in iCliRegisterCallback srv = %#v\n", srv)
 	s.startGoRoutine(func() {
 		s.createClient(srv)
 		s.grWG.Done()

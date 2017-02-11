@@ -155,7 +155,7 @@ func (m *Membership) Stop() {
 }
 
 func (m *Membership) Start() error {
-	p("Membership.Start() running")
+	//p("Membership.Start() running")
 	m.Cfg.SetDefaults()
 
 	nc, err := m.setupNatsClient()
@@ -168,7 +168,7 @@ func (m *Membership) Start() error {
 }
 
 func (m *Membership) start(nc *nats.Conn) {
-	p("Membership.start(nc=%p) running", nc)
+	//p("Membership.start(nc=%p) running", nc)
 
 	// history
 	history := NewRingBuf(10)
@@ -503,9 +503,7 @@ func (m *Membership) setupNatsClient() (*nats.Conn, error) {
 		opts = append(opts, nats.Dialer(&m.Cfg))
 	}
 
-	p("about to do nats.Connect()...")
 	nc, err := nats.Connect(m.Cfg.NatsUrl, opts...)
-	p("got err = '%v' from nats.Connect().\n", err)
 	if err != nil {
 		log.Fatalf("Can't connect: %v\n", err)
 	}

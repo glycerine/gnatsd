@@ -31,10 +31,6 @@ type MembershipCfg struct {
 	// optional, if provided we will use this connection on
 	// the client side.
 	CliConn net.Conn
-
-	// optional, if provided we will use this connection on
-	// the server side.
-	SrvConn net.Conn
 }
 
 func (cfg *MembershipCfg) SetDefaults() {
@@ -56,6 +52,5 @@ func (cfg *MembershipCfg) SetDefaults() {
 }
 
 func (cfg *MembershipCfg) Dial(network, address string) (net.Conn, error) {
-	p("MembershipDfg.Dial returning cfg.CliConn='%#v'", cfg.CliConn)
 	return cfg.CliConn, nil
 }

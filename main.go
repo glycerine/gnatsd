@@ -176,7 +176,6 @@ func main() {
 		server.PrintAndDie(err.Error())
 	}
 
-	fmt.Printf("adding health.NewAgent\n")
 	opts.InternalCli = append(opts.InternalCli, health.NewAgent(&opts))
 
 	// Create the server with appropriate options.
