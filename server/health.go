@@ -19,19 +19,19 @@ func (s *Server) CreateInternalHealthClient(
 
 	s.mu.Lock()
 
-	// make an bi-directional in-memory
-	// version of a TCP stream so the health
-	// client stays completely in process.
+	// To keep the health client fast and its traffic
+	// internal-only, we use an bi-directional,
+	// in-memory version of a TCP stream.
 	cli, srv := lcon.NewBidir(s.info.MaxPayload * 2)
 
 	host := s.info.Host
 	port := s.info.Port
 	rank := s.info.ServerRank
+	beat := s.opts.PingInterval
 
 	cfg := &health.MembershipCfg{
 		MaxClockSkew: time.Second,
-		BeatDur:      100 * time.Millisecond,
-		NatsUrl:      fmt.Sprintf("nats://%v:%v", host, port),
+		BeatDur:      beat,
 		MyRank:       rank,
 		CliConn:      cli,
 		SrvConn:      srv,
