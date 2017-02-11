@@ -21,7 +21,7 @@ import (
 	// Allow dynamic profiling.
 	_ "net/http/pprof"
 
-	"github.com/nats-io/gnatsd/health"
+	"github.com/nats-io/gnatsd/server/health"
 	"github.com/nats-io/gnatsd/util"
 )
 
@@ -337,6 +337,9 @@ func (s *Server) Shutdown() {
 
 	// Release the solicited routes connect go routines.
 	close(s.rcQuit)
+
+	// stop health monitoring
+	s.clusterhealth.Stop()
 
 	s.mu.Unlock()
 

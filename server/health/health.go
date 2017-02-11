@@ -227,7 +227,12 @@ func (m *Membership) start(nc *nats.Conn) {
 	prev, err := allcall(nc, m.subjAllCall, &m.elec)
 	panicOn(err)
 
-	time.Sleep(m.Cfg.BeatDur)
+	select {
+	case <-time.After(m.Cfg.BeatDur):
+	case <-m.rcQuit:
+		close(m.done)
+		return
+	}
 
 	prevCount, prevMember = prev.unsubAndGetSet()
 
@@ -244,8 +249,14 @@ func (m *Membership) start(nc *nats.Conn) {
 			firstSeenLead.Id, firstSeenLead.Rank, limit.Sub(now), limit,
 		)
 	} else {
-		log.Printf("init: after one heartbeat, no leader found. waiting for a full leader lease term of '%s' to expire...", leaseTime)
-		time.Sleep(leaseTime)
+		log.Printf("init: after one heartbeat, no leader found. waiting for a full leader lease term of '%s' to expire...", m.Cfg.LeaseTime)
+
+		select {
+		case <-time.After(m.Cfg.LeaseTime):
+		case <-m.rcQuit:
+			close(m.done)
+			return
+		}
 	}
 
 	// prev responses should be back by now.

@@ -2,7 +2,7 @@ package server
 
 import (
 	"fmt"
-	"github.com/nats-io/gnatsd/health"
+	"github.com/nats-io/gnatsd/server/health"
 	"time"
 )
 

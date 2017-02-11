@@ -71,10 +71,11 @@ type Options struct {
 	ProfPort       int           `json:"-"`
 	PidFile        string        `json:"-"`
 	LogFile        string        `json:"-"`
-	Syslog         bool          `json:"-"`
 	RemoteSyslog   string        `json:"-"`
 	Routes         []*url.URL    `json:"-"`
 	RoutesStr      string        `json:"-"`
+	ServerRank     int           `json:"server_rank"`
+	Syslog         bool          `json:"-"`
 	TLSTimeout     float64       `json:"tls_timeout"`
 	TLS            bool          `json:"-"`
 	TLSVerify      bool          `json:"-"`
@@ -225,6 +226,8 @@ func ProcessConfigFile(configFile string) (*Options, error) {
 			opts.PingInterval = time.Duration(int(v.(int64))) * time.Second
 		case "ping_max":
 			opts.MaxPingsOut = int(v.(int64))
+		case "rank":
+			opts.ServerRank = int(v.(int64))
 		case "tls":
 			tlsm := v.(map[string]interface{})
 			tc, err := parseTLS(tlsm)
