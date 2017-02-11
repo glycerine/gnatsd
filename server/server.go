@@ -285,7 +285,7 @@ func (s *Server) Start() {
 		}
 		Debugf("Starting the %v internal client(s).", n)
 		for _, ic := range s.icli.configured {
-			err := ic.Start(info, opts, clientListenReady, s.iCliRegisterCallback)
+			err := ic.Start(info, opts, clientListenReady, s.iCliRegisterCallback, log.logger)
 
 			if err == nil {
 				s.icli.running = append(s.icli.running, ic)

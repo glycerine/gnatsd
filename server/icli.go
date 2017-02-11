@@ -82,10 +82,13 @@ type InternalClient interface {
 	// returned then Stop() should be
 	// expected.
 	//
+	// The iclient should log using logger.
+	//
 	Start(info Info,
 		opts Options,
 		lsnReady chan struct{},
-		accept func(nc net.Conn)) error
+		accept func(nc net.Conn),
+		logger Logger) error
 
 	// Stop should shutdown the goroutine(s)
 	// of the internal client.

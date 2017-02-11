@@ -1,6 +1,7 @@
 package health
 
 import (
+	"github.com/nats-io/gnatsd/server"
 	"net"
 	"time"
 )
@@ -31,6 +32,8 @@ type MembershipCfg struct {
 	// optional, if provided we will use this connection on
 	// the client side.
 	CliConn net.Conn
+
+	Logger server.Logger
 }
 
 func (cfg *MembershipCfg) SetDefaults() {

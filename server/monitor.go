@@ -473,10 +473,10 @@ func (s *Server) HandleVarz(w http.ResponseWriter, r *http.Request) {
 	v.TotalConnections = s.totalClients
 	v.Routes = len(s.routes)
 	v.Remotes = len(s.remotes)
-	v.InMsgs = s.inMsgs
-	v.InBytes = s.inBytes
-	v.OutMsgs = s.outMsgs
-	v.OutBytes = s.outBytes
+	v.InMsgs = atomic.LoadInt64(&s.inMsgs)
+	v.InBytes = atomic.LoadInt64(&s.inBytes)
+	v.OutMsgs = atomic.LoadInt64(&s.outMsgs)
+	v.OutBytes = atomic.LoadInt64(&s.outBytes)
 	v.SlowConsumers = s.slowConsumers
 	v.Subscriptions = s.sl.Count()
 	s.httpReqStats[VarzPath]++

@@ -32,7 +32,7 @@ func (h *Agent) Start(
 	opts server.Options,
 	lsnReady chan struct{},
 	accept func(nc net.Conn),
-
+	logger server.Logger,
 ) error {
 
 	// To keep the health client fast and its traffic
@@ -48,6 +48,7 @@ func (h *Agent) Start(
 		BeatDur:      beat,
 		MyRank:       rank,
 		CliConn:      cli,
+		Logger:       logger,
 	}
 	h.mship = NewMembership(cfg)
 
