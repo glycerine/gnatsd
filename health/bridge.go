@@ -41,7 +41,7 @@ func (h *Agent) Start(
 	cli, srv := lcon.NewBidir(info.MaxPayload * 2)
 
 	rank := info.ServerRank
-	beat := opts.PingInterval
+	beat := time.Second
 
 	cfg := &MembershipCfg{
 		MaxClockSkew: time.Second,
