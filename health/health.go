@@ -436,7 +436,7 @@ func (m *Membership) start(nc *nats.Conn, pc *pongCollector) {
 				curCount,
 				lost)
 
-		} else if curCount > prevCount && curCount > 0 {
+		} else if curCount > prevCount && prevCount > 0 {
 			m.Cfg.Log.Debugf("health-agent: ++++  "+
 				"MORE ROBUSTNESS GAINED; "+
 				"we went from %v -> %v. "+
