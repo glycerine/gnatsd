@@ -241,10 +241,10 @@ func (m *Membership) start(nc *nats.Conn, pc *pongCollector) {
 
 	// do an initial allcall() to discover any
 	// current leader.
-	m.Cfg.Log.Tracef("health-agent: "+
-		"init: doing initial allcall "+
+	m.Cfg.Log.Tracef("health-agent: " +
+		"init: doing initial allcall " +
 		"to discover any existing leader...")
-	
+
 	err := m.allcall()
 	if err != nil {
 		m.Cfg.Log.Debugf("health-agent: "+
@@ -268,7 +268,7 @@ func (m *Membership) start(nc *nats.Conn, pc *pongCollector) {
 
 	limit := xpire.Add(m.Cfg.MaxClockSkew)
 	if !xpire.IsZero() && limit.After(now) {
-		
+
 		m.Cfg.Log.Tracef("health-agent: init: "+
 			"after one heartbeat, "+
 			"we detect current leader '%s'"+
@@ -347,54 +347,58 @@ func (m *Membership) start(nc *nats.Conn, pc *pongCollector) {
 		if loc != nil {
 			loc.Rank = m.Cfg.MyRank
 			if loc.Id == curLead.Id {
-				
+
 				if now.After(nextLeadReportTm) ||
 					prevLead == nil ||
 					prevLead.Id != curLead.Id {
-					
+
 					left := curLead.LeaseExpires.Sub(now)
 					m.Cfg.Log.Debugf("health-agent: "+
 						"I am LEAD, my Id: '%s', "+
-						"rank %v. lease expires "+
+						"rank %v port %v. lease expires "+
 						"in %s",
 						loc.Id,
 						loc.Rank,
+						loc.Port,
 						left)
-					
+
 					nextLeadReportTm = now.Add(left).Add(time.Second)
 				}
 			} else {
 				if prevLead != nil &&
 					prevLead.Id == loc.Id {
-					
+
 					m.Cfg.Log.Debugf("health-agent: "+
 						"I am no longer lead, "+
 						"new LEAD is '%s', rank %v. "+
-						"lease expires in %s",
+						"port %v. lease expires in %s",
 						curLead.Id,
 						curLead.Rank,
+						curLead.Port,
 						curLead.LeaseExpires.Sub(now))
 
 				} else {
 					if curLead != nil &&
 						(nextLeadReportTm.IsZero() || now.After(nextLeadReportTm)) {
-						
+
 						left := curLead.LeaseExpires.Sub(now)
 						if curLead.Id == "" {
 							m.Cfg.Log.Debugf("health-agent: "+
 								"I am '%s'/rank=%v. "+
-								"lead is unknown.",
+								"port %v. lead is unknown.",
 								m.myLoc.Id,
-								m.myLoc.Rank)
-							
+								m.myLoc.Rank,
+								m.myLoc.Port)
+
 						} else {
 							m.Cfg.Log.Debugf("health-agent: "+
 								"I am not lead. lead is '%s', "+
-								"rank %v, for %v",
+								"rank %v, port %v, for %v",
 								curLead.Id,
 								curLead.Rank,
+								curLead.Port,
 								left)
-							
+
 						}
 						nextLeadReportTm = now.Add(left).Add(time.Second)
 					}
@@ -751,7 +755,7 @@ func (m *Membership) setupNatsClient(pc *pongCollector) (*nats.Conn, error) {
 			string(msg.Data))
 	})
 
-	// reporting 
+	// reporting
 	nc.Subscribe(m.subjMemberAdded, func(msg *nats.Msg) {
 		if m.deaf() {
 			return

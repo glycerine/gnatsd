@@ -188,6 +188,7 @@ func Test103TiedRanksUseIdAndDoNotAlternate(t *testing.T) {
 
 		n := 2
 
+		aLogger := logger.NewStdLogger(micros, true, trace, colors, pid)
 		var ms []*Membership
 		for i := 0; i < n; i++ {
 
@@ -206,7 +207,6 @@ func Test103TiedRanksUseIdAndDoNotAlternate(t *testing.T) {
 			s.InternalCliRegisterCallback(srv)
 			cfg.CliConn = cli
 
-			aLogger := logger.NewStdLogger(micros, true, trace, colors, pid)
 			cfg.Log = aLogger
 
 			m := NewMembership(cfg)
