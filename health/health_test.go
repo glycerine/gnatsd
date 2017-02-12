@@ -193,8 +193,8 @@ func Test103TiedRanksUseIdAndDoNotAlternate(t *testing.T) {
 
 			cfg := &MembershipCfg{
 				MaxClockSkew: 1 * time.Nanosecond,
-				LeaseTime:    400 * time.Millisecond,
-				BeatDur:      100 * time.Millisecond,
+				LeaseTime:    80 * time.Millisecond,
+				BeatDur:      20 * time.Millisecond,
 				NatsUrl:      fmt.Sprintf("nats://localhost:%v", TEST_PORT),
 				MyRank:       0,
 				historyCount: 10000,
@@ -251,13 +251,20 @@ func Test103TiedRanksUseIdAndDoNotAlternate(t *testing.T) {
 			// prints first:
 			for i := 0; i < av; i++ {
 				sloc := h.A[h.Kth(i)].(*ServerLoc)
-				fmt.Printf("server j=%v, history print i = %v. sloc.Id=%v / sloc.Port=%v\n", j, i, sloc.Id, sloc.Port)
+				fmt.Printf("server j=%v, history print i = %v. / sloc.Port=%v, winner.Port=%v\n", j, i, sloc.Port, winner.Port)
 			}
+		}
+		for j := 0; j < n; j++ {
+
+			// check that the history doesn't alternate
+			// between ports / servers.
+			h := ms[j].elec.history
+			av := h.Avail()
 
 			// checks second:
 			for i := 0; i < av; i++ {
 				sloc := h.A[h.Kth(i)].(*ServerLoc)
-				fmt.Printf("server j=%v, history check Id at i = %v. sloc.Id=%v  and winner.Port=%v\n", j, i, sloc.Id, winner.Port)
+				fmt.Printf("server j=%v, history check Id at i = %v. sloc.Port=%v,  winner.Port=%v\n", j, i, sloc.Port, winner.Port)
 				cv.So(sloc.Port, cv.ShouldEqual, winner.Port)
 			}
 
