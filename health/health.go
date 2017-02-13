@@ -184,7 +184,7 @@ func (e *leadHolder) getLeader() ServerLoc {
 // then alt contains a copy of sloc. We
 // return a value in alt to avoid data races.
 //
-func (e *leadHolder) setLeader(sloc *ServerLoc) (slocWon bool, alt ServerLoc) {
+func (e *leadHolder) setLeader(sloc *ServerLoc, now time.Time) (slocWon bool, alt ServerLoc) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -193,9 +193,20 @@ func (e *leadHolder) setLeader(sloc *ServerLoc) (slocWon bool, alt ServerLoc) {
 		return false, e.sloc
 	}
 
-	//now := time.Now().UTC()
-	newWon := ServerLocLessThan(sloc, &e.sloc)
-	oldWon := ServerLocLessThan(&e.sloc, sloc)
+	// check on expired leases: if old is expired
+	// we automatically take the new
+	nowu := now.UnixNano()
+	curexp := e.sloc.LeaseExpires.UnixNano()
+
+	var newWon, oldWon bool
+	if curexp <= nowu {
+		newWon = true
+		oldWon = false
+	} else {
+		newWon = ServerLocLessThan(sloc, &e.sloc)
+		oldWon = ServerLocLessThan(&e.sloc, sloc)
+	}
+
 	switch {
 	case !newWon && !oldWon:
 		// they are equal, pick the longer lease
@@ -422,7 +433,7 @@ func (m *Membership) start() {
 		)
 
 		// record in our history
-		won, alt := m.elec.setLeader(curLead)
+		won, alt := m.elec.setLeader(curLead, now)
 		if !won {
 			//p("%v, port %v, k-th (k=%v) round conclusion of trying to setLeader: rejected '%s' in favor of '%s'", now, m.myLoc.Port, k, curLead, &alt)
 			curLead = &alt
@@ -430,6 +441,7 @@ func (m *Membership) start() {
 			//p("%v, port %v, k-th (k=%v) round conclusion of trying to setLeader: accepted as new lead '%s'", now, m.myLoc.Port, k, curLead)
 		}
 
+		// logging
 		loc, _ := m.getNatsServerLocation()
 		if loc != nil {
 			if loc.Id == curLead.Id {
@@ -680,15 +692,6 @@ func (m *members) leaderLeaseCheck(
 	lead.IsLeader = true
 	lead.LeaseExpires = now.Add(leaseLen).UTC()
 
-	// debug:
-	//	if mship.Cfg.MyRank == 1 {
-	//		p("port %v, leaderLeaseCheck has list of len %v:",
-	//			mship.myLoc.Port, len(sortme)) // TODO: racy read of mship.myLoc
-	//		for i := range sortme {
-	//			fmt.Printf("port %v, sortme[%v]=%v\n", mship.myLoc.Port, i, sortme[i])
-	//		}
-	//		fmt.Printf("\n\n")
-	//	}
 	return true, lead
 }
 
