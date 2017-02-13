@@ -282,7 +282,7 @@ func Test103TiedRanksUseIdAndDoNotAlternate(t *testing.T) {
 		time.Sleep(time.Duration(rounds+1) * (ms[0].Cfg.LeaseTime + ms[0].Cfg.MaxClockSkew))
 
 		// who should be winner after lease expiration...
-		zeroWins := ServerLocLessThan(&ms[0].myLoc, &ms[1].myLoc, time.Now().Add(time.Hour))
+		zeroWins := ServerLocLessThan(&ms[0].myLoc, &ms[1].myLoc)
 		p("zeroWins: %v, [0].myLoc=%v  [1].myLoc=%v", zeroWins, &ms[0].myLoc, &ms[1].myLoc)
 		winner := &ms[1].myLoc
 		if zeroWins {
@@ -541,8 +541,7 @@ func Test106ServerLocLessThan(t *testing.T) {
 		var s1, s2 ServerLoc
 		s1.Id = "a"
 		s1.Rank = 1
-		now := time.Now()
-		cv.So(ServerLocLessThan(&s1, &s2, now), cv.ShouldBeTrue)
+		cv.So(ServerLocLessThan(&s1, &s2), cv.ShouldBeTrue)
 
 		// we should sort
 		// sloc='{"serverId":"5GbhwhtX80BGp2WkidaPMI","host":"127.0.0.1","port":57655,"leader":true,"leaseExpires":"2017-02-13T05:51:46.165603433Z","rank":1}'
