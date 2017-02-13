@@ -19,8 +19,9 @@ func Test201BtreeInsertDisplay(t *testing.T) {
 	if s == "[]" {
 		t.Fatalf("missing serialization of set elements")
 	}
-	if s != `[{"serverId":"abc","host":"","port":0,"leader":false,"leaseExpires":"0001-01-01T00:00:00Z","rank":0}{"serverId":"xyz","host":"","port":0,"leader":false,"leaseExpires":"0001-01-01T00:00:00Z","rank":0]` {
-		t.Fatalf("serial json didn't match expectations")
+	expect := `[{"serverId":"abc","host":"","port":0,"leader":false,"leaseExpires":"0001-01-01T00:00:00Z","rank":0},{"serverId":"xyz","host":"","port":0,"leader":false,"leaseExpires":"0001-01-01T00:00:00Z","rank":0}]`
+	if s != expect {
+		t.Fatalf("serial json didn't match expectations.\n expect:'%s'\n\n observe:'%s'", expect, s)
 	}
 }
 

@@ -73,7 +73,7 @@ func (t *ranktree) String() string {
 	s := "["
 	t.AscendLessThan(&ServerLoc{}, func(item btree.Item) bool {
 		cur := item.(*ServerLoc)
-		s += cur.String()
+		s += cur.String() + ","
 		return true
 	})
 	t.tex.Unlock()

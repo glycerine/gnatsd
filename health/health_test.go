@@ -453,15 +453,16 @@ func Test104ReceiveOwnSends(t *testing.T) {
 			close(repliedInAllCall)
 		})
 
+		now := time.Now().UTC()
 		// send on subjAllCall
 		sl := ServerLoc{
 			Id:           "abc",
 			Host:         "here",
 			Port:         99,
 			Rank:         -100,
-			LeaseExpires: time.Now().Add(time.Hour),
+			LeaseExpires: now.Add(time.Hour),
 		}
-		won, _ := m.elec.setLeader(&sl)
+		won, _ := m.elec.setLeader(&sl, now)
 		if !won {
 			panic("must be able to set leader")
 		}
