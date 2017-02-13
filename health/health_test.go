@@ -597,6 +597,6 @@ func Test107OneNodeAloneWaitsLeaseTermBeforeRenewal(t *testing.T) {
 func Test108ResponseToAllCallShouldIncludeLeaderAndLeaseMarkings(t *testing.T) {
 
 	cv.Convey("Given a cluster of one server, it should elect itself leader and then wait a full lease term before considering who to elect again", t, func() {
-		s := RunServerOnPort(TEST_PORT)
+		// RunServerOnPort(TEST_PORT)
 	})
 }

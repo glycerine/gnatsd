@@ -598,7 +598,7 @@ func pong(nc *nats.Conn, subj string, msg []byte) {
 //
 func (m *Membership) allcall() error {
 	lead := m.elec.getLeader()
-	m.dlog("ISSUING ALLCALL on '%s' with leader '%s'\n", m.subjAllCall, &lead)
+	m.trace("ISSUING ALLCALL on '%s' with leader '%s'\n", m.subjAllCall, &lead)
 
 	leadby, err := json.Marshal(&lead)
 	panicOn(err)
@@ -879,7 +879,7 @@ func (m *Membership) setupNatsClient() error {
 		hp, err := json.Marshal(&locWithLease)
 		panicOn(err)
 		if !m.deaf() {
-			m.dlog("REPLYING TO ALLCALL on '%s' with my details: '%s'", msg.Reply, &locWithLease)
+			m.trace("REPLYING TO ALLCALL on '%s' with my details: '%s'", msg.Reply, &locWithLease)
 			pong(nc, msg.Reply, hp)
 		}
 	})

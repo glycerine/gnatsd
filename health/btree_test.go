@@ -38,3 +38,29 @@ func Test202BtreeEqual(t *testing.T) {
 		t.Fatalf("expected setsEqual to be true")
 	}
 }
+
+func Test203SetDiff(t *testing.T) {
+	s1 := &ServerLoc{Id: "abc"}
+	s2 := &ServerLoc{Id: "def"}
+	s3 := &ServerLoc{Id: "ghi"}
+	s4 := &ServerLoc{Id: "jkl"}
+
+	r1 := newRanktree()
+	r1.insert(s1)
+	r1.insert(s2)
+	r1.insert(s3)
+	r1.insert(s4)
+
+	r2 := newRanktree()
+	r2.insert(s1)
+	r2.insert(s2)
+
+	diff := setDiff(&members{DedupTree: r1}, &members{DedupTree: r2}, nil)
+	if diff.DedupTree.size() != 2 {
+		t.Fatalf("setdiff was not the right size")
+	}
+	x := diff.DedupTree.minrank()
+	if !slocEqual(x, s3) {
+		t.Fatalf("setdiff was not the right element")
+	}
+}
