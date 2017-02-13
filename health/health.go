@@ -386,9 +386,8 @@ func (m *Membership) start() {
 			curLead = &alt
 		}
 
-		loc, _ := nc.ServerLocation()
+		loc, _ := m.getNatsServerLocation()
 		if loc != nil {
-			loc.Rank = m.Cfg.MyRank
 			if loc.Id == curLead.Id {
 
 				if now.After(nextLeadReportTm) ||
@@ -736,14 +735,6 @@ func (m *Membership) setupNatsClient() error {
 	//
 	optrecon := nats.NoReconnect()
 
-	/*
-		recon := func(nc *nats.Conn) {
-			loc, err := nc.ServerLocation()
-			panicOn(err)
-			m.Cfg.Log.Debugf("health-agent: Reconnect to nats!: loc = '%s'", loc)
-		}
-		optrecon := nats.ReconnectHandler(recon)
-	*/
 	opts := []nats.Option{optdis, optrecon, norand}
 	if m.Cfg.CliConn != nil {
 		opts = append(opts, nats.Dialer(&m.Cfg))
@@ -759,11 +750,10 @@ func (m *Membership) setupNatsClient() error {
 		return msg
 	}
 
-	loc, err := nc.ServerLocation()
+	loc, err := m.getNatsServerLocation()
 	if err != nil {
 		return err
 	}
-	loc.Rank = m.Cfg.MyRank
 	m.setLoc(loc)
 	m.Cfg.Log.Debugf("health-agent: HELLOWORLD: "+
 		"I am '%s' at '%v:%v'. "+
@@ -790,7 +780,7 @@ func (m *Membership) setupNatsClient() error {
 		if m.deaf() {
 			return
 		}
-		loc, err := nc.ServerLocation()
+		loc, err := m.getNatsServerLocation()
 		if err != nil {
 			return // try again next time.
 		}
@@ -801,12 +791,17 @@ func (m *Membership) setupNatsClient() error {
 		// We are supposed to be monitoring
 		// just our own server.
 		if m.locDifferent(loc) {
-			panic(fmt.Sprintf("very bad! health-agent "+
+			panic(fmt.Sprintf("\n very bad! health-agent "+
 				"changed locations! "+
-				"first: '%s', now:'%s'",
-				m.myLoc,
+				"first: '%s',\n\nvs\n now:'%s'\n",
+				&m.myLoc,
 				loc))
 		}
+		/*	 very bad! health-agent changed locations! first: '{"serverId":"C4xFcdVR1TpPY7pXpAJYo4","host":"127.0.0.1","port":55354,"leader":false,"leaseExpires":"0001-01-01T00:00:00Z","rank":1}',
+
+		vs
+		 now:'{"serverId":"C4xFcdVR1TpPY7pXpAJYo4","host":"127.0.0.1","port":55354,"leader":false,"leaseExpires":"0001-01-01T00:00:00Z","rank":0}'
+		*/
 
 		// allcall broadcasts the leader
 		var lead ServerLoc
@@ -898,4 +893,24 @@ func (m *Membership) setLoc(b *nats.ServerLoc) {
 	m.myLoc.Port = b.Port
 	m.mu.Unlock()
 	m.elec.setMyLoc(&m.myLoc)
+}
+
+func (m *Membership) getNatsServerLocation() (*nats.ServerLoc, error) {
+	loc, err := m.nc.ServerLocation()
+	if err != nil {
+		return nil, err
+	}
+	// fill in the rank because server
+	// doesn't have the rank correct under
+	// various test scenarios where we
+	// spin up an embedded gnatsd.
+	//
+	// This is still correct in non-test,
+	// since the health-agent will
+	// have read from the command line
+	// -rank options and then
+	// configured Cfg.MyRank when running
+	// embedded as an internal client.
+	loc.Rank = m.Cfg.MyRank
+	return loc, nil
 }
