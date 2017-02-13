@@ -189,11 +189,11 @@ func (e *leadHolder) setLeader(sloc *ServerLoc) (slocWon bool, alt ServerLoc) {
 	defer e.mu.Unlock()
 
 	if sloc == nil || sloc.Id == "" {
-		p("port %v, 77777 setLeader is returning false because sloc==nil or sloc.Id==empty string", e.m.myLoc.Port)
+		//p("port %v, 77777 setLeader is returning false because sloc==nil or sloc.Id==empty string", e.m.myLoc.Port)
 		return false, e.sloc
 	}
 
-	now := time.Now().UTC()
+	//now := time.Now().UTC()
 	newWon := ServerLocLessThan(sloc, &e.sloc)
 	oldWon := ServerLocLessThan(&e.sloc, sloc)
 	switch {
@@ -205,12 +205,12 @@ func (e *leadHolder) setLeader(sloc *ServerLoc) (slocWon bool, alt ServerLoc) {
 			alt = *sloc
 			e.sloc = *sloc
 
-			p("%v, port %v, 999999 setLeader sees same leader with > lease, renewing its lease %v\n", now, e.m.myLoc.Port, &e.sloc)
+			//p("%v, port %v, 999999 setLeader sees same leader with > lease, renewing its lease %v\n", now, e.m.myLoc.Port, &e.sloc)
 		} else {
 			slocWon = false
 			alt = e.sloc
 
-			p("%v, port %v, 000000 setLeader is failing to update the leader, rejecting the new contendor.\n\nsloc='%s'\n >= \n prev:'%s'\n", now, e.m.myLoc.Port, sloc, &e.sloc)
+			//p("%v, port %v, 000000 setLeader is failing to update the leader, rejecting the new contendor.\n\nsloc='%s'\n >= \n prev:'%s'\n", now, e.m.myLoc.Port, sloc, &e.sloc)
 		}
 	case newWon:
 		slocWon = true
@@ -387,7 +387,7 @@ func (m *Membership) start() {
 			return
 		}
 
-		p("%v, port %v, SLEEPING for a heartbeat of %v", time.Now().UTC(), m.myLoc.Port, m.Cfg.BeatDur)
+		//p("%v, port %v, SLEEPING for a heartbeat of %v", time.Now().UTC(), m.myLoc.Port, m.Cfg.BeatDur)
 		select {
 		case <-time.After(m.Cfg.BeatDur):
 			// continue below, latest heartbeat session done.
@@ -411,9 +411,7 @@ func (m *Membership) start() {
 		// and we can compare prev and cur.
 		curCount, curMember = pc.getSetAndClear(m.myLoc)
 		now = time.Now().UTC()
-		//		if m.Cfg.MyRank == 1 {
-		p("%v, port %v, k-th (k=%v) round conclusion, curMember='%s'", now, m.myLoc.Port, k, curMember)
-		//		}
+		//p("%v, port %v, k-th (k=%v) round conclusion, curMember='%s'", now, m.myLoc.Port, k, curMember)
 
 		expired, curLead = curMember.leaderLeaseCheck(
 			now,
@@ -426,10 +424,10 @@ func (m *Membership) start() {
 		// record in our history
 		won, alt := m.elec.setLeader(curLead)
 		if !won {
-			p("%v, port %v, k-th (k=%v) round conclusion of trying to setLeader: rejected '%s' in favor of '%s'", now, m.myLoc.Port, k, curLead, &alt)
+			//p("%v, port %v, k-th (k=%v) round conclusion of trying to setLeader: rejected '%s' in favor of '%s'", now, m.myLoc.Port, k, curLead, &alt)
 			curLead = &alt
 		} else {
-			p("%v, port %v, k-th (k=%v) round conclusion of trying to setLeader: accepted as new lead '%s'", now, m.myLoc.Port, k, curLead)
+			//p("%v, port %v, k-th (k=%v) round conclusion of trying to setLeader: accepted as new lead '%s'", now, m.myLoc.Port, k, curLead)
 		}
 
 		loc, _ := m.getNatsServerLocation()
@@ -608,7 +606,7 @@ func (pc *pongCollector) receivePong(msg *nats.Msg) {
 		panic(err)
 	}
 
-	p("%v, port %v, pong collector received '%#v'. pc.from is now '%s'", time.Now().UTC(), pc.mship.myLoc.Port, &loc, pc.from)
+	//p("%v, port %v, pong collector received '%#v'. pc.from is now '%s'", time.Now().UTC(), pc.mship.myLoc.Port, &loc, pc.from)
 
 	pc.mu.Unlock()
 }
