@@ -181,7 +181,7 @@ func (e *leadHolder) setLeader(sloc *ServerLoc) (slocWon bool, alt ServerLoc) {
 
 	if sloc == nil || sloc.Id == "" {
 		// debug
-		if e.m.myLoc.Rank == 0 {
+		if e.m.myLoc.Rank == 1 {
 			p("port %v, 77777 setLeader is returning false because sloc==nil or sloc.Id==empty string", e.m.myLoc.Port)
 		}
 		return false, e.sloc
@@ -200,7 +200,7 @@ func (e *leadHolder) setLeader(sloc *ServerLoc) (slocWon bool, alt ServerLoc) {
 			e.history.Append(&histcp)
 			eq = true
 		}
-		if e.m.myLoc.Rank == 0 {
+		if e.m.myLoc.Rank == 1 {
 			if eq {
 				p("port %v, 999999 setLeader sees same leader update, keeping same but recorded in history.'%s'\nat time %v\n", e.m.myLoc.Port, &e.sloc, now.UTC())
 			} else {
@@ -211,7 +211,7 @@ func (e *leadHolder) setLeader(sloc *ServerLoc) (slocWon bool, alt ServerLoc) {
 		return false, e.sloc
 	}
 	// debug:
-	if e.m.myLoc.Rank == 0 {
+	if e.m.myLoc.Rank == 1 {
 		p("port %v, 8888888 setLeader is appending to history now len %v: this is new \n\nsloc='%s'\n <\n prev:'%s'\nat time %v\n", e.m.myLoc.Port, e.history.Avail(), sloc, &e.sloc, now.UTC())
 	}
 	e.sloc = *sloc
@@ -301,7 +301,7 @@ func (m *Membership) start() {
 	}
 
 	prevCount, prevMember = pc.getSetAndClear(m.myLoc)
-	if m.Cfg.MyRank == 0 {
+	if m.Cfg.MyRank == 1 {
 		p("port %v, 0-th round, prevMember='%s'", m.myLoc.Port, prevMember)
 	}
 
@@ -396,7 +396,7 @@ func (m *Membership) start() {
 		// cur responses should be back by now
 		// and we can compare prev and cur.
 		curCount, curMember = pc.getSetAndClear(m.myLoc)
-		if m.Cfg.MyRank == 0 {
+		if m.Cfg.MyRank == 1 {
 			p("port %v, k-th (k=%v) round, curMember='%s'", m.myLoc.Port, k, curMember)
 		}
 
@@ -675,7 +675,7 @@ func (m *members) leaderLeaseExpired(
 	lead.LeaseExpires = now.Add(leaseLen).UTC()
 
 	// debug:
-	if mship.Cfg.MyRank == 0 {
+	if mship.Cfg.MyRank == 1 {
 		p("port %v, leaderLeaseExpired has list of len %v:",
 			mship.myLoc.Port, len(sortme)) // TODO: racy read of mship.myLoc
 		for i := range sortme {
@@ -732,6 +732,16 @@ func ServerLocLessThan(i, j *ServerLoc, now time.Time) bool {
 		}
 		p("both expired")
 	*/
+	// recognize empty ServerLoc and sort them high, not low.
+	iempt := i.Id == ""
+	jempt := j.Id == ""
+	if iempt || jempt {
+		if jempt {
+			return true // "123" < ""
+		}
+		return false
+	}
+
 	if i.Rank != j.Rank {
 		return i.Rank < j.Rank
 	}

@@ -132,7 +132,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 		// verify liveness, a leader exists.
 		p("verifying everyone thinks there is a leader:")
 		for i := 0; i < n; i++ {
-			//fmt.Printf("verifying %v thinks there is a leader\n", i)
+			fmt.Printf("verifying %v thinks there is a leader\n", i)
 			cv.So(ms[i].elec.history.Avail(), cv.ShouldBeGreaterThan, 0)
 		}
 
@@ -487,3 +487,29 @@ func getAvailPort() (int, net.Listener) {
 	r := l.Addr()
 	return r.(*net.TCPAddr).Port, l
 }
+
+func Test106ServerLocLessThan(t *testing.T) {
+
+	cv.Convey("To properly handle empty ServerLoc, ServerLocLessThan should sort sloc with and Id as smaller (more preferred) compared to an sloc (ServerLoc) with an empty string Id, even if their ranks are different.", t, func() {
+		var s1, s2 ServerLoc
+		s1.Id = "a"
+		s1.Rank = 1
+		now := time.Now()
+		cv.So(ServerLocLessThan(&s1, &s2, now), cv.ShouldBeTrue)
+
+		// we should sort
+		// sloc='{"serverId":"5GbhwhtX80BGp2WkidaPMI","host":"127.0.0.1","port":57655,"leader":true,"leaseExpires":"2017-02-13T05:51:46.165603433Z","rank":1}'
+		// as <
+		// '{"serverId":"","host":"","port":0,"leader":false,"leaseExpires":"0001-01-01T00:00:00Z","rank":0}'
+		// also.
+
+	})
+}
+
+/*
+func ServerLocLessThan(i, j *ServerLoc, now time.Time) bool {
+
+sloc='{"serverId":"5GbhwhtX80BGp2WkidaPMI","host":"127.0.0.1","port":57655,"leader":true,"leaseExpires":"2017-02-13T05:51:46.165603433Z","rank":1}'
+ >=
+ prev:'{"serverId":"","host":"","port":0,"leader":false,"leaseExpires":"0001-01-01T00:00:00Z","rank":0}'
+*/
