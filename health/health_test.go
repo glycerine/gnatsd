@@ -144,13 +144,17 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 			ms[i].unDeaf()
 		}
 
-		// check that the history from rank 0
+		// get a few more lease cycles in
+		// for good history length
+		time.Sleep(20 * (ms[0].Cfg.LeaseTime + ms[0].Cfg.MaxClockSkew))
+
+		// check that the history from the rank 0
 		// always shows rank 0 as lead.
 		h := ms[0].elec.history
 		av := h.Avail()
 		p("ms[0].myLoc.Port = %v", ms[0].myLoc.Port)
 		cv.So(ms[0].myLoc.Id, cv.ShouldNotEqual, "")
-		cv.So(av, cv.ShouldBeGreaterThan, 10)
+		cv.So(av, cv.ShouldBeGreaterThan, 9)
 		p("av: available history len = %v", av)
 
 		// prints first:
@@ -174,6 +178,40 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 			sloc := h.A[h.Kth(i)].(*ServerLoc)
 			//p("history check Rank at i = %v. sloc.Rank=%v", i, sloc.Rank)
 			cv.So(sloc.Rank, cv.ShouldEqual, 0)
+		}
+
+		// check that the other ranks have
+		// histories that converge
+		// on the rank 0 process quickly
+		for j := 1; j < n; j++ {
+			h := ms[j].elec.history
+			av := h.Avail()
+			p("ms[j=%v].myLoc.Port = %v has history av = %v", j, ms[j].myLoc.Port, av)
+			cv.So(ms[j].myLoc.Id, cv.ShouldNotEqual, "")
+			cv.So(av, cv.ShouldBeGreaterThan, 8)
+			p("av: available history len = %v", av)
+
+			// prints first:
+
+			for i := 0; i < av; i++ {
+				sloc := h.A[h.Kth(i)].(*ServerLoc)
+				fmt.Printf("history print i = %v. sloc.Id=%v / sloc.Rank=%v, port=%v\n", i, sloc.Id, sloc.Rank, sloc.Port)
+			}
+			// checks second:
+			for i := 0; i < av; i++ {
+				sloc := h.A[h.Kth(i)].(*ServerLoc)
+				fmt.Printf("history check Id at i = %v. sloc.Port=%v vs.  ms[0].myLoc.Port=%v\n", i, sloc.Port, ms[0].myLoc.Port)
+				// ports will be the only thing different when
+				// running off of the one gnatsd that has the
+				// same rank and Id for all clients.
+				//cv.So(sloc.Port, cv.ShouldEqual, ms[j].myLoc.Port)
+			}
+
+			for i := 0; i < av; i++ {
+				sloc := h.A[h.Kth(i)].(*ServerLoc)
+				p("history check Rank at i = %v. sloc.Rank=%v", i, sloc.Rank)
+				//cv.So(sloc.Rank, cv.ShouldEqual, 0)
+			}
 		}
 	})
 }

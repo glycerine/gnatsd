@@ -650,7 +650,7 @@ func (m *members) leaderLeaseExpired(
 
 	if prevLead.LeaseExpires.Add(maxClockSkew).After(now) {
 		// honor the leases until they expire
-		p("leaderLeaseExpired: honoring outstanding lease")
+		//p("leaderLeaseExpired: honoring outstanding lease")
 		return false, prevLead
 	}
 
@@ -674,14 +674,14 @@ func (m *members) leaderLeaseExpired(
 	lead.LeaseExpires = now.Add(leaseLen).UTC()
 
 	// debug:
-	if mship.Cfg.MyRank == 1 {
-		p("port %v, leaderLeaseExpired has list of len %v:",
-			mship.myLoc.Port, len(sortme)) // TODO: racy read of mship.myLoc
-		for i := range sortme {
-			fmt.Printf("port %v, sortme[%v]=%v\n", mship.myLoc.Port, i, sortme[i])
-		}
-		fmt.Printf("\n\n")
-	}
+	//	if mship.Cfg.MyRank == 1 {
+	//		p("port %v, leaderLeaseExpired has list of len %v:",
+	//			mship.myLoc.Port, len(sortme)) // TODO: racy read of mship.myLoc
+	//		for i := range sortme {
+	//			fmt.Printf("port %v, sortme[%v]=%v\n", mship.myLoc.Port, i, sortme[i])
+	//		}
+	//		fmt.Printf("\n\n")
+	//	}
 	return true, lead
 }
 
