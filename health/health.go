@@ -56,6 +56,18 @@ type Membership struct {
 	needReconnect chan bool
 }
 
+func (m *Membership) getMyLocWithAnyLease() ServerLoc {
+	m.mu.Lock()
+	myLoc := m.myLoc
+	m.mu.Unlock()
+
+	lead := m.elec.getLeader()
+	if slocEqual(&lead, &myLoc) {
+		myLoc.LeaseExpires = lead.LeaseExpires
+	}
+	return myLoc
+}
+
 func (m *Membership) deaf() bool {
 	v := atomic.LoadInt64(&m.Cfg.deaf)
 	return v == DEAF_TRUE
@@ -301,7 +313,7 @@ func (m *Membership) start() {
 		return
 	}
 
-	prevCount, prevMember = pc.getSetAndClear(m.myLoc)
+	prevCount, prevMember = pc.getSetAndClear(m.getMyLocWithAnyLease())
 	now := time.Now().UTC()
 	p("%v, 0-th round, myLoc:%s, prevMember='%s'", now, &m.myLoc, prevMember)
 
@@ -843,6 +855,7 @@ func (m *Membership) setupNatsClient() error {
 		if m.deaf() {
 			return
 		}
+
 		loc, err := m.getNatsServerLocation()
 		if err != nil {
 			return // try again next time.
@@ -861,15 +874,9 @@ func (m *Membership) setupNatsClient() error {
 				loc))
 		}
 
-		loc2 := natsLocConvert(loc)
+		locWithLease := m.getMyLocWithAnyLease()
 
-		// if we are the current lead, let the caller know.
-		lead := m.elec.getLeader()
-		if slocEqual(&lead, loc2) {
-			loc2.LeaseExpires = lead.LeaseExpires
-		}
-
-		hp, err := json.Marshal(loc2)
+		hp, err := json.Marshal(&locWithLease)
 		panicOn(err)
 		if !m.deaf() {
 			pong(nc, msg.Reply, hp)
