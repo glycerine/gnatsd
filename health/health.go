@@ -300,9 +300,7 @@ func (m *Membership) start() {
 	}
 
 	prevCount, prevMember = pc.getSetAndClear(m.myLoc)
-	//	if m.Cfg.MyRank == 1 {
-	//		p("port %v, 0-th round, prevMember='%s'", m.myLoc.Port, prevMember)
-	//	}
+	//p("myLoc:%s, 0-th round, prevMember='%s'", &m.myLoc, prevMember)
 
 	now := time.Now()
 
@@ -709,10 +707,9 @@ func (p byRankThenId) Less(i, j int) bool {
 	return ServerLocLessThan(p.s[i], p.s[j], p.now)
 }
 
-// ServerLocLessThan returns true iff i < j, in terms of rank.
-// Lower rank is more electable. We order first by LeaseExpires,
-// then by Rank, Id, Host, and Port; in that order. The
-// longer leaseExpires wins (is less than).
+// ServerLocLessThan returns true iff i < j, in
+// terms of leader preference where lowest is
+// more electable/preferred as leader.
 func ServerLocLessThan(i, j *ServerLoc, now time.Time) bool {
 
 	/*
@@ -752,11 +749,14 @@ func ServerLocLessThan(i, j *ServerLoc, now time.Time) bool {
 	// recognize empty ServerLoc and sort them high, not low.
 	iempt := i.Id == ""
 	jempt := j.Id == ""
-	if iempt || jempt {
-		if jempt {
-			return true // "123" < ""
-		}
-		return false
+	if iempt && jempt {
+		return false // "" == ""
+	}
+	if jempt {
+		return true // "123" < ""
+	}
+	if iempt {
+		return false // "" > "123"
 	}
 
 	if i.Rank != j.Rank {
