@@ -314,7 +314,7 @@ func (m *Membership) start() {
 
 	prevCount, prevMember = pc.getSetAndClear(m.myLoc)
 	now := time.Now().UTC()
-	p("%v, 0-th round, myLoc:%s, prevMember='%s'", now, &m.myLoc, prevMember)
+	//p("%v, 0-th round, myLoc:%s, prevMember='%s'", now, &m.myLoc, prevMember)
 
 	firstSeenLead := m.elec.getLeader()
 	xpire := firstSeenLead.LeaseExpires
@@ -373,7 +373,7 @@ func (m *Membership) start() {
 		// and won't change
 		// what the current leader
 		// is in elec.
-		p("%v, port %v, issuing k-th (k=%v) allcall", time.Now().UTC(), m.myLoc.Port, k)
+		//p("%v, port %v, issuing k-th (k=%v) allcall", time.Now().UTC(), m.myLoc.Port, k)
 		err = m.allcall()
 		if err != nil {
 			// err could be: "write on closed buffer"
@@ -628,7 +628,7 @@ func (pc *pongCollector) getSetAndClear(myLoc ServerLoc) (int, *members) {
 	// add myLoc to pc.from as a part of "reset"
 	pc.from.DedupTree.insert(&myLoc)
 
-	p("%v, in getSetAndClear, here are the contents of mem.DedupTree: '%s'", time.Now().UTC(), mem.DedupTree)
+	//p("%v, in getSetAndClear, here are the contents of mem.DedupTree: '%s'", time.Now().UTC(), mem.DedupTree)
 
 	// return the old member set
 	return mem.DedupTree.Len(), mem
@@ -670,7 +670,7 @@ func (m *members) leaderLeaseCheck(
 	}
 
 	if m.DedupTree.Len() == 0 {
-		p("leaderLeaseCheck: m.DedupTree.Len is 0")
+		//p("leaderLeaseCheck: m.DedupTree.Len is 0")
 		return false, prevLead
 	}
 
