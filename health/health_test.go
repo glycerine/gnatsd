@@ -94,8 +94,8 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 
 			cfg := &MembershipCfg{
 				MaxClockSkew: 1 * time.Nanosecond,
-				LeaseTime:    150 * time.Millisecond,
-				BeatDur:      50 * time.Millisecond,
+				LeaseTime:    400 * time.Millisecond,
+				BeatDur:      100 * time.Millisecond,
 				NatsUrl:      fmt.Sprintf("nats://localhost:%v", TEST_PORT),
 				MyRank:       i,         //min(1, i), // ranks 0,1,1,1,1,1,...
 				deaf:         DEAF_TRUE, // don't ping or pong
@@ -147,7 +147,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 		// always shows rank 0 as lead.
 		h := ms[0].elec.history
 		av := h.Avail()
-		//p("ms[0].myLoc.Id = %v", ms[0].myLoc.Id)
+		p("ms[0].myLoc.Port = %v", ms[0].myLoc.Port)
 		cv.So(ms[0].myLoc.Id, cv.ShouldNotEqual, "")
 		cv.So(av, cv.ShouldBeGreaterThan, 10)
 		p("av: available history len = %v", av)
@@ -281,6 +281,30 @@ func RunServerOnPort(port int) *server.Server {
 	return gnatsd.RunServer(&opts)
 }
 
+func StartClusterOnPort(port, clusterPort int) *server.Server {
+	opts := serverOpts
+	opts.Port = port
+
+	opts.Cluster = server.ClusterOpts{
+		Port: clusterPort,
+		Host: opts.Host,
+	}
+	return gnatsd.RunServer(&opts)
+}
+func AddToClusterOnPort(
+	port, clusterPort int, routesStr string,
+) *server.Server {
+
+	opts := serverOpts
+	opts.Port = port
+	opts.Routes = server.RoutesFromStr(routesStr)
+	opts.Cluster = server.ClusterOpts{
+		Port: clusterPort,
+		Host: opts.Host,
+	}
+	return gnatsd.RunServer(&opts)
+}
+
 func min(a, b int) int {
 	if a < b {
 		return a
@@ -350,6 +374,7 @@ func Test104ReceiveOwnSends(t *testing.T) {
 
 		loc, err := nc.ServerLocation()
 		panicOn(err)
+		loc.Rank = m.Cfg.MyRank
 		m.setLoc(loc)
 
 		m.subjAllCall = sysMemberPrefix + "allcall"
@@ -398,4 +423,49 @@ func Test104ReceiveOwnSends(t *testing.T) {
 		// expect to have gotAllRep closed.
 		<-gotAllRep
 	})
+}
+
+func Test105OnlyConnectToOriginalGnatsd(t *testing.T) {
+
+	cv.Convey("If a heath-agent is disconnected from gnatsd, it should only ever reconnect to that same gnatsd--the server whose health it is responsible for monitoring.", t, func() {
+
+		cluster1Port, lsn1 := getAvailPort()
+		cluster2Port, lsn2 := getAvailPort()
+		// now that we've got different available ports,
+		// we can close the listeners to free these up.
+		lsn1.Close()
+		lsn2.Close()
+		routesString := fmt.Sprintf("nats://127.0.0.1:%v", cluster1Port)
+		s := StartClusterOnPort(TEST_PORT, cluster1Port)
+		s2 := AddToClusterOnPort(TEST_PORT+1, cluster2Port, routesString)
+		defer s2.Shutdown()
+		defer s.Shutdown()
+
+		cli, srv, err := NewInternalClientPair()
+		panicOn(err)
+		s.InternalCliRegisterCallback(srv)
+		cfg := &MembershipCfg{
+			CliConn:      cli,
+			MaxClockSkew: 1 * time.Nanosecond,
+			LeaseTime:    30 * time.Millisecond,
+			BeatDur:      10 * time.Millisecond,
+			NatsUrl:      fmt.Sprintf("nats://localhost:%v", TEST_PORT),
+		}
+
+		m := NewMembership(cfg)
+		err = m.Start()
+		if err != nil {
+			panic(err)
+		}
+		ms = append(ms, m)
+		defer m.Stop()
+
+		select {}
+	})
+}
+
+func getAvailPort() (int, net.Listener) {
+	l, _ := net.Listen("tcp", ":0")
+	r := l.Addr()
+	return r.(*net.TCPAddr).Port, l
 }

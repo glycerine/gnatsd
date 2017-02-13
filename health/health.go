@@ -183,7 +183,7 @@ func (e *leadHolder) setLeader(sloc *ServerLoc) (slocWon bool, alt ServerLoc) {
 	if !slocWon {
 		return false, e.sloc
 	}
-	//	p("port %v, 8888888 setLeader is appending to history, before is len %v", e.m.myLoc.Port, e.history.Avail())
+	p("port %v, 8888888 setLeader is appending to history now len %v: this is new \n\nsloc='%s'\n <\n prev:'%s'\n", e.m.myLoc.Port, e.history.Avail(), sloc, &e.sloc)
 
 	e.sloc = *sloc
 	histcp := *sloc
@@ -701,6 +701,7 @@ func (m *Membership) setupNatsClient(pc *pongCollector) (*nats.Conn, error) {
 	if err != nil {
 		return nil, err
 	}
+	loc.Rank = m.Cfg.MyRank
 	m.setLoc(loc)
 	m.Cfg.Log.Debugf("health-agent: HELLOWORLD: "+
 		"I am '%s' at '%v:%v'. "+
