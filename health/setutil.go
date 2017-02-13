@@ -1,8 +1,6 @@
 package health
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"reflect"
 )
@@ -21,60 +19,13 @@ func panicOn(err error) {
 	}
 }
 
-// return a minus b, where a and b are sets.
-func setDiff(a, b *members, curLead *ServerLoc) *members {
-
-	res := newMembers()
-	a.Amap.tex.Lock()
-	for k, v := range a.Amap.U {
-
-		if curLead != nil {
-			// annotate leader as we go...
-			if v.Id == curLead.Id {
-				v.IsLeader = true
-				v.LeaseExpires = curLead.LeaseExpires
-			}
-		}
-
-		if _, found := b.Amap.U[k]; !found { // data race
-			res.Amap.U[k] = v
-		}
-	}
-	a.Amap.tex.Unlock()
-	return res
-}
-
-func setsEqual(a, b *members) bool {
-	a.Amap.tex.Lock()
-	b.Amap.tex.Lock()
-	defer b.Amap.tex.Unlock()
-	defer a.Amap.tex.Unlock()
-
-	alen := len(a.Amap.U)
-	if alen != len(b.Amap.U) {
-		return false
-	}
-	// INVAR: len(a) == len(b)
-	if alen == 0 {
-		return true
-	}
-	for k := range a.Amap.U {
-		if _, found := b.Amap.U[k]; !found {
-			return false
-		}
-	}
-	// INVAR: all of a was found in b, and they
-	// are the same size
-	return true
-}
-
 type members struct {
-	GroupName string              `json:"GroupName"`
-	Amap      *AtomicServerLocMap `json:"Mem"`
+	GroupName string    `json:"GroupName"`
+	Amap      *ranktree `json:"Mem"`
 }
 
 func (m *members) clear() {
-	m.Amap = NewAtomicServerLocMap()
+	m.Amap = newRanktree()
 }
 
 func (m *members) clone() *members {
@@ -83,13 +34,7 @@ func (m *members) clone() *members {
 	if m.Amap == nil {
 		return cp
 	}
-	m.Amap.tex.Lock()
-	cp.Amap.tex.Lock()
-	for k, v := range m.Amap.U {
-		cp.Amap.U[k] = v
-	}
-	cp.Amap.tex.Unlock()
-	m.Amap.tex.Unlock()
+	cp.Amap = m.Amap.clone()
 	return cp
 }
 
@@ -103,30 +48,14 @@ func (m *members) String() string {
 
 func newMembers() *members {
 	return &members{
-		Amap: NewAtomicServerLocMap(),
+		Amap: newRanktree(),
 	}
 }
 
-func (m members) mustJsonBytes() []byte {
-	m.Amap.tex.Lock()
-	defer m.Amap.tex.Unlock()
-
-	var buf bytes.Buffer
-	fmt.Fprintf(&buf, "[")
-	i := 0
-	n := len(m.Amap.U)
-	for _, v := range m.Amap.U {
-		by, err := json.Marshal(v)
-		panicOn(err)
-		buf.Write(by)
-		if i < n-1 {
-			fmt.Fprintf(&buf, ",")
-		}
-		i++
-	}
-	fmt.Fprintf(&buf, "]")
-
-	return buf.Bytes()
+func (m *members) mustJsonBytes() []byte {
+	by, err := m.Amap.MarshalJSON()
+	panicOn(err)
+	return by
 }
 
 func slocEqual(a, b *ServerLoc) bool {

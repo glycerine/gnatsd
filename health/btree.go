@@ -1,6 +1,8 @@
 package health
 
 import (
+	"bytes"
+
 	"fmt"
 	"sync"
 
@@ -17,7 +19,7 @@ import (
 // priority order and deduplicated.
 type ranktree struct {
 	*btree.BTree
-	mu sync.RWMutex
+	tex sync.RWMutex
 }
 
 func (a *ServerLoc) Less(than btree.Item) bool {
@@ -29,15 +31,22 @@ func (a *ServerLoc) Less(than btree.Item) bool {
 // to insert the same sloc multiple times and
 // duplicates will be ignored.
 func (t *ranktree) insert(j *ServerLoc) {
-	t.mu.Lock()
+	t.tex.Lock()
 	t.ReplaceOrInsert(j)
-	t.mu.Unlock()
+	t.tex.Unlock()
 }
 
-func (t *ranktree) min() *ServerLoc {
-	t.mu.RLock()
+func (t *ranktree) present(j *ServerLoc) bool {
+	t.tex.Lock()
+	b := t.Has(j)
+	t.tex.Unlock()
+	return b
+}
+
+func (t *ranktree) minrank() *ServerLoc {
+	t.tex.RLock()
 	min := t.Min()
-	t.mu.RUnlock()
+	t.tex.RUnlock()
 
 	if min == nil {
 		return nil
@@ -46,9 +55,9 @@ func (t *ranktree) min() *ServerLoc {
 }
 
 func (t *ranktree) deleteSloc(j *ServerLoc) {
-	t.mu.Lock()
+	t.tex.Lock()
 	t.Delete(j)
-	t.mu.Unlock()
+	t.tex.Unlock()
 }
 
 func newRanktree() *ranktree {
@@ -58,33 +67,94 @@ func newRanktree() *ranktree {
 }
 
 func (t *ranktree) String() string {
-	t.mu.Lock()
+	t.tex.Lock()
 
-	s := "{"
+	s := "["
 	t.AscendGreaterOrEqual(&ServerLoc{}, func(item btree.Item) bool {
 		cur := item.(*ServerLoc)
 		s += fmt.Sprintf("%s,", cur)
 		return true
 	})
-	t.mu.Unlock()
+	t.tex.Unlock()
 
-	// replace last comma with closing curly brace
+	// replace last comma with matching bracket
 	n := len(s)
 	if n > 0 {
-		s = s[:n-1] + "}"
+		s = s[:n-1] + "]"
 	}
 	return s
 }
 
 func (t *ranktree) clone() *ranktree {
 	r := newRanktree()
-	t.mu.Lock()
+	t.tex.Lock()
 
 	t.AscendGreaterOrEqual(&ServerLoc{}, func(item btree.Item) bool {
 		cur := item.(*ServerLoc)
 		r.insert(cur)
 		return true
 	})
-	t.mu.Unlock()
+	t.tex.Unlock()
 	return r
+}
+
+func (t *ranktree) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	fmt.Fprintf(&buf, "%s", t)
+	return buf.Bytes(), nil
+}
+
+// Len() is inherted from the btree
+
+// return a minus b, where a and b are sets.
+func setDiff(a, b *members, curLead *ServerLoc) *members {
+
+	res := a.Amap.clone()
+	a.Amap.tex.Lock()
+	b.Amap.tex.Lock()
+
+	b.Amap.AscendGreaterOrEqual(&ServerLoc{}, func(item btree.Item) bool {
+		v := item.(*ServerLoc)
+		res.deleteSloc(v)
+
+		if curLead != nil {
+			// annotate leader as we go...
+			if v.Id == curLead.Id {
+				v.IsLeader = true
+				v.LeaseExpires = curLead.LeaseExpires
+			}
+		}
+		return true // keep iterating
+	})
+
+	b.Amap.tex.Unlock()
+	a.Amap.tex.Unlock()
+	return &members{Amap: res}
+}
+
+func setsEqual(a, b *members) bool {
+	a.Amap.tex.Lock()
+	b.Amap.tex.Lock()
+	defer b.Amap.tex.Unlock()
+	defer a.Amap.tex.Unlock()
+
+	alen := a.Amap.Len()
+	if alen != b.Amap.Len() {
+		return false
+	}
+	// INVAR: len(a) == len(b)
+	if alen == 0 {
+		return true
+	}
+
+	missing := false
+	a.Amap.AscendGreaterOrEqual(&ServerLoc{}, func(item btree.Item) bool {
+		v := item.(*ServerLoc)
+		if !b.Amap.present(v) {
+			missing = true
+			return false // stop iterating
+		}
+		return true // keep iterating
+	})
+	return !missing
 }

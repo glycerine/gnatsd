@@ -3,7 +3,6 @@ package health
 import (
 	"encoding/json"
 	"fmt"
-	"sort"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -582,7 +581,7 @@ func (pc *pongCollector) receivePong(msg *nats.Msg) {
 	var loc ServerLoc
 	err := loc.fromBytes(msg.Data)
 	if err == nil {
-		pc.from.Amap.Set(string(msg.Data), &loc)
+		pc.from.Amap.insert(&loc)
 	} else {
 		panic(err)
 	}
@@ -604,13 +603,10 @@ func (pc *pongCollector) clear() {
 func (pc *pongCollector) getSetAndClear(myLoc ServerLoc) (int, *members) {
 
 	mem := pc.from.clone()
-	mem.clearLeaderAndLease()
 	pc.clear()
 
 	// add myLoc to pc.from as a part of "reset"
-	by, err := json.Marshal(&myLoc)
-	panicOn(err)
-	pc.from.Amap.Set(string(by), &myLoc)
+	pc.from.Amap.insert(&myLoc)
 
 	p("in getSetAndClear, here are the contents of mem.Amap: '%s'", mem.Amap)
 
@@ -659,16 +655,8 @@ func (m *members) leaderLeaseExpired(
 	}
 
 	// INVAR: any lease has expired.
-	var sortme []*ServerLoc
-	m.Amap.tex.Lock()
-	for _, v := range m.Amap.U {
-		sortme = append(sortme, v)
-	}
-	m.Amap.tex.Unlock()
-	m.clearLeaderAndLease()
 
-	sort.Sort(&byRankThenId{s: sortme, now: now})
-	lead = sortme[0]
+	lead = m.Amap.minrank()
 	lead.IsLeader = true
 	lead.LeaseExpires = now.Add(leaseLen).UTC()
 
@@ -682,15 +670,6 @@ func (m *members) leaderLeaseExpired(
 	//		fmt.Printf("\n\n")
 	//	}
 	return true, lead
-}
-
-func (m *members) clearLeaderAndLease() {
-	m.Amap.tex.Lock()
-	for _, v := range m.Amap.U {
-		v.IsLeader = false
-		v.LeaseExpires = time.Time{}
-	}
-	m.Amap.tex.Unlock()
 }
 
 type byRankThenId struct {
