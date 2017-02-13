@@ -111,10 +111,10 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 
 			if i == 0 {
 				cfg.deaf = DEAF_FALSE
-				aLogger := logger.NewStdLogger(micros, true, trace, colors, pid)
+				aLogger := logger.NewStdLogger(micros, true, true, colors, pid)
 				_ = aLogger
 				// to follow the prints, uncomment:
-				//cfg.Log = aLogger
+				cfg.Log = aLogger
 			}
 
 			m := NewMembership(cfg)
@@ -127,7 +127,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 		}
 
 		// let them all get past init phase.
-		time.Sleep(2 * (ms[0].Cfg.LeaseTime + ms[0].Cfg.MaxClockSkew))
+		time.Sleep(4 * (ms[0].Cfg.LeaseTime + ms[0].Cfg.MaxClockSkew))
 
 		// verify liveness, a leader exists.
 		p("verifying everyone thinks there is a leader:")

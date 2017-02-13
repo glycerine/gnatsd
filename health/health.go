@@ -182,13 +182,15 @@ func (e *leadHolder) setLeader(sloc *ServerLoc) (slocWon bool, alt ServerLoc) {
 	if sloc == nil || sloc.Id == "" {
 		return false, e.sloc
 	}
-
-	slocWon = ServerLocLessThan(sloc, &e.sloc, time.Now())
+	now := time.Now()
+	slocWon = ServerLocLessThan(sloc, &e.sloc, now)
 	if !slocWon {
 		return false, e.sloc
 	}
-	p("port %v, 8888888 setLeader is appending to history now len %v: this is new \n\nsloc='%s'\n <\n prev:'%s'\n", e.m.myLoc.Port, e.history.Avail(), sloc, &e.sloc)
-
+	// debug:
+	if e.m.myLoc.Rank == 0 {
+		p("port %v, 8888888 setLeader is appending to history now len %v: this is new \n\nsloc='%s'\n <\n prev:'%s'\nat time %v\n", e.m.myLoc.Port, e.history.Avail(), sloc, &e.sloc, now.UTC())
+	}
 	e.sloc = *sloc
 	histcp := *sloc
 	e.history.Append(&histcp)
@@ -276,7 +278,7 @@ func (m *Membership) start() {
 	}
 
 	prevCount, prevMember = pc.getSetAndClear(m.myLoc)
-	//p("port %v, 0-th round, prevMember='%s'", m.myLoc.Port, prevMember)
+	p("port %v, 0-th round, prevMember='%s'", m.myLoc.Port, prevMember)
 
 	now := time.Now()
 
@@ -369,7 +371,7 @@ func (m *Membership) start() {
 		// cur responses should be back by now
 		// and we can compare prev and cur.
 		curCount, curMember = pc.getSetAndClear(m.myLoc)
-		//p("port %v, k-th (k=%v) round, curMember='%s'", m.myLoc.Port, k, curMember)
+		p("port %v, k-th (k=%v) round, curMember='%s'", m.myLoc.Port, k, curMember)
 
 		now = time.Now()
 		expired, curLead = curMember.leaderLeaseExpired(
@@ -421,7 +423,8 @@ func (m *Membership) start() {
 
 				} else {
 					if curLead != nil &&
-						(nextLeadReportTm.IsZero() || now.After(nextLeadReportTm)) {
+						(nextLeadReportTm.IsZero() ||
+							now.After(nextLeadReportTm)) {
 
 						left := curLead.LeaseExpires.Sub(now)
 						if curLead.Id == "" {
@@ -621,10 +624,12 @@ func (m *members) leaderLeaseExpired(
 
 	if prevLead.LeaseExpires.Add(maxClockSkew).After(now) {
 		// honor the leases until they expire
+		p("leaderLeaseExpired: honoring outstanding lease")
 		return false, prevLead
 	}
 
 	if m.Amap.Len() == 0 {
+		p("leaderLeaseExpired: m.Amap.Len is 0")
 		return false, prevLead
 	}
 
@@ -643,11 +648,11 @@ func (m *members) leaderLeaseExpired(
 	lead.LeaseExpires = now.Add(leaseLen).UTC()
 
 	// debug:
-	if false {
+	if mship.Cfg.MyRank == 0 {
 		p("port %v, leaderLeaseExpired has list of len %v:",
 			mship.myLoc.Port, len(sortme)) // TODO: racy read of mship.myLoc
 		for i := range sortme {
-			fmt.Printf("sortme[%v]=%v\n", i, sortme[i])
+			fmt.Printf("port %v, sortme[%v]=%v\n", mship.myLoc.Port, i, sortme[i])
 		}
 		fmt.Printf("\n\n")
 	}
@@ -683,20 +688,23 @@ func (p byRankThenId) Less(i, j int) bool {
 // then by Rank, Id, Host, and Port; in that order. The
 // longer leaseExpires wins (is less than).
 func ServerLocLessThan(i, j *ServerLoc, now time.Time) bool {
-	nowu := now.UnixNano()
-	itm := i.LeaseExpires.UnixNano()
-	jtm := j.LeaseExpires.UnixNano()
+	/*
+		nowu := now.UnixNano()
+		itm := i.LeaseExpires.UnixNano()
+		jtm := j.LeaseExpires.UnixNano()
 
-	// if both are expired, then its a tie.
-	if jtm <= nowu {
-		jtm = 0
-	}
-	if itm <= nowu {
-		itm = 0
-	}
-	if itm != jtm {
-		return itm > jtm // we want an actual time to sort before a zero-time.
-	}
+		// if both are expired, then its a tie.
+		if jtm <= nowu {
+			jtm = 0
+		}
+		if itm <= nowu {
+			itm = 0
+		}
+		if itm != jtm {
+			return itm > jtm // we want an actual time to sort before a zero-time.
+		}
+		p("both expired")
+	*/
 	if i.Rank != j.Rank {
 		return i.Rank < j.Rank
 	}
