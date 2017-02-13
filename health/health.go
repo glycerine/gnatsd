@@ -178,24 +178,25 @@ func (e *leadHolder) setLeader(sloc *ServerLoc, now time.Time) (slocWon bool, al
 	curExpired := cure <= nowu
 	newExpired := newe <= nowu
 	bothExpired := curExpired && newExpired
-
-	if bothExpired {
-		p("%v, port %v, 33333 setLeader is returning false because both new and cur are expired leases.", now, e.m.myLoc.Port)
-		return false, e.sloc
-	}
-	if newExpired {
-		p("%v, port %v, 55555 setLeader is returning false because both new has expired lease.", now, e.m.myLoc.Port)
-		return false, e.sloc
-	}
+	neitherExpired := !curExpired && !newExpired
 
 	var newWon, oldWon bool
-	if curExpired {
+
+	switch {
+	case bothExpired, neitherExpired:
+		// if bothExpired, everyone is in init.
+		// Either way, just take the lower rank.
+		newWon = ServerLocLessThan(sloc, &e.sloc)
+		oldWon = ServerLocLessThan(&e.sloc, sloc)
+
+	case newExpired:
+		p("%v, port %v, 55555 setLeader is returning false because new has expired lease.", now, e.m.myLoc.Port)
+		return false, e.sloc
+
+	case curExpired:
 		newWon = true
 		oldWon = false
 		p("%v, port %v, 44444 setLeader finds old lease expired", now, e.m.myLoc.Port)
-	} else {
-		newWon = ServerLocLessThan(sloc, &e.sloc)
-		oldWon = ServerLocLessThan(&e.sloc, sloc)
 	}
 
 	switch {
