@@ -475,7 +475,10 @@ func Test105OnlyConnectToOriginalGnatsd(t *testing.T) {
 		// this *should* *have* *failed*
 		cv.So(err, cv.ShouldNotBeNil)
 		cv.So(err.Error(), cv.ShouldEqual, "nats: invalid connection")
-		select {}
+		select {
+		case <-m.halt.Done.Chan:
+			p("good: Membership shut itself down.")
+		}
 	})
 }
 
