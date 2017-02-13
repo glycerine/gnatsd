@@ -337,12 +337,14 @@ func (m *Membership) start() {
 
 	lead0 := prevMember.minrank()
 	if lead0 != nil {
+		p("setting lead to lead0 = %v", lead0)
 		m.elec.setLeader(lead0, now)
 	}
 	firstSeenLead := m.elec.getLeader()
 	xpire := firstSeenLead.LeaseExpires
 
 	limit := xpire.Add(m.Cfg.MaxClockSkew)
+	p("xpire=%v, limit=%v", xpire, limit)
 	if !xpire.IsZero() && limit.After(now) {
 
 		m.Cfg.Log.Debugf("health-agent: init: "+
@@ -637,7 +639,7 @@ func (pc *pongCollector) receivePong(msg *nats.Msg) {
 		panic(err)
 	}
 
-	pc.mship.trace("%v, port %v, pong collector received '%#v'. pc.from is now '%s'", &loc, pc.from)
+	pc.mship.trace("pong collector received '%v'. pc.from is now '%s'", &loc, pc.from)
 
 	pc.mu.Unlock()
 }
@@ -656,9 +658,12 @@ func (pc *pongCollector) getSetAndClear() (int, *members) {
 	mem := pc.from.clone()
 	pc.clear()
 
-	// add myLoc to pc.from as a part of "reset"
-	myLoc := pc.mship.getMyLocWithAnyLease()
-	pc.from.DedupTree.insert(&myLoc)
+	// we don't need to seed, since we'll hear
+	// our own allcall.
+	//
+	// //add myLoc to pc.from as a part of "reset"
+	//	myLoc := pc.mship.getMyLocWithAnyLease()
+	//	pc.from.DedupTree.insert(&myLoc)
 
 	pc.mship.trace("in getSetAndClear, here are the contents of mem.DedupTree: '%s'", mem.DedupTree)
 

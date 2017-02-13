@@ -42,7 +42,7 @@ func main() {
 
 	const colors = false
 	const micros, pid = true, true
-	const trace = false
+	const trace = true // false
 	const debug = true
 	aLogger := logger.NewStdLogger(micros, debug, trace, colors, pid)
 
