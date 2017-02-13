@@ -6,10 +6,9 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/nats-io/gnatsd/health"
-	"github.com/nats-io/gnatsd/logger"	
+	"github.com/nats-io/gnatsd/logger"
 )
 
 // healthcmd runs an allcall election from a standalone
@@ -41,18 +40,16 @@ func main() {
 		}
 	}
 
-const colors = false
-const micros, pid = true, true
+	const colors = false
+	const micros, pid = true, true
 	const trace = true //false
 	const debug = true
-	aLogger := logger.NewStdLogger(micros,debug, trace, colors, pid)
-	
+	aLogger := logger.NewStdLogger(micros, debug, trace, colors, pid)
+
 	cfg := &health.MembershipCfg{
-		MaxClockSkew: time.Second,
-		BeatDur:      100 * time.Millisecond,
-		NatsUrl:      "nats://" + args[0], // "nats://127.0.0.1:4222"
-		MyRank:       rank,
-		Log: aLogger,
+		NatsUrl: "nats://" + args[0], // "nats://127.0.0.1:4222"
+		MyRank:  rank,
+		Log:     aLogger,
 	}
 	m := health.NewMembership(cfg)
 	err = m.Start()
