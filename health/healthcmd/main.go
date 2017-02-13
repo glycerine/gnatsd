@@ -43,7 +43,7 @@ func main() {
 	const colors = false
 	const micros, pid = true, true
 	const trace = false
-	const debug = false //true
+	const debug = true
 	aLogger := logger.NewStdLogger(micros, debug, trace, colors, pid)
 
 	cfg := &health.MembershipCfg{

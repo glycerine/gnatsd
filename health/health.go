@@ -174,7 +174,7 @@ func (e *leadHolder) setLeader(sloc *ServerLoc, now time.Time) (slocWon bool, al
 	defer e.mu.Unlock()
 
 	if sloc == nil || sloc.Id == "" {
-		p("port %v, 77777 setLeader is returning false because sloc==nil or sloc.Id==empty string", e.m.myLoc.Port)
+		e.m.trace("setLeader returning false because sloc==nil or sloc.Id==\"\"")
 		return false, e.sloc
 	}
 
@@ -196,19 +196,20 @@ func (e *leadHolder) setLeader(sloc *ServerLoc, now time.Time) (slocWon bool, al
 		// Either way, just take the lower rank.
 		newWon = ServerLocLessThan(sloc, &e.sloc)
 		oldWon = ServerLocLessThan(&e.sloc, sloc)
+		e.m.trace("22222 setLeader finds both expired")
 
 	case neitherExpired:
 		newWon = ServerLocLessThan(sloc, &e.sloc)
 		oldWon = ServerLocLessThan(&e.sloc, sloc)
 
 	case newExpired:
-		p("%v, port %v, 55555 setLeader is returning false because new has expired lease.", now, e.m.myLoc.Port)
+		e.m.trace("55555 setLeader is returning false because new has expired lease.")
 		return false, e.sloc
 
 	case curExpired:
 		newWon = true
 		oldWon = false
-		p("%v, port %v, 44444 setLeader finds old lease expired", now, e.m.myLoc.Port)
+		e.m.trace("44444 setLeader finds old lease expired")
 	}
 
 	switch {
@@ -220,19 +221,19 @@ func (e *leadHolder) setLeader(sloc *ServerLoc, now time.Time) (slocWon bool, al
 			alt = *sloc
 			e.sloc = *sloc
 
-			p("%v, port %v, 999999 setLeader sees same leader with > lease, renewing its lease %v\n", now, e.m.myLoc.Port, &e.sloc)
+			e.m.trace("999999 setLeader: same leader, > lease, renewing lease for %v\n", &e.sloc)
 		} else {
 			slocWon = false
 			alt = e.sloc
 
-			p("%v, port %v, 000000 setLeader is failing to update the leader, rejecting the new contendor.\n\nsloc='%s'\n >= \n prev:'%s'\n", now, e.m.myLoc.Port, sloc, &e.sloc)
+			e.m.trace("000000 setLeader is failing to update the leader, rejecting the new contendor.\n\nsloc='%s'\n >= \n prev:'%s'\n", sloc, &e.sloc)
 		}
 	case newWon:
 		slocWon = true
 		alt = *sloc
 		e.sloc = *sloc
 
-		p("%v, port %v, 11111 setLeader updated the leader, accepting new proposal.\n\nsloc='%s'\n < \n prev:'%s'\n", now, e.m.myLoc.Port, sloc, &e.sloc)
+		e.m.trace("11111 setLeader updated the leader, accepting new proposal.\n\nsloc='%s'\n < \n prev:'%s'\n", sloc, &e.sloc)
 
 	default:
 		//oldWon
@@ -332,7 +333,7 @@ func (m *Membership) start() {
 
 	prevCount, prevMember = pc.getSetAndClear()
 	now := time.Now().UTC()
-	p("%v, 0-th round, myLoc:%s, prevMember='%s'", now, &m.myLoc, prevMember)
+	m.trace("0-th round, myLoc:%s, prevMember='%s'", &m.myLoc, prevMember)
 
 	lead0 := prevMember.minrank()
 	if lead0 != nil {
@@ -395,13 +396,13 @@ func (m *Membership) start() {
 		// and won't change
 		// what the current leader
 		// is in elec.
-		//p("%v, port %v, issuing k-th (k=%v) allcall", time.Now().UTC(), m.myLoc.Port, k)
+		m.trace("issuing k-th (k=%v) allcall", k)
 		err = m.allcall()
 		if err != nil {
 			// err could be: "write on closed buffer"
 			// typically means we are shutting down.
 
-			m.Cfg.Log.Tracef("health-agent: "+
+			m.trace("health-agent: "+
 				"error on allcall, "+
 				"shutting down the "+
 				"health-agent: %s",
@@ -409,7 +410,7 @@ func (m *Membership) start() {
 			return
 		}
 
-		//p("%v, port %v, SLEEPING for a heartbeat of %v", time.Now().UTC(), m.myLoc.Port, m.Cfg.BeatDur)
+		m.trace("SLEEPING for a heartbeat of %v", m.Cfg.BeatDur)
 		select {
 		case <-time.After(m.Cfg.BeatDur):
 			// continue below, latest heartbeat session done.
@@ -433,7 +434,7 @@ func (m *Membership) start() {
 		// and we can compare prev and cur.
 		curCount, curMember = pc.getSetAndClear()
 		now = time.Now().UTC()
-		//		p("%v, port %v, k-th (k=%v) before doing leaderLeaseCheck, curMember='%s'", now, m.myLoc.Port, k, curMember)
+		m.trace("k-th (k=%v) before doing leaderLeaseCheck, curMember='%s'", k, curMember)
 
 		expired, curLead = curMember.leaderLeaseCheck(
 			now,
@@ -447,10 +448,10 @@ func (m *Membership) start() {
 			// record in our history
 			won, alt := m.elec.setLeader(curLead, now)
 			if !won {
-				p("%v, port %v, k-th (k=%v) round conclusion of trying to setLeader: rejected '%s' in favor of '%s'", now, m.myLoc.Port, k, curLead, &alt)
+				m.trace("k-th (k=%v) round conclusion of trying to setLeader: rejected '%s' in favor of '%s'", k, curLead, &alt)
 				curLead = &alt
 			} else {
-				p("%v, port %v, k-th (k=%v) round conclusion of trying to setLeader: accepted as new lead '%s'", now, m.myLoc.Port, k, curLead)
+				m.trace("k-th (k=%v) round conclusion of trying to setLeader: accepted as new lead '%s'", k, curLead)
 			}
 		}
 
@@ -464,7 +465,7 @@ func (m *Membership) start() {
 					prevLead.Id != curLead.Id {
 
 					left := curLead.LeaseExpires.Sub(now)
-					m.Cfg.Log.Debugf("health-agent: "+
+					m.dlog("health-agent: "+
 						"I am LEAD, my Id: '%s', "+
 						"rank %v port %v. lease expires "+
 						"in %s",
@@ -479,7 +480,7 @@ func (m *Membership) start() {
 				if prevLead != nil &&
 					prevLead.Id == loc.Id {
 
-					m.Cfg.Log.Debugf("health-agent: "+
+					m.dlog("health-agent: "+
 						"I am no longer lead, "+
 						"new LEAD is '%s', rank %v. "+
 						"port %v. lease expires in %s",
@@ -495,7 +496,7 @@ func (m *Membership) start() {
 
 						left := curLead.LeaseExpires.Sub(now)
 						if curLead.Id == "" {
-							m.Cfg.Log.Debugf("health-agent: "+
+							m.dlog("health-agent: "+
 								"I am '%s'/rank=%v. "+
 								"port %v. lead is unknown.",
 								m.myLoc.Id,
@@ -503,7 +504,7 @@ func (m *Membership) start() {
 								m.myLoc.Port)
 
 						} else {
-							m.Cfg.Log.Debugf("health-agent: "+
+							m.dlog("health-agent: "+
 								"I am not lead. lead is '%s', "+
 								"rank %v, port %v, for %v",
 								curLead.Id,
@@ -597,7 +598,7 @@ func pong(nc *nats.Conn, subj string, msg []byte) {
 //
 func (m *Membership) allcall() error {
 	lead := m.elec.getLeader()
-	p("%v, port %v, ISSUING ALLCALL on '%s' with leader '%s'\n", time.Now().UTC(), m.myLoc.Port, m.subjAllCall, &lead)
+	m.dlog("ISSUING ALLCALL on '%s' with leader '%s'\n", m.subjAllCall, &lead)
 
 	leadby, err := json.Marshal(&lead)
 	panicOn(err)
@@ -636,7 +637,7 @@ func (pc *pongCollector) receivePong(msg *nats.Msg) {
 		panic(err)
 	}
 
-	//p("%v, port %v, pong collector received '%#v'. pc.from is now '%s'", time.Now().UTC(), pc.mship.myLoc.Port, &loc, pc.from)
+	pc.mship.trace("%v, port %v, pong collector received '%#v'. pc.from is now '%s'", &loc, pc.from)
 
 	pc.mu.Unlock()
 }
@@ -659,7 +660,7 @@ func (pc *pongCollector) getSetAndClear() (int, *members) {
 	myLoc := pc.mship.getMyLocWithAnyLease()
 	pc.from.DedupTree.insert(&myLoc)
 
-	//p("%v, in getSetAndClear, here are the contents of mem.DedupTree: '%s'", time.Now().UTC(), mem.DedupTree)
+	pc.mship.trace("in getSetAndClear, here are the contents of mem.DedupTree: '%s'", mem.DedupTree)
 
 	// return the old member set
 	return mem.DedupTree.Len(), mem
@@ -685,29 +686,29 @@ func (pc *pongCollector) getSetAndClear() (int, *members) {
 // function below for exactly how
 // we rank candidates.
 //
-func (m *members) leaderLeaseCheck(
+func (mems *members) leaderLeaseCheck(
 	now time.Time,
 	leaseLen time.Duration,
 	prevLead *ServerLoc,
 	maxClockSkew time.Duration,
-	mship *Membership,
+	m *Membership,
 
 ) (expired bool, lead *ServerLoc) {
 
 	if prevLead.LeaseExpires.Add(maxClockSkew).After(now) {
 		// honor the leases until they expire
-		//p("leaderLeaseCheck: honoring outstanding lease")
+		m.trace("leaderLeaseCheck: honoring outstanding lease")
 		return false, prevLead
 	}
 
-	if m.DedupTree.Len() == 0 {
-		//p("leaderLeaseCheck: m.DedupTree.Len is 0")
+	if mems.DedupTree.Len() == 0 {
+		m.trace("leaderLeaseCheck: m.DedupTree.Len is 0")
 		return false, prevLead
 	}
 
 	// INVAR: any lease has expired.
 
-	lead = m.DedupTree.minrank()
+	lead = mems.DedupTree.minrank()
 	lead.IsLeader = true
 	lead.LeaseExpires = now.Add(leaseLen).UTC()
 
@@ -846,8 +847,7 @@ func (m *Membership) setupNatsClient() error {
 
 	// allcall says: "who is out there? Are you a lead?"
 	nc.Subscribe(m.subjAllCall, func(msg *nats.Msg) {
-		p("%v, port %v, ALLCALL RECEIVED. msg:'%s' \n",
-			time.Now().UTC(), m.myLoc.Port, string(msg.Data))
+		m.trace("ALLCALL RECEIVED. msg:'%s'", string(msg.Data))
 		if m.deaf() {
 			return
 		}
