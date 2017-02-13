@@ -192,11 +192,8 @@ func (e *leadHolder) setLeader(sloc *ServerLoc, now time.Time) (slocWon bool, al
 
 	switch {
 	case bothExpired:
-		// if bothExpired, everyone is in init.
-		// Either way, just take the lower rank.
-		newWon = ServerLocLessThan(sloc, &e.sloc)
-		oldWon = ServerLocLessThan(&e.sloc, sloc)
 		e.m.trace("22222 setLeader finds both expired")
+		return false, e.sloc
 
 	case neitherExpired:
 		newWon = ServerLocLessThan(sloc, &e.sloc)
@@ -340,7 +337,11 @@ func (m *Membership) start() {
 		m.elec.setLeader(lead0, now)
 	}
 	firstSeenLead := m.elec.getLeader()
-	if firstSeenLead.Id != m.myLoc.Id {
+	if lead0 != nil &&
+		firstSeenLead.Id != "" &&
+		firstSeenLead.Id != m.myLoc.Id &&
+		!firstSeenLead.LeaseExpires.IsZero() &&
+		firstSeenLead.LeaseExpires.After(now) {
 
 		m.dlog("health-agent: init: "+
 			"after one heartbeat, "+
