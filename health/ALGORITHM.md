@@ -47,7 +47,8 @@ When a server joins the cluster,
 it does not issue allcalls (a ping of all members)
 until after leaseTime + maxClockSkew time has elapsed.
 
-During init, the server does, however, accept and respond to allcalls() from
+During init, the server does, however,
+accept and respond to allcalls() from
 other cluster members. The allcall() ping will contain
 the current (lease, leader-rank) and leader-id
 according to the issuer of the allcall(). Every

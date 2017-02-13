@@ -64,6 +64,7 @@ func (m *Membership) getMyLocWithAnyLease() ServerLoc {
 	lead := m.elec.getLeader()
 	if slocEqual(&lead, &myLoc) {
 		myLoc.LeaseExpires = lead.LeaseExpires
+		myLoc.IsLeader = true
 	}
 	return myLoc
 }
@@ -313,7 +314,7 @@ func (m *Membership) start() {
 		return
 	}
 
-	prevCount, prevMember = pc.getSetAndClear(m.getMyLocWithAnyLease())
+	prevCount, prevMember = pc.getSetAndClear()
 	now := time.Now().UTC()
 	p("%v, 0-th round, myLoc:%s, prevMember='%s'", now, &m.myLoc, prevMember)
 
@@ -414,9 +415,9 @@ func (m *Membership) start() {
 
 		// cur responses should be back by now
 		// and we can compare prev and cur.
-		curCount, curMember = pc.getSetAndClear(m.myLoc)
+		curCount, curMember = pc.getSetAndClear()
 		now = time.Now().UTC()
-		p("%v, port %v, k-th (k=%v) round conclusion, curMember='%s'", now, m.myLoc.Port, k, curMember)
+		//		p("%v, port %v, k-th (k=%v) before doing leaderLeaseCheck, curMember='%s'", now, m.myLoc.Port, k, curMember)
 
 		expired, curLead = curMember.leaderLeaseCheck(
 			now,
@@ -628,12 +629,13 @@ func (pc *pongCollector) clear() {
 // getSet returns the count and set so far, then
 // clears the set, emptying it, and then adding
 // back just myLoc
-func (pc *pongCollector) getSetAndClear(myLoc ServerLoc) (int, *members) {
+func (pc *pongCollector) getSetAndClear() (int, *members) {
 
 	mem := pc.from.clone()
 	pc.clear()
 
 	// add myLoc to pc.from as a part of "reset"
+	myLoc := pc.mship.getMyLocWithAnyLease()
 	pc.from.DedupTree.insert(&myLoc)
 
 	//p("%v, in getSetAndClear, here are the contents of mem.DedupTree: '%s'", time.Now().UTC(), mem.DedupTree)
@@ -711,40 +713,6 @@ func (p byRankThenId) Less(i, j int) bool {
 // more electable/preferred as leader.
 func ServerLocLessThan(i, j *ServerLoc) bool {
 
-	/*
-		nowu := now.UnixNano()
-		itm := i.LeaseExpires.UnixNano()
-		jtm := j.LeaseExpires.UnixNano()
-
-		// if both are in force, then
-		// we'll go ahead and force a
-		// choice based on the next
-		// criteria; rank, id, host, port.
-		// This speeds up convergence
-		// massively for the 102 test
-		// of healing after split brain.
-
-		// if both are expired,
-		// or both in force, then its a tie.
-		if jtm <= nowu {
-			jtm = 0
-		}
-		if itm <= nowu {
-			itm = 0
-		}
-
-		if (itm == 0 &&
-			jtm == 0) ||
-			(itm > nowu &&
-				jtm > nowu) {
-			// its a tie on leases
-			// proceed to rank
-		} else {
-			// we want an actual time to sort before a zero-time.
-			return itm > jtm
-		}
-	*/
-
 	// recognize empty ServerLoc and sort them high, not low.
 	iempt := i.Id == ""
 	jempt := j.Id == ""
@@ -767,7 +735,12 @@ func ServerLocLessThan(i, j *ServerLoc) bool {
 	if i.Host != j.Host {
 		return lessThanString(i.Host, j.Host)
 	}
-	return i.Port < j.Port
+	if i.Port != j.Port {
+		return i.Port < j.Port
+	}
+	itm := i.LeaseExpires.UnixNano()
+	jtm := j.LeaseExpires.UnixNano()
+	return itm > jtm // want the later expiration to have priority
 }
 
 // return i < j where empty strings are big not small.
@@ -850,7 +823,7 @@ func (m *Membership) setupNatsClient() error {
 		pc.receivePong(msg)
 	})
 
-	// allcall says: "here's my leader, who is out there?"
+	// allcall says: "who is out there? Are you a lead?"
 	nc.Subscribe(m.subjAllCall, func(msg *nats.Msg) {
 		if m.deaf() {
 			return
