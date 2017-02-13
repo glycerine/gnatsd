@@ -70,7 +70,7 @@ func (m *Membership) getMyLocWithAnyLease() ServerLoc {
 	m.mu.Unlock()
 
 	lead := m.elec.getLeader()
-	if slocEqual(&lead, &myLoc) {
+	if slocEqualIgnoreLease(&lead, &myLoc) {
 		myLoc.LeaseExpires = lead.LeaseExpires
 		myLoc.IsLeader = true
 	}
@@ -333,7 +333,7 @@ func (m *Membership) start() {
 
 	prevCount, prevMember = pc.getSetAndClear()
 	now := time.Now().UTC()
-	m.trace("0-th round, myLoc:%s, prevMember='%s'", &m.myLoc, prevMember)
+	m.dlog("0-th round, myLoc:%s, prevMember='%s'", &m.myLoc, prevMember)
 
 	lead0 := prevMember.minrank()
 	if lead0 != nil {
@@ -669,7 +669,7 @@ func (pc *pongCollector) clear() {
 // back just myLoc
 func (pc *pongCollector) getSetAndClear() (int, *members) {
 
-	mem := pc.fromNoTime.clone()
+	mem := pc.fromWithTime.clone()
 	pc.clear()
 
 	// we don't need to seed, since we'll hear

@@ -53,6 +53,19 @@ func slocEqual(a, b *ServerLoc) bool {
 	return !aless && !bless
 }
 
+func slocEqualIgnoreLease(a, b *ServerLoc) bool {
+	a0 := *a
+	b0 := *b
+	a0.LeaseExpires = time.Time{}
+	a0.IsLeader = false
+	b0.LeaseExpires = time.Time{}
+	b0.IsLeader = false
+
+	aless := ServerLocLessThan(&a0, &b0)
+	bless := ServerLocLessThan(&b0, &a0)
+	return !aless && !bless
+}
+
 // the 2 types should be kept in sync.
 // We return a brand new &ServerLoc{}
 // with contents filled from loc.
