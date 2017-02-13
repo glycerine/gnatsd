@@ -215,7 +215,7 @@ func (m *Membership) Start() error {
 
 	m.Cfg.SetDefaults()
 
-	pc := newPongCollector()
+	pc := m.newPongCollector()
 	nc, err := m.setupNatsClient(pc)
 	if err != nil {
 		m.halt.Done.Close()
@@ -241,7 +241,7 @@ func (m *Membership) start(nc *nats.Conn, pc *pongCollector) {
 
 	// do an initial allcall() to discover any
 	// current leader.
-	m.Cfg.Log.Tracef("health-agent: " +
+	m.Cfg.Log.Debugf("health-agent: " +
 		"init: doing initial allcall " +
 		"to discover any existing leader...")
 
@@ -269,7 +269,7 @@ func (m *Membership) start(nc *nats.Conn, pc *pongCollector) {
 	limit := xpire.Add(m.Cfg.MaxClockSkew)
 	if !xpire.IsZero() && limit.After(now) {
 
-		m.Cfg.Log.Tracef("health-agent: init: "+
+		m.Cfg.Log.Debugf("health-agent: init: "+
 			"after one heartbeat, "+
 			"we detect current leader '%s'"+
 			" of rank %v with lease good "+
@@ -335,6 +335,7 @@ func (m *Membership) start(nc *nats.Conn, pc *pongCollector) {
 			m.Cfg.LeaseTime,
 			&lastSeenLead,
 			m.Cfg.MaxClockSkew,
+			m,
 		)
 
 		// tell pong
@@ -483,6 +484,7 @@ func pong(nc *nats.Conn, subj string, msg []byte) {
 // This gives a round-trip connectivity check.
 //
 func (m *Membership) allcall() error {
+	p("port %v, at 777 allcall sent", m.myLoc.Port)
 	// allcall broadcasts the current leader + lease
 	leadby := m.elec.getLeaderAsBytes()
 	return m.nc.PublishRequest(m.subjAllCall, m.subjAllReply, leadby)
@@ -494,11 +496,13 @@ type pongCollector struct {
 	replies int
 	from    *members
 	mu      sync.Mutex
+	mship   *Membership
 }
 
-func newPongCollector() *pongCollector {
+func (m *Membership) newPongCollector() *pongCollector {
 	return &pongCollector{
-		from: newMembers(),
+		from:  newMembers(),
+		mship: m,
 	}
 }
 
@@ -511,8 +515,12 @@ func (pc *pongCollector) receivePong(msg *nats.Msg) {
 	var loc ServerLoc
 	err := loc.fromBytes(msg.Data)
 	if err != nil {
-		pc.from.Amap.Set(loc.Id, &loc)
+		pc.from.Amap.Set(string(msg.Data), &loc)
 	}
+
+	p("port %v, pong collector received '%#v'",
+		pc.mship.myLoc.Port, &loc)
+
 	pc.mu.Unlock()
 }
 
@@ -530,7 +538,13 @@ func (pc *pongCollector) getSetAndClear(myLoc ServerLoc) (int, *members) {
 	mem := pc.from.clone()
 	mem.clearLeaderAndLease()
 	pc.clear()
-	pc.from.Amap.Set(myLoc.Id, &myLoc)
+
+	// add myLoc to pc.from as a part of "reset"
+	by, err := json.Marshal(&myLoc)
+	panicOn(err)
+	pc.from.Amap.Set(string(by), &myLoc)
+
+	// return the old member set
 	return mem.Amap.Len(), mem
 }
 
@@ -559,6 +573,7 @@ func (m *members) leaderLeaseExpired(
 	leaseLen time.Duration,
 	prevLead *ServerLoc,
 	maxClockSkew time.Duration,
+	mship *Membership,
 
 ) (expired bool, lead *ServerLoc) {
 
@@ -572,7 +587,6 @@ func (m *members) leaderLeaseExpired(
 	}
 
 	// INVAR: any lease has expired.
-
 	var sortme []*ServerLoc
 	m.Amap.tex.Lock()
 	for _, v := range m.Amap.U {
@@ -585,6 +599,12 @@ func (m *members) leaderLeaseExpired(
 	lead = sortme[0]
 	lead.IsLeader = true
 	lead.LeaseExpires = now.Add(leaseLen).UTC()
+	p("port %v, leaderLeaseExpired has list of len %v:",
+		mship.myLoc.Port, len(sortme)) // TODO: racy read of mship.myLoc
+	for i := range sortme {
+		fmt.Printf("sortme[%v]=%v\n", i, sortme[i])
+	}
+	fmt.Printf("\n\n")
 
 	return true, lead
 }
@@ -695,9 +715,11 @@ func (m *Membership) setupNatsClient(pc *pongCollector) (*nats.Conn, error) {
 	})
 
 	nc.Subscribe(m.subjAllCall, func(msg *nats.Msg) {
+		p("port %v, at 888 allcall received", m.myLoc.Port)
 		if m.deaf() {
 			return
 		}
+		p("port %v, at 999 allcall received, not deaf.", m.myLoc.Port)
 		loc, err := nc.ServerLocation()
 		if err != nil {
 			return // try again next time.
@@ -720,6 +742,7 @@ func (m *Membership) setupNatsClient(pc *pongCollector) (*nats.Conn, error) {
 		var lead ServerLoc
 		err = lead.fromBytes(msg.Data)
 		panicOn(err)
+		p("port %v, at 000 allcall received leader: '%s'", m.myLoc.Port, &lead)
 
 		if lead.Id != "" && !lead.LeaseExpires.IsZero() {
 			won, alt := m.elec.setLeader(&lead)
@@ -769,7 +792,7 @@ func (m *Membership) setupNatsClient(pc *pongCollector) (*nats.Conn, error) {
 		if m.deaf() {
 			return
 		}
-		m.Cfg.Log.Tracef("health-agent: "+
+		m.Cfg.Log.Debugf("health-agent: "+
 			"Received on [%s]: '%s'",
 			msg.Subject,
 			string(msg.Data))

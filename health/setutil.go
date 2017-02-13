@@ -1,6 +1,7 @@
 package health
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 )
@@ -106,7 +107,23 @@ func newMembers() *members {
 }
 
 func (m members) mustJsonBytes() []byte {
-	by, err := json.Marshal(m)
-	panicOn(err)
-	return by
+	m.Amap.tex.Lock()
+	defer m.Amap.tex.Unlock()
+
+	var buf bytes.Buffer
+	fmt.Fprintf(&buf, "[")
+	i := 0
+	n := len(m.Amap.U)
+	for _, v := range m.Amap.U {
+		by, err := json.Marshal(v)
+		panicOn(err)
+		buf.Write(by)
+		if i < n-1 {
+			fmt.Fprintf(&buf, ",")
+		}
+		i++
+	}
+	fmt.Fprintf(&buf, "]")
+
+	return buf.Bytes()
 }
