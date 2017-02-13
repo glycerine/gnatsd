@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"reflect"
 )
 
 // utilities and sets stuff
@@ -126,4 +127,8 @@ func (m members) mustJsonBytes() []byte {
 	fmt.Fprintf(&buf, "]")
 
 	return buf.Bytes()
+}
+
+func slocEqual(a, b *ServerLoc) bool {
+	return reflect.DeepEqual(a, b)
 }

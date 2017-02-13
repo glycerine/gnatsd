@@ -189,6 +189,15 @@ func (e *leadHolder) setLeader(sloc *ServerLoc) (slocWon bool, alt ServerLoc) {
 	now := time.Now()
 	slocWon = ServerLocLessThan(sloc, &e.sloc, now)
 	if !slocWon {
+		// equal?
+		if slocEqual(sloc, &e.sloc) {
+			// for history keeping, and the
+			// tests that examine our history,
+			// record that we kept the same
+			// lead.
+			histcp := *sloc
+			e.history.Append(&histcp)
+		}
 		if e.m.myLoc.Rank == 0 {
 			p("port %v, 999999 setLeader is failing to update the leader, rejecting the new contendor.\n\nsloc='%s'\n >= \n prev:'%s'\nat time %v\n", e.m.myLoc.Port, sloc, &e.sloc, now.UTC())
 		}
@@ -830,11 +839,6 @@ func (m *Membership) setupNatsClient() error {
 				&m.myLoc,
 				loc))
 		}
-		/*	 very bad! health-agent changed locations! first: '{"serverId":"C4xFcdVR1TpPY7pXpAJYo4","host":"127.0.0.1","port":55354,"leader":false,"leaseExpires":"0001-01-01T00:00:00Z","rank":1}',
-
-		vs
-		 now:'{"serverId":"C4xFcdVR1TpPY7pXpAJYo4","host":"127.0.0.1","port":55354,"leader":false,"leaseExpires":"0001-01-01T00:00:00Z","rank":0}'
-		*/
 
 		// allcall broadcasts the leader
 		var lead ServerLoc
