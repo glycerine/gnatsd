@@ -349,7 +349,7 @@ func (m *Membership) start() {
 			"for %v",
 			firstSeenLead.Id,
 			firstSeenLead.Rank,
-			time.Now().UTC().Sub(firstSeenLead.LeaseExpires),
+			firstSeenLead.LeaseExpires.Sub(now),
 		)
 	} else {
 		m.Cfg.Log.Debugf("health-agent: "+
