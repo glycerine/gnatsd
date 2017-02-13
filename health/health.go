@@ -613,16 +613,31 @@ func (m *Membership) allcall() error {
 // from an allcall request.
 type pongCollector struct {
 	replies int
-	from    *members
-	mu      sync.Mutex
-	mship   *Membership
+
+	fromWithTime *members
+	fromNoTime   *members
+
+	mu    sync.Mutex
+	mship *Membership
 }
 
 func (m *Membership) newPongCollector() *pongCollector {
 	return &pongCollector{
-		from:  newMembers(),
-		mship: m,
+		fromWithTime: newMembers(),
+		fromNoTime:   newMembers(),
+		mship:        m,
 	}
+}
+
+func (pc *pongCollector) insert(sloc *ServerLoc) {
+	// insert into both our trees, one
+	// keeping the lease time, the other not.
+	cp := *sloc
+	cp.LeaseExpires = time.Time{}
+	cp.IsLeader = false
+	pc.fromNoTime.insert(&cp)
+
+	pc.fromWithTime.insert(sloc)
 }
 
 // acumulate pong responses
@@ -634,19 +649,18 @@ func (pc *pongCollector) receivePong(msg *nats.Msg) {
 	var loc ServerLoc
 	err := loc.fromBytes(msg.Data)
 	if err == nil {
-		pc.from.DedupTree.insert(&loc)
+		pc.insert(&loc)
 	} else {
 		panic(err)
 	}
-
-	pc.mship.trace("pong collector received '%v'. pc.from is now '%s'", &loc, pc.from)
 
 	pc.mu.Unlock()
 }
 
 func (pc *pongCollector) clear() {
 	pc.mu.Lock()
-	pc.from.clear()
+	pc.fromWithTime.clear()
+	pc.fromNoTime.clear()
 	pc.mu.Unlock()
 }
 
@@ -655,7 +669,7 @@ func (pc *pongCollector) clear() {
 // back just myLoc
 func (pc *pongCollector) getSetAndClear() (int, *members) {
 
-	mem := pc.from.clone()
+	mem := pc.fromNoTime.clone()
 	pc.clear()
 
 	// we don't need to seed, since we'll hear

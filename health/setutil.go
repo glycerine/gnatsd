@@ -23,6 +23,9 @@ type members struct {
 	DedupTree *ranktree `json:"Mem"`
 }
 
+func (m *members) insert(s *ServerLoc) {
+	m.DedupTree.insert(s)
+}
 func (m *members) clear() {
 	m.DedupTree = newRanktree()
 }
