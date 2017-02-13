@@ -293,7 +293,7 @@ func max(a, b int) int {
 	return b
 }
 
-func Test104RecevieOwnSends(t *testing.T) {
+func Test104ReceiveOwnSends(t *testing.T) {
 
 	cv.Convey("If we transmit on a topic we are subscribed to, then we should receive our own send.", t, func() {
 

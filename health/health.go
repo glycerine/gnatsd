@@ -183,8 +183,7 @@ func (e *leadHolder) setLeader(sloc *ServerLoc) (slocWon bool, alt ServerLoc) {
 	if !slocWon {
 		return false, e.sloc
 	}
-	p("port %v, 8888888 setLeader is appending to history, before is len %v",
-		e.m.myLoc.Port, e.history.Avail())
+	//	p("port %v, 8888888 setLeader is appending to history, before is len %v", e.m.myLoc.Port, e.history.Avail())
 
 	e.sloc = *sloc
 	histcp := *sloc
@@ -262,7 +261,7 @@ func (m *Membership) start(nc *nats.Conn, pc *pongCollector) {
 	}
 
 	prevCount, prevMember = pc.getSetAndClear(m.myLoc)
-	p("port %v, 0-th round, prevMember='%s'", m.myLoc.Port, prevMember)
+	//p("port %v, 0-th round, prevMember='%s'", m.myLoc.Port, prevMember)
 
 	now := time.Now()
 
@@ -333,8 +332,7 @@ func (m *Membership) start(nc *nats.Conn, pc *pongCollector) {
 		// cur responses should be back by now
 		// and we can compare prev and cur.
 		curCount, curMember = pc.getSetAndClear(m.myLoc)
-		p("port %v, k-th (k=%v) round, curMember='%s'",
-			m.myLoc.Port, k, curMember)
+		//p("port %v, k-th (k=%v) round, curMember='%s'", m.myLoc.Port, k, curMember)
 
 		now = time.Now()
 		expired, curLead = curMember.leaderLeaseExpired(
@@ -609,13 +607,14 @@ func (m *members) leaderLeaseExpired(
 	lead.LeaseExpires = now.Add(leaseLen).UTC()
 
 	// debug:
-	p("port %v, leaderLeaseExpired has list of len %v:",
-		mship.myLoc.Port, len(sortme)) // TODO: racy read of mship.myLoc
-	for i := range sortme {
-		fmt.Printf("sortme[%v]=%v\n", i, sortme[i])
+	if false {
+		p("port %v, leaderLeaseExpired has list of len %v:",
+			mship.myLoc.Port, len(sortme)) // TODO: racy read of mship.myLoc
+		for i := range sortme {
+			fmt.Printf("sortme[%v]=%v\n", i, sortme[i])
+		}
+		fmt.Printf("\n\n")
 	}
-	fmt.Printf("\n\n")
-
 	return true, lead
 }
 
