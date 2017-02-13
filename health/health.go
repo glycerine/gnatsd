@@ -293,7 +293,8 @@ func (m *Membership) start() {
 	m.Cfg.Log.Debugf("health-agent: Listening on [%s]\n", m.subjAllCall)
 
 	prevCount, curCount := 0, 0
-	var curMember, prevMember *members
+	prevMember := newMembers()
+	var curMember *members
 	var curLead *ServerLoc
 
 	/*
@@ -473,7 +474,7 @@ func (m *Membership) start() {
 						loc.Port,
 						left)
 
-					nextLeadReportTm = now.Add(left).Add(time.Second)
+					nextLeadReportTm = now.Add(left).Add(m.Cfg.MaxClockSkew)
 				}
 			} else {
 				if prevLead != nil &&
@@ -512,7 +513,7 @@ func (m *Membership) start() {
 								left)
 
 						}
-						nextLeadReportTm = now.Add(left).Add(time.Second)
+						nextLeadReportTm = now.Add(left).Add(m.Cfg.MaxClockSkew)
 					}
 				}
 			}
@@ -547,10 +548,12 @@ func (m *Membership) start() {
 			m.Cfg.Log.Debugf("health-agent: ---- "+
 				"PAGE PAGE PAGE!! we went "+
 				"down a server, from %v -> %v."+
-				"lost: '%s'",
+				"\nlost: '%s'\nprev: '%s'\ncur:'%s'",
 				prevCount,
 				curCount,
-				lost)
+				lost,
+				prevMember,
+				curMember)
 
 		} else if curCount > prevCount && prevCount > 0 {
 			m.Cfg.Log.Debugf("health-agent: ++++  "+

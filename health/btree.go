@@ -121,20 +121,28 @@ func setDiff(a, b *members, curLead *ServerLoc) *members {
 	a.DedupTree.tex.Lock()
 	b.DedupTree.tex.Lock()
 
+	var vlead []*ServerLoc
+
 	b.DedupTree.AscendLessThan(&ServerLoc{}, func(item btree.Item) bool {
 		v := item.(*ServerLoc)
 		res.deleteSloc(v)
-
 		if curLead != nil {
-			// annotate leader as we go...
 			if v.Id == curLead.Id {
-				v.IsLeader = true
-				v.LeaseExpires = curLead.LeaseExpires
+				vlead = append(vlead, v)
 			}
 		}
 		return true // keep iterating
 	})
 
+	// annotate leader(s)
+	if curLead != nil && len(vlead) > 0 {
+		for _, v := range vlead {
+			if v.Id == curLead.Id {
+				v.IsLeader = true
+				v.LeaseExpires = curLead.LeaseExpires
+			}
+		}
+	}
 	b.DedupTree.tex.Unlock()
 	a.DedupTree.tex.Unlock()
 	return &members{DedupTree: res}
