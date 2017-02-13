@@ -82,7 +82,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 			s.Shutdown()
 		}()
 
-		n := 50
+		n := 20
 		tot := 50
 		pause := make([]int, n)
 		for i := 0; i < n; i++ {
@@ -127,7 +127,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 		}
 
 		// let them all get past init phase.
-		time.Sleep(4 * (ms[0].Cfg.LeaseTime + ms[0].Cfg.MaxClockSkew))
+		time.Sleep(2 * (ms[0].Cfg.LeaseTime + ms[0].Cfg.MaxClockSkew))
 
 		// verify liveness, a leader exists.
 		p("verifying everyone thinks there is a leader:")
@@ -146,7 +146,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 
 		// get a few more lease cycles in
 		// for good history length
-		time.Sleep(20 * (ms[0].Cfg.LeaseTime + ms[0].Cfg.MaxClockSkew))
+		//		time.Sleep(3 * (ms[0].Cfg.LeaseTime + ms[0].Cfg.MaxClockSkew))
 
 		// check that the history from the rank 0
 		// always shows rank 0 as lead.
@@ -201,8 +201,8 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 
 			// after the preample of leases, everybody
 			// should have chosen the rank 0 leader.
-			// start scanning from 4,5,6,...
-			for i := 4; i < av; i++ {
+			// start scanning from 5,6,...
+			for i := 5; i < av; i++ {
 				sloc := h.A[h.Kth(i)].(*ServerLoc)
 				fmt.Printf("j=%v, history check Id at i = %v. sloc.Port=%v vs.  ms[0].myLoc.Port=%v\n", j, i, sloc.Port, ms[0].myLoc.Port)
 				// ports will be the only thing different when
@@ -211,7 +211,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 				cv.So(sloc.Port, cv.ShouldEqual, ms[0].myLoc.Port)
 			}
 
-			for i := 4; i < av; i++ {
+			for i := 5; i < av; i++ {
 				sloc := h.A[h.Kth(i)].(*ServerLoc)
 				p("j=%v history check Rank at i = %v. sloc.Rank=%v",
 					j, i, sloc.Rank)
