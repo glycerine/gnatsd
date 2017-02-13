@@ -50,13 +50,13 @@ type MembershipCfg struct {
 
 func (cfg *MembershipCfg) SetDefaults() {
 	if cfg.LeaseTime == 0 {
-		cfg.LeaseTime = time.Second * 10
+		cfg.LeaseTime = time.Second * 12
 	}
 	if cfg.SysMemberPrefix == "" {
 		cfg.SysMemberPrefix = "_nats.cluster.members."
 	}
 	if cfg.BeatDur == 0 {
-		cfg.BeatDur = 100 * time.Millisecond
+		cfg.BeatDur = 3000 * time.Millisecond
 	}
 	if cfg.MaxClockSkew == 0 {
 		cfg.MaxClockSkew = time.Second

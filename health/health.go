@@ -310,7 +310,7 @@ func (m *Membership) start() {
 
 	prevCount, prevMember = pc.getSetAndClear(m.myLoc)
 	now := time.Now().UTC()
-	p("%v, myLoc:%s, 0-th round, prevMember='%s'", now, &m.myLoc, prevMember)
+	p("%v, 0-th round, myLoc:%s, prevMember='%s'", now, &m.myLoc, prevMember)
 
 	firstSeenLead := m.elec.getLeader()
 	xpire := firstSeenLead.LeaseExpires
@@ -369,6 +369,7 @@ func (m *Membership) start() {
 		// and won't change
 		// what the current leader
 		// is in elec.
+		p("%v, port %v, issuing k-th (k=%v) allcall", time.Now().UTC(), m.myLoc.Port, k)
 		err = m.allcall()
 		if err != nil {
 			// err could be: "write on closed buffer"
@@ -382,6 +383,7 @@ func (m *Membership) start() {
 			return
 		}
 
+		p("%v, port %v, SLEEPING for a heartbeat of %v", time.Now().UTC(), m.myLoc.Port, m.Cfg.BeatDur)
 		select {
 		case <-time.After(m.Cfg.BeatDur):
 			// continue below, latest heartbeat session done.
@@ -404,11 +406,11 @@ func (m *Membership) start() {
 		// cur responses should be back by now
 		// and we can compare prev and cur.
 		curCount, curMember = pc.getSetAndClear(m.myLoc)
+		now = time.Now().UTC()
 		//		if m.Cfg.MyRank == 1 {
-		p("%v, port %v, k-th (k=%v) round, curMember='%s'", time.Now().UTC(), m.myLoc.Port, k, curMember)
+		p("%v, port %v, k-th (k=%v) round counclusion, curMember='%s'", now, m.myLoc.Port, k, curMember)
 		//		}
 
-		now = time.Now()
 		expired, curLead = curMember.leaderLeaseExpired(
 			now,
 			m.Cfg.LeaseTime,
@@ -844,6 +846,7 @@ func (m *Membership) setupNatsClient() error {
 		pc.receivePong(msg)
 	})
 
+	// allcall says: "here's my leader, who is out there?"
 	nc.Subscribe(m.subjAllCall, func(msg *nats.Msg) {
 		if m.deaf() {
 			return
@@ -866,28 +869,29 @@ func (m *Membership) setupNatsClient() error {
 				loc))
 		}
 
-		// allcall broadcasts the leader
-		var lead ServerLoc
-		err = lead.fromBytes(msg.Data)
-		panicOn(err)
+		/*
+			// allcall broadcasts the sender's leader
+			var lead ServerLoc
+			err = lead.fromBytes(msg.Data)
+			panicOn(err)
 
-		if lead.Id != "" && !lead.LeaseExpires.IsZero() {
-			won, alt := m.elec.setLeader(&lead)
-			if !won {
-				//p("port %v, at 111 in allcall handler: !won: rejected '%s' in favor of alt '%s'", m.myLoc.Port, &lead, &alt)
-				// if we rejected, get our preferred leader.
-				lead = alt
+			if lead.Id != "" && !lead.LeaseExpires.IsZero() {
+				won, alt := m.elec.setLeader(&lead)
+				if !won {
+					//p("port %v, at 111 in allcall handler: !won: rejected '%s' in favor of alt '%s'", m.myLoc.Port, &lead, &alt)
+					// if we rejected, get our preferred leader.
+					lead = alt
+				}
+
+				if loc.Id == lead.Id {
+					loc.IsLeader = true
+					loc.LeaseExpires = lead.LeaseExpires
+				} else {
+					loc.IsLeader = false
+					loc.LeaseExpires = time.Time{}
+				}
 			}
-
-			if loc.Id == lead.Id {
-				loc.IsLeader = true
-				loc.LeaseExpires = lead.LeaseExpires
-			} else {
-				loc.IsLeader = false
-				loc.LeaseExpires = time.Time{}
-			}
-		}
-
+		*/
 		hp, err := json.Marshal(loc)
 		panicOn(err)
 		if !m.deaf() {
