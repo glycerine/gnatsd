@@ -467,11 +467,12 @@ func (m *Membership) start() {
 					left := curLead.LeaseExpires.Sub(now)
 					m.dlog("health-agent: "+
 						"I am LEAD, my Id: '%s', "+
-						"rank %v port %v. lease expires "+
+						"rank %v port %v host %v. lease expires "+
 						"in %s",
 						loc.Id,
 						loc.Rank,
 						loc.Port,
+						loc.Host,
 						left)
 
 					nextLeadReportTm = now.Add(left).Add(m.Cfg.MaxClockSkew)
@@ -483,10 +484,11 @@ func (m *Membership) start() {
 					m.dlog("health-agent: "+
 						"I am no longer lead, "+
 						"new LEAD is '%s', rank %v. "+
-						"port %v. lease expires in %s",
+						"port %v. host %v. lease expires in %s",
 						curLead.Id,
 						curLead.Rank,
 						curLead.Port,
+						curLead.Host,
 						curLead.LeaseExpires.Sub(now))
 
 				} else {
