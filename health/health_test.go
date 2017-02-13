@@ -348,15 +348,7 @@ func Test104RecevieOwnSends(t *testing.T) {
 
 		loc, err := nc.ServerLocation()
 		panicOn(err)
-
 		m.setLoc(loc)
-		m.Cfg.Log.Debugf("health-agent: HELLOWORLD: "+
-			"I am '%s' at '%v:%v'. "+
-			"rank %v",
-			m.myLoc.Id,
-			m.myLoc.Host,
-			m.myLoc.Port,
-			m.myLoc.Rank)
 
 		m.subjAllCall = sysMemberPrefix + "allcall"
 		m.subjAllReply = sysMemberPrefix + "allreply"
@@ -369,21 +361,39 @@ func Test104RecevieOwnSends(t *testing.T) {
 		repliedInAllCall := make(chan bool)
 		gotAllRep := make(chan bool)
 		nc.Subscribe(m.subjAllReply, func(msg *nats.Msg) {
-			p("I received on subjAllReply: msg='%#v'", msg)
+			p("I received on subjAllReply: msg='%#v'", string(msg.Data))
 			close(gotAllRep)
 		})
 
 		nc.Subscribe(m.subjAllCall, func(msg *nats.Msg) {
 			close(gotAllCall)
-			p("test104, port %v, at 999 allcall received, not deaf.", m.myLoc.Port)
+			p("test104, port %v, at 999 allcall received '%s'", m.myLoc.Port, string(msg.Data))
 			loc, err := nc.ServerLocation()
 			panicOn(err)
 			hp, err := json.Marshal(loc)
 			panicOn(err)
+
 			p("test104, port %v, at 222 in allcall handler: replying to allcall with our loc: '%s'", m.myLoc.Port, loc)
 			pong(nc, msg.Reply, hp)
 			close(repliedInAllCall)
 		})
 
+		// send on subjAllCall
+		sl := ServerLoc{
+			Id:           "abc",
+			Host:         "here",
+			Port:         99,
+			Rank:         -100,
+			LeaseExpires: time.Now().Add(time.Hour),
+		}
+		won, _ := m.elec.setLeader(&sl)
+		if !won {
+			panic("must be able to set leader")
+		}
+		m.allcall()
+		<-gotAllCall
+		<-repliedInAllCall
+		// expect to have gotAllRep closed.
+		<-gotAllRep
 	})
 }
