@@ -186,8 +186,7 @@ func (e *leadHolder) setLeader(sloc *ServerLoc) (slocWon bool, alt ServerLoc) {
 		return false, e.sloc
 	}
 	//eq := false
-	now := time.Now()
-	slocWon = ServerLocLessThan(sloc, &e.sloc, now)
+	slocWon = ServerLocLessThan(sloc, &e.sloc)
 	if !slocWon {
 		// equal? still want to record those.
 		if slocEqual(sloc, &e.sloc) {
@@ -613,6 +612,8 @@ func (pc *pongCollector) getSetAndClear(myLoc ServerLoc) (int, *members) {
 	panicOn(err)
 	pc.from.Amap.Set(string(by), &myLoc)
 
+	p("in getSetAndClear, here are the contents of mem.Amap: '%s'", mem.Amap)
+
 	// return the old member set
 	return mem.Amap.Len(), mem
 }
@@ -704,13 +705,13 @@ func (p byRankThenId) Swap(i, j int) { p.s[i], p.s[j] = p.s[j], p.s[i] }
 // applicable globally: it is how we choose a leader
 // in a stable fashion.
 func (p byRankThenId) Less(i, j int) bool {
-	return ServerLocLessThan(p.s[i], p.s[j], p.now)
+	return ServerLocLessThan(p.s[i], p.s[j])
 }
 
 // ServerLocLessThan returns true iff i < j, in
 // terms of leader preference where lowest is
 // more electable/preferred as leader.
-func ServerLocLessThan(i, j *ServerLoc, now time.Time) bool {
+func ServerLocLessThan(i, j *ServerLoc) bool {
 
 	/*
 		nowu := now.UnixNano()
