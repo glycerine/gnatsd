@@ -588,8 +588,13 @@ func pong(nc *nats.Conn, subj string, msg []byte) {
 // This gives a round-trip connectivity check.
 //
 func (m *Membership) allcall() error {
+	lead := m.elec.getLeader()
+	p("%v, port %v, ISSUING ALLCALL on '%s' with leader '%s'\n", time.Now().UTC(), m.myLoc.Port, m.subjAllCall, lead)
+
+	leadby, err := json.Marshal(&lead)
+	panicOn(err)
+
 	// allcall broadcasts the current leader + lease
-	leadby := m.elec.getLeaderAsBytes()
 	return m.nc.PublishRequest(m.subjAllCall, m.subjAllReply, leadby)
 }
 
@@ -833,6 +838,7 @@ func (m *Membership) setupNatsClient() error {
 
 	// allcall says: "who is out there? Are you a lead?"
 	nc.Subscribe(m.subjAllCall, func(msg *nats.Msg) {
+		p("%v, port %v, ALLCALL RECEIVED. \n", time.Now().UTC(), m.myLoc.Port)
 		if m.deaf() {
 			return
 		}
@@ -864,7 +870,7 @@ func (m *Membership) setupNatsClient() error {
 		hp, err := json.Marshal(&locWithLease)
 		panicOn(err)
 		if !m.deaf() {
-			p("%v, port %v, REPLYING TO ALLCALL with my details: '%s'\n", time.Now().UTC(), locWithLease.Port, locWithLease)
+			p("%v, port %v, REPLYING TO ALLCALL on '%s' with my details: '%s'\n", time.Now().UTC(), locWithLease.Port, msg.Reply, locWithLease)
 			pong(nc, msg.Reply, hp)
 		}
 	})
