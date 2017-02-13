@@ -3,7 +3,6 @@ package health
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -81,6 +80,9 @@ type Membership struct {
 	halt     *halter
 	mu       sync.Mutex
 	stopping bool
+	pc       *pongCollector
+
+	needReconnect chan bool
 }
 
 func (m *Membership) deaf() bool {
@@ -98,9 +100,11 @@ func (m *Membership) unDeaf() {
 
 func NewMembership(cfg *MembershipCfg) *Membership {
 	m := &Membership{
-		Cfg:  *cfg,
-		halt: newHalter(),
+		Cfg:           *cfg,
+		halt:          newHalter(),
+		needReconnect: make(chan bool),
 	}
+	m.pc = m.newPongCollector()
 	m.elec = m.newLeadHolder(cfg.historyCount)
 	return m
 }
@@ -216,25 +220,25 @@ func (m *Membership) Start() error {
 
 	m.Cfg.SetDefaults()
 
-	pc := m.newPongCollector()
-	nc, err := m.setupNatsClient(pc)
+	err := m.setupNatsClient()
 	if err != nil {
 		m.halt.Done.Close()
 		return err
 	}
-	m.nc = nc
-	go m.start(nc, pc)
+	go m.start()
 	return nil
 }
 
-func (m *Membership) start(nc *nats.Conn, pc *pongCollector) {
+func (m *Membership) start() {
+
+	var nc *nats.Conn = m.nc
+	var pc *pongCollector = m.pc
 
 	defer func() {
 		m.halt.Done.Close()
 	}()
 
 	m.Cfg.Log.Debugf("health-agent: Listening on [%s]\n", m.subjAllCall)
-	log.SetFlags(log.LstdFlags)
 
 	prevCount, curCount := 0, 0
 	var curMember, prevMember *members
@@ -256,6 +260,17 @@ func (m *Membership) start(nc *nats.Conn, pc *pongCollector) {
 
 	select {
 	case <-time.After(m.Cfg.BeatDur):
+	case <-m.needReconnect:
+		err := m.setupNatsClient()
+		if err != nil {
+			m.Cfg.Log.Debugf("health-agent: "+
+				"fatal error: could not reconnect to, "+
+				"our url '%s', error: %s",
+				m.Cfg.NatsUrl, err)
+
+			m.halt.ReqStop.Close()
+			return
+		}
 	case <-m.halt.ReqStop.Chan:
 		return
 	}
@@ -292,6 +307,17 @@ func (m *Membership) start(nc *nats.Conn, pc *pongCollector) {
 
 		select {
 		case <-time.After(m.Cfg.LeaseTime):
+		case <-m.needReconnect:
+			err := m.setupNatsClient()
+			if err != nil {
+				m.Cfg.Log.Debugf("health-agent: "+
+					"fatal error: could not reconnect to, "+
+					"our url '%s', error: %s",
+					m.Cfg.NatsUrl, err)
+
+				m.halt.ReqStop.Close()
+				return
+			}
 		case <-m.halt.ReqStop.Chan:
 			return
 		}
@@ -324,6 +350,17 @@ func (m *Membership) start(nc *nats.Conn, pc *pongCollector) {
 
 		select {
 		case <-time.After(m.Cfg.BeatDur):
+		case <-m.needReconnect:
+			err := m.setupNatsClient()
+			if err != nil {
+				m.Cfg.Log.Debugf("health-agent: "+
+					"fatal error: could not reconnect to, "+
+					"our url '%s', error: %s",
+					m.Cfg.NatsUrl, err)
+
+				m.halt.ReqStop.Close()
+				return
+			}
 		case <-m.halt.ReqStop.Chan:
 			return
 		}
@@ -673,20 +710,40 @@ func ServerLocLessThan(i, j *ServerLoc, now time.Time) bool {
 	return i.Port < j.Port
 }
 
-func (m *Membership) setupNatsClient(pc *pongCollector) (*nats.Conn, error) {
+func (m *Membership) setupNatsClient() error {
+	var pc *pongCollector = m.pc
+
 	discon := func(nc *nats.Conn) {
-		m.Cfg.Log.Tracef("health-agent: Disconnected from nats!")
+		select {
+		case m.needReconnect <- true:
+		case <-m.halt.ReqStop.Chan:
+			return
+		}
 	}
 	optdis := nats.DisconnectHandler(discon)
 	norand := nats.DontRandomize()
 
-	recon := func(nc *nats.Conn) {
-		loc, err := nc.ServerLocation()
-		panicOn(err)
-		m.Cfg.Log.Tracef("health-agent: Reconnect to nats!: loc = '%s'", loc)
-	}
-	optrecon := nats.ReconnectHandler(recon)
+	// We don't want to get connected to
+	// some different server in the pool,
+	// so any reconnect, if needed, will
+	// need to be handled manually by us by
+	// attempting to contact the
+	// exact same address as we are
+	// configured with; see the m.needReconnect
+	// channel.
+	// Otherwise we are monitoring
+	// the health of the wrong server.
+	//
+	optrecon := nats.NoReconnect()
 
+	/*
+		recon := func(nc *nats.Conn) {
+			loc, err := nc.ServerLocation()
+			panicOn(err)
+			m.Cfg.Log.Debugf("health-agent: Reconnect to nats!: loc = '%s'", loc)
+		}
+		optrecon := nats.ReconnectHandler(recon)
+	*/
 	opts := []nats.Option{optdis, optrecon, norand}
 	if m.Cfg.CliConn != nil {
 		opts = append(opts, nats.Dialer(&m.Cfg))
@@ -694,12 +751,17 @@ func (m *Membership) setupNatsClient(pc *pongCollector) (*nats.Conn, error) {
 
 	nc, err := nats.Connect(m.Cfg.NatsUrl, opts...)
 	if err != nil {
-		log.Fatalf("Can't connect: %v\n", err)
+		msg := fmt.Errorf("Can't connect to "+
+			"nats on url '%s': %v",
+			m.Cfg.NatsUrl,
+			err)
+		m.Cfg.Log.Errorf(msg.Error())
+		return msg
 	}
 
 	loc, err := nc.ServerLocation()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	loc.Rank = m.Cfg.MyRank
 	m.setLoc(loc)
@@ -806,7 +868,8 @@ func (m *Membership) setupNatsClient(pc *pongCollector) (*nats.Conn, error) {
 			string(msg.Data))
 	})
 
-	return nc, nil
+	m.nc = nc
+	return nil
 }
 
 func (m *Membership) locDifferent(b *nats.ServerLoc) bool {

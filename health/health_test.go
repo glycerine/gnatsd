@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"net"
 	"testing"
 	"time"
 
@@ -431,7 +432,7 @@ func Test105OnlyConnectToOriginalGnatsd(t *testing.T) {
 
 		cluster1Port, lsn1 := getAvailPort()
 		cluster2Port, lsn2 := getAvailPort()
-		// now that we've got different available ports,
+		// now that we've bound different available ports,
 		// we can close the listeners to free these up.
 		lsn1.Close()
 		lsn2.Close()
@@ -439,7 +440,6 @@ func Test105OnlyConnectToOriginalGnatsd(t *testing.T) {
 		s := StartClusterOnPort(TEST_PORT, cluster1Port)
 		s2 := AddToClusterOnPort(TEST_PORT+1, cluster2Port, routesString)
 		defer s2.Shutdown()
-		defer s.Shutdown()
 
 		cli, srv, err := NewInternalClientPair()
 		panicOn(err)
@@ -451,15 +451,30 @@ func Test105OnlyConnectToOriginalGnatsd(t *testing.T) {
 			BeatDur:      10 * time.Millisecond,
 			NatsUrl:      fmt.Sprintf("nats://localhost:%v", TEST_PORT),
 		}
+		aLogger := logger.NewStdLogger(micros, true, trace, colors, pid)
+		cfg.Log = aLogger
 
 		m := NewMembership(cfg)
 		err = m.Start()
-		if err != nil {
-			panic(err)
-		}
-		ms = append(ms, m)
+		panicOn(err)
 		defer m.Stop()
 
+		_, err = m.nc.ServerLocation()
+		panicOn(err)
+
+		time.Sleep(100 * time.Millisecond)
+		s.Shutdown()
+		// allow time for any unwanted
+		// auto-reconnect to be attempted;
+		// we are testing that no reconnect
+		// happens.
+		time.Sleep(300 * time.Millisecond)
+
+		_, err = m.nc.ServerLocation()
+		p("attempting to contact failed server; err is '%v'", err)
+		// this *should* *have* *failed*
+		cv.So(err, cv.ShouldNotBeNil)
+		cv.So(err.Error(), cv.ShouldEqual, "nats: invalid connection")
 		select {}
 	})
 }
