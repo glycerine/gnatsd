@@ -190,7 +190,7 @@ func (e *leadHolder) setLeader(sloc *ServerLoc) (slocWon bool, alt ServerLoc) {
 	slocWon = ServerLocLessThan(sloc, &e.sloc, now)
 	if !slocWon {
 		if e.m.myLoc.Rank == 0 {
-			p("port %v, 999999 setLeader is failing to update the leader, rejecting the new contendor.\n\nsloc='%s'\n <\n prev:'%s'\nat time %v\n", e.m.myLoc.Port, sloc, &e.sloc, now.UTC())
+			p("port %v, 999999 setLeader is failing to update the leader, rejecting the new contendor.\n\nsloc='%s'\n >= \n prev:'%s'\nat time %v\n", e.m.myLoc.Port, sloc, &e.sloc, now.UTC())
 		}
 
 		return false, e.sloc
@@ -721,12 +721,25 @@ func ServerLocLessThan(i, j *ServerLoc, now time.Time) bool {
 		return i.Rank < j.Rank
 	}
 	if i.Id != j.Id {
-		return i.Id < j.Id
+		return lessThanString(i.Id, j.Id)
 	}
 	if i.Host != j.Host {
-		return i.Host < j.Host
+		return lessThanString(i.Host, j.Host)
 	}
 	return i.Port < j.Port
+}
+
+// return i < j where empty strings are big not small.
+func lessThanString(i, j string) bool {
+	iempt := i == ""
+	jempt := j == ""
+	if iempt || jempt {
+		if jempt {
+			return true // "123" < ""
+		}
+		return false
+	}
+	return i < j
 }
 
 func (m *Membership) setupNatsClient() error {
@@ -831,7 +844,7 @@ func (m *Membership) setupNatsClient() error {
 		if lead.Id != "" && !lead.LeaseExpires.IsZero() {
 			won, alt := m.elec.setLeader(&lead)
 			if !won {
-				//p("port %v, at 111 in allcall handler: !won: rejected '%s' in favor of alt '%s'", m.myLoc.Port, &lead, &alt)
+				p("port %v, at 111 in allcall handler: !won: rejected '%s' in favor of alt '%s'", m.myLoc.Port, &lead, &alt)
 				// if we rejected, get our preferred leader.
 				lead = alt
 			}
