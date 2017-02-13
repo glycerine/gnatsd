@@ -70,9 +70,9 @@ func (t *ranktree) String() string {
 	t.tex.Lock()
 
 	s := "["
-	t.AscendGreaterOrEqual(&ServerLoc{}, func(item btree.Item) bool {
+	t.AscendLessThan(&ServerLoc{}, func(item btree.Item) bool {
 		cur := item.(*ServerLoc)
-		s += fmt.Sprintf("%s,", cur)
+		s += cur.String()
 		return true
 	})
 	t.tex.Unlock()
@@ -89,7 +89,7 @@ func (t *ranktree) clone() *ranktree {
 	r := newRanktree()
 	t.tex.Lock()
 
-	t.AscendGreaterOrEqual(&ServerLoc{}, func(item btree.Item) bool {
+	t.AscendLessThan(&ServerLoc{}, func(item btree.Item) bool {
 		cur := item.(*ServerLoc)
 		r.insert(cur)
 		return true
@@ -120,7 +120,7 @@ func setDiff(a, b *members, curLead *ServerLoc) *members {
 	a.Amap.tex.Lock()
 	b.Amap.tex.Lock()
 
-	b.Amap.AscendGreaterOrEqual(&ServerLoc{}, func(item btree.Item) bool {
+	b.Amap.AscendLessThan(&ServerLoc{}, func(item btree.Item) bool {
 		v := item.(*ServerLoc)
 		res.deleteSloc(v)
 
@@ -155,7 +155,7 @@ func setsEqual(a, b *members) bool {
 	}
 
 	missing := false
-	a.Amap.AscendGreaterOrEqual(&ServerLoc{}, func(item btree.Item) bool {
+	a.Amap.AscendLessThan(&ServerLoc{}, func(item btree.Item) bool {
 		v := item.(*ServerLoc)
 		if !b.Amap.present(v) {
 			missing = true
