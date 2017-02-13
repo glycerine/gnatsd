@@ -79,10 +79,10 @@ func (t *ranktree) String() string {
 
 	// replace last comma with matching bracket
 	n := len(s)
-	if n > 0 {
-		s = s[:n-1] + "]"
+	if n > 1 {
+		s = s[:n-1]
 	}
-	return s
+	return s + "]"
 }
 
 func (t *ranktree) clone() *ranktree {
