@@ -520,12 +520,14 @@ func (pc *pongCollector) receivePong(msg *nats.Msg) {
 
 	var loc ServerLoc
 	err := loc.fromBytes(msg.Data)
-	if err != nil {
+	if err == nil {
 		pc.from.Amap.Set(string(msg.Data), &loc)
+	} else {
+		panic(err)
 	}
 
-	p("port %v, pong collector received '%#v'",
-		pc.mship.myLoc.Port, &loc)
+	p("port %v, pong collector received '%#v'. pc.from is now '%s'",
+		pc.mship.myLoc.Port, &loc, pc.from)
 
 	pc.mu.Unlock()
 }
