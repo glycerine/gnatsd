@@ -907,7 +907,7 @@ func (m *Membership) setupNatsClient() error {
 		if m.deaf() {
 			return
 		}
-		m.Cfg.Log.Debugf("health-agent: "+
+		m.Cfg.Log.Tracef("health-agent: "+
 			"Received on [%s]: '%s'",
 			msg.Subject,
 			string(msg.Data))
