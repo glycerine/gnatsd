@@ -193,13 +193,11 @@ func (e *leadHolder) setLeader(sloc *ServerLoc) (slocWon bool, alt ServerLoc) {
 		return false, e.sloc
 	}
 
-	eq := false
 	now := time.Now().UTC()
 	newWon := ServerLocLessThan(sloc, &e.sloc)
 	oldWon := ServerLocLessThan(&e.sloc, sloc)
 	switch {
 	case !newWon && !oldWon:
-		eq = true
 		// they are equal, pick the longer lease
 		// so we allow lease renewal
 		if sloc.LeaseExpires.After(e.sloc.LeaseExpires) {
@@ -224,6 +222,7 @@ func (e *leadHolder) setLeader(sloc *ServerLoc) (slocWon bool, alt ServerLoc) {
 		alt = e.sloc
 	}
 
+	// update history
 	if slocWon {
 		histcp := *sloc
 		e.history.Append(&histcp)
