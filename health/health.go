@@ -183,9 +183,13 @@ func (e *leadHolder) setLeader(sloc *ServerLoc, now time.Time) (slocWon bool, al
 	var newWon, oldWon bool
 
 	switch {
-	case bothExpired, neitherExpired:
+	case bothExpired:
 		// if bothExpired, everyone is in init.
 		// Either way, just take the lower rank.
+		newWon = ServerLocLessThan(sloc, &e.sloc)
+		oldWon = ServerLocLessThan(&e.sloc, sloc)
+
+	case neitherExpired:
 		newWon = ServerLocLessThan(sloc, &e.sloc)
 		oldWon = ServerLocLessThan(&e.sloc, sloc)
 
@@ -208,17 +212,20 @@ func (e *leadHolder) setLeader(sloc *ServerLoc, now time.Time) (slocWon bool, al
 			alt = *sloc
 			e.sloc = *sloc
 
-			//p("%v, port %v, 999999 setLeader sees same leader with > lease, renewing its lease %v\n", now, e.m.myLoc.Port, &e.sloc)
+			p("%v, port %v, 999999 setLeader sees same leader with > lease, renewing its lease %v\n", now, e.m.myLoc.Port, &e.sloc)
 		} else {
 			slocWon = false
 			alt = e.sloc
 
-			//p("%v, port %v, 000000 setLeader is failing to update the leader, rejecting the new contendor.\n\nsloc='%s'\n >= \n prev:'%s'\n", now, e.m.myLoc.Port, sloc, &e.sloc)
+			p("%v, port %v, 000000 setLeader is failing to update the leader, rejecting the new contendor.\n\nsloc='%s'\n >= \n prev:'%s'\n", now, e.m.myLoc.Port, sloc, &e.sloc)
 		}
 	case newWon:
 		slocWon = true
 		alt = *sloc
 		e.sloc = *sloc
+
+		p("%v, port %v, 11111 setLeader updated the leader, accepting new proposal.\n\nsloc='%s'\n < \n prev:'%s'\n", now, e.m.myLoc.Port, sloc, &e.sloc)
+
 	default:
 		//oldWon
 		slocWon = false
@@ -830,6 +837,7 @@ func (m *Membership) setupNatsClient() error {
 			return
 		}
 
+		// sanity check that we haven't moved.
 		loc, err := m.getNatsServerLocation()
 		if err != nil {
 			return // try again next time.
@@ -847,12 +855,16 @@ func (m *Membership) setupNatsClient() error {
 				&m.myLoc,
 				loc))
 		}
+		// Done with sanity check.
+		// INVAR: we haven't moved, and
+		// loc matches m.myLoc.
 
 		locWithLease := m.getMyLocWithAnyLease()
 
 		hp, err := json.Marshal(&locWithLease)
 		panicOn(err)
 		if !m.deaf() {
+			p("%v, port %v, REPLYING TO ALLCALL with my details: '%s'\n", time.Now().UTC(), locWithLease.Port, locWithLease)
 			pong(nc, msg.Reply, hp)
 		}
 	})
