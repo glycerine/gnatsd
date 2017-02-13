@@ -296,72 +296,24 @@ func (m *Membership) start() {
 	var curMember, prevMember *members
 	var curLead *ServerLoc
 
-	// do an initial allcall() to discover any
-	// current leader.
-	m.Cfg.Log.Debugf("health-agent: " +
-		"init: doing initial allcall " +
-		"to discover any existing leader...")
+	/*
+		// do an initial allcall() to discover any
+		// current leader.
+		m.Cfg.Log.Debugf("health-agent: " +
+			"init: doing initial allcall " +
+			"to discover any existing leader...")
 
-	err := m.allcall()
-	if err != nil {
-		m.Cfg.Log.Debugf("health-agent: "+
-			"error back from allcall, "+
-			"terminating on: %s", err)
-		return
-	}
-
-	select {
-	case <-time.After(m.Cfg.BeatDur):
-		// continue below, initial heartbeat done.
-	case <-m.needReconnect:
-		err := m.setupNatsClient()
+		err := m.allcall()
 		if err != nil {
 			m.Cfg.Log.Debugf("health-agent: "+
-				"fatal error: could not reconnect to, "+
-				"our url '%s', error: %s",
-				m.Cfg.NatsUrl, err)
-
-			m.halt.ReqStop.Close()
+				"error back from allcall, "+
+				"terminating on: %s", err)
 			return
 		}
-	case <-m.halt.ReqStop.Chan:
-		return
-	}
-
-	prevCount, prevMember = pc.getSetAndClear()
-	now := time.Now().UTC()
-	m.dlog("0-th round, myLoc:%s, prevMember='%s'", &m.myLoc, prevMember)
-
-	lead0 := prevMember.minrank()
-	if lead0 != nil {
-		m.elec.setLeader(lead0, now)
-	}
-	firstSeenLead := m.elec.getLeader()
-	if lead0 != nil &&
-		firstSeenLead.Id != "" &&
-		firstSeenLead.Id != m.myLoc.Id &&
-		!firstSeenLead.LeaseExpires.IsZero() &&
-		firstSeenLead.LeaseExpires.After(now) {
-
-		m.dlog("health-agent: init: "+
-			"after one heartbeat, "+
-			"we detect current leader '%s'"+
-			" of rank %v with lease "+
-			"for %v",
-			firstSeenLead.Id,
-			firstSeenLead.Rank,
-			firstSeenLead.LeaseExpires.Sub(now),
-		)
-	} else {
-		m.dlog("health-agent: "+
-			"init: after one heartbeat,"+
-			" no leader found. waiting "+
-			"for a full leader lease "+
-			"term of %s to expire...",
-			m.Cfg.LeaseTime)
 
 		select {
-		case <-time.After(m.Cfg.LeaseTime):
+		case <-time.After(m.Cfg.BeatDur):
+			// continue below, initial heartbeat done.
 		case <-m.needReconnect:
 			err := m.setupNatsClient()
 			if err != nil {
@@ -376,14 +328,65 @@ func (m *Membership) start() {
 		case <-m.halt.ReqStop.Chan:
 			return
 		}
-	}
 
+		prevCount, prevMember = pc.getSetAndClear()
+		now := time.Now().UTC()
+		m.dlog("0-th round, myLoc:%s, prevMember='%s'", &m.myLoc, prevMember)
+
+		lead0 := prevMember.minrank()
+		if lead0 != nil {
+			m.elec.setLeader(lead0, now)
+		}
+		firstSeenLead := m.elec.getLeader()
+		if lead0 != nil &&
+			firstSeenLead.Id != "" &&
+			firstSeenLead.Id != m.myLoc.Id &&
+			!firstSeenLead.LeaseExpires.IsZero() &&
+			firstSeenLead.LeaseExpires.After(now) {
+
+			m.dlog("health-agent: init: "+
+				"after one heartbeat, "+
+				"we detect current leader '%s'"+
+				" of rank %v with lease "+
+				"for %v",
+				firstSeenLead.Id,
+				firstSeenLead.Rank,
+				firstSeenLead.LeaseExpires.Sub(now),
+			)
+		} else {
+			m.dlog("health-agent: "+
+				"init: after one heartbeat,"+
+				" no leader found. waiting "+
+				"for a full leader lease "+
+				"term of %s to expire...",
+				m.Cfg.LeaseTime)
+
+			select {
+			case <-time.After(m.Cfg.LeaseTime):
+			case <-m.needReconnect:
+				err := m.setupNatsClient()
+				if err != nil {
+					m.Cfg.Log.Debugf("health-agent: "+
+						"fatal error: could not reconnect to, "+
+						"our url '%s', error: %s",
+						m.Cfg.NatsUrl, err)
+
+					m.halt.ReqStop.Close()
+					return
+				}
+			case <-m.halt.ReqStop.Chan:
+				return
+			}
+		}
+	*/
 	// prev responses should be back by now.
+	var err error
+	var now time.Time
 	var expired bool
 	var prevLead *ServerLoc
 	var nextLeadReportTm time.Time
 
-	k := 0
+	k := -1
 	for {
 		k++
 		// NB: replies to an
