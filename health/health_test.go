@@ -111,7 +111,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 
 			if i == 0 {
 				cfg.deaf = DEAF_FALSE
-				aLogger := logger.NewStdLogger(micros, true, true, colors, pid)
+				aLogger := logger.NewStdLogger(micros, debug, trace, colors, pid)
 				_ = aLogger
 				// to follow the prints, uncomment:
 				cfg.Log = aLogger

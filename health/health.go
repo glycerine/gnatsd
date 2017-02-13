@@ -180,17 +180,16 @@ func (e *leadHolder) setLeader(sloc *ServerLoc) (slocWon bool, alt ServerLoc) {
 	defer e.mu.Unlock()
 
 	if sloc == nil || sloc.Id == "" {
-		// debug
-		if e.m.myLoc.Rank == 1 {
-			p("port %v, 77777 setLeader is returning false because sloc==nil or sloc.Id==empty string", e.m.myLoc.Port)
-		}
+		//if e.m.myLoc.Rank == 1 {
+		//	p("port %v, 77777 setLeader is returning false because sloc==nil or sloc.Id==empty string", e.m.myLoc.Port)
+		//}
 		return false, e.sloc
 	}
-	eq := false
+	//eq := false
 	now := time.Now()
 	slocWon = ServerLocLessThan(sloc, &e.sloc, now)
 	if !slocWon {
-		// equal?
+		// equal? still want to record those.
 		if slocEqual(sloc, &e.sloc) {
 			// for history keeping, and the
 			// tests that examine our history,
@@ -198,22 +197,22 @@ func (e *leadHolder) setLeader(sloc *ServerLoc) (slocWon bool, alt ServerLoc) {
 			// lead.
 			histcp := *sloc
 			e.history.Append(&histcp)
-			eq = true
+			//eq = true
 		}
-		if e.m.myLoc.Rank == 1 {
-			if eq {
-				p("port %v, 999999 setLeader sees same leader update, keeping same but recorded in history.'%s'\nat time %v\n", e.m.myLoc.Port, &e.sloc, now.UTC())
-			} else {
-				p("port %v, 999999 setLeader is failing to update the leader, rejecting the new contendor.\n\nsloc='%s'\n >= \n prev:'%s'\nat time %v\n", e.m.myLoc.Port, sloc, &e.sloc, now.UTC())
-			}
-		}
+		//if e.m.myLoc.Rank == 1 {
+		//if eq {
+		//	p("port %v, 999999 setLeader sees same leader update, keeping same but recorded in history.'%s'\nat time %v\n", e.m.myLoc.Port, &e.sloc, now.UTC())
+		//} else {
+		//	p("port %v, 999999 setLeader is failing to update the leader, rejecting the new contendor.\n\nsloc='%s'\n >= \n prev:'%s'\nat time %v\n", e.m.myLoc.Port, sloc, &e.sloc, now.UTC())
+		//}
+		//}
 
 		return false, e.sloc
 	}
 	// debug:
-	if e.m.myLoc.Rank == 1 {
-		p("port %v, 8888888 setLeader is appending to history now len %v: this is new \n\nsloc='%s'\n <\n prev:'%s'\nat time %v\n", e.m.myLoc.Port, e.history.Avail(), sloc, &e.sloc, now.UTC())
-	}
+	//	if e.m.myLoc.Rank == 1 {
+	//		p("port %v, 8888888 setLeader is appending to history now len %v: this is new \n\nsloc='%s'\n <\n prev:'%s'\nat time %v\n", e.m.myLoc.Port, e.history.Avail(), sloc, &e.sloc, now.UTC())
+	//	}
 	e.sloc = *sloc
 	histcp := *sloc
 	e.history.Append(&histcp)
@@ -301,9 +300,9 @@ func (m *Membership) start() {
 	}
 
 	prevCount, prevMember = pc.getSetAndClear(m.myLoc)
-	if m.Cfg.MyRank == 1 {
-		p("port %v, 0-th round, prevMember='%s'", m.myLoc.Port, prevMember)
-	}
+	//	if m.Cfg.MyRank == 1 {
+	//		p("port %v, 0-th round, prevMember='%s'", m.myLoc.Port, prevMember)
+	//	}
 
 	now := time.Now()
 
@@ -396,9 +395,9 @@ func (m *Membership) start() {
 		// cur responses should be back by now
 		// and we can compare prev and cur.
 		curCount, curMember = pc.getSetAndClear(m.myLoc)
-		if m.Cfg.MyRank == 1 {
-			p("port %v, k-th (k=%v) round, curMember='%s'", m.myLoc.Port, k, curMember)
-		}
+		//		if m.Cfg.MyRank == 1 {
+		//			p("port %v, k-th (k=%v) round, curMember='%s'", m.myLoc.Port, k, curMember)
+		//		}
 
 		now = time.Now()
 		expired, curLead = curMember.leaderLeaseExpired(
@@ -864,7 +863,7 @@ func (m *Membership) setupNatsClient() error {
 		if lead.Id != "" && !lead.LeaseExpires.IsZero() {
 			won, alt := m.elec.setLeader(&lead)
 			if !won {
-				p("port %v, at 111 in allcall handler: !won: rejected '%s' in favor of alt '%s'", m.myLoc.Port, &lead, &alt)
+				//p("port %v, at 111 in allcall handler: !won: rejected '%s' in favor of alt '%s'", m.myLoc.Port, &lead, &alt)
 				// if we rejected, get our preferred leader.
 				lead = alt
 			}
