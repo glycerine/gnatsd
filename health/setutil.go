@@ -21,25 +21,25 @@ func panicOn(err error) {
 
 type members struct {
 	GroupName string    `json:"GroupName"`
-	Amap      *ranktree `json:"Mem"`
+	DedupTree *ranktree `json:"Mem"`
 }
 
 func (m *members) clear() {
-	m.Amap = newRanktree()
+	m.DedupTree = newRanktree()
 }
 
 func (m *members) clone() *members {
 	cp := newMembers()
 	cp.GroupName = m.GroupName
-	if m.Amap == nil {
+	if m.DedupTree == nil {
 		return cp
 	}
-	cp.Amap = m.Amap.clone()
+	cp.DedupTree = m.DedupTree.clone()
 	return cp
 }
 
 func (m *members) setEmpty() bool {
-	return m.Amap.Len() == 0
+	return m.DedupTree.Len() == 0
 }
 
 func (m *members) String() string {
@@ -48,12 +48,12 @@ func (m *members) String() string {
 
 func newMembers() *members {
 	return &members{
-		Amap: newRanktree(),
+		DedupTree: newRanktree(),
 	}
 }
 
 func (m *members) mustJsonBytes() []byte {
-	by, err := m.Amap.MarshalJSON()
+	by, err := m.DedupTree.MarshalJSON()
 	panicOn(err)
 	return by
 }

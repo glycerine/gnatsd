@@ -117,11 +117,11 @@ func (t *ranktree) size() int {
 // return a minus b, where a and b are sets.
 func setDiff(a, b *members, curLead *ServerLoc) *members {
 
-	res := a.Amap.clone()
-	a.Amap.tex.Lock()
-	b.Amap.tex.Lock()
+	res := a.DedupTree.clone()
+	a.DedupTree.tex.Lock()
+	b.DedupTree.tex.Lock()
 
-	b.Amap.AscendLessThan(&ServerLoc{}, func(item btree.Item) bool {
+	b.DedupTree.AscendLessThan(&ServerLoc{}, func(item btree.Item) bool {
 		v := item.(*ServerLoc)
 		res.deleteSloc(v)
 
@@ -135,19 +135,19 @@ func setDiff(a, b *members, curLead *ServerLoc) *members {
 		return true // keep iterating
 	})
 
-	b.Amap.tex.Unlock()
-	a.Amap.tex.Unlock()
-	return &members{Amap: res}
+	b.DedupTree.tex.Unlock()
+	a.DedupTree.tex.Unlock()
+	return &members{DedupTree: res}
 }
 
 func setsEqual(a, b *members) bool {
-	a.Amap.tex.Lock()
-	b.Amap.tex.Lock()
-	defer b.Amap.tex.Unlock()
-	defer a.Amap.tex.Unlock()
+	a.DedupTree.tex.Lock()
+	b.DedupTree.tex.Lock()
+	defer b.DedupTree.tex.Unlock()
+	defer a.DedupTree.tex.Unlock()
 
-	alen := a.Amap.Len()
-	if alen != b.Amap.Len() {
+	alen := a.DedupTree.Len()
+	if alen != b.DedupTree.Len() {
 		return false
 	}
 	// INVAR: len(a) == len(b)
@@ -156,9 +156,9 @@ func setsEqual(a, b *members) bool {
 	}
 
 	missing := false
-	a.Amap.AscendLessThan(&ServerLoc{}, func(item btree.Item) bool {
+	a.DedupTree.AscendLessThan(&ServerLoc{}, func(item btree.Item) bool {
 		v := item.(*ServerLoc)
-		if !b.Amap.Has(v) {
+		if !b.DedupTree.Has(v) {
 			missing = true
 			return false // stop iterating
 		}

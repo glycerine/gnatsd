@@ -556,8 +556,8 @@ func Test107OneNodeAloneWaitsLeaseTermBeforeRenewal(t *testing.T) {
 
 		cfg := &MembershipCfg{
 			MaxClockSkew: 1 * time.Nanosecond,
-			LeaseTime:    100 * time.Millisecond,
-			BeatDur:      30 * time.Millisecond,
+			LeaseTime:    3000 * time.Millisecond,
+			BeatDur:      1000 * time.Millisecond,
 			NatsUrl:      fmt.Sprintf("nats://localhost:%v", TEST_PORT),
 			MyRank:       0,
 			historyCount: 10000,
@@ -569,7 +569,7 @@ func Test107OneNodeAloneWaitsLeaseTermBeforeRenewal(t *testing.T) {
 		s.InternalCliRegisterCallback(srv)
 		cfg.CliConn = cli
 
-		aLogger := logger.NewStdLogger(micros, debug, trace, colors, pid)
+		aLogger := logger.NewStdLogger(micros, true, trace, colors, pid)
 		_ = aLogger
 		// to follow the prints, uncomment:
 		cfg.Log = aLogger

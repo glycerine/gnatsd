@@ -32,7 +32,7 @@ func Test202BtreeEqual(t *testing.T) {
 	r.insert(s1)
 
 	s := r.clone()
-	same := setsEqual(&members{Amap: s}, &members{Amap: r})
+	same := setsEqual(&members{DedupTree: s}, &members{DedupTree: r})
 	if !same {
 		t.Fatalf("expected setsEqual to be true")
 	}

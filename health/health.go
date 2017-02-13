@@ -66,6 +66,15 @@ func (s *ServerLoc) fromBytes(by []byte) error {
 type Membership struct {
 	Cfg MembershipCfg
 
+	// the pongCollector holds
+	// all the pongs received in
+	// response to allcall pings
+	// in the most recent heartbeat
+	// session.
+	pc *pongCollector
+
+	// actually elected leaders, should
+	// change only after a lease term.
 	elec  *leadHolder
 	nc    *nats.Conn
 	myLoc ServerLoc
@@ -79,7 +88,6 @@ type Membership struct {
 	halt     *halter
 	mu       sync.Mutex
 	stopping bool
-	pc       *pongCollector
 
 	needReconnect chan bool
 }
@@ -99,8 +107,10 @@ func (m *Membership) unDeaf() {
 
 func NewMembership(cfg *MembershipCfg) *Membership {
 	m := &Membership{
-		Cfg:           *cfg,
-		halt:          newHalter(),
+		Cfg:  *cfg,
+		halt: newHalter(),
+
+		// needReconnect should be sent on, not closed.
 		needReconnect: make(chan bool),
 	}
 	m.pc = m.newPongCollector()
@@ -282,6 +292,7 @@ func (m *Membership) start() {
 
 	select {
 	case <-time.After(m.Cfg.BeatDur):
+		// continue below, initial heartbeat done.
 	case <-m.needReconnect:
 		err := m.setupNatsClient()
 		if err != nil {
@@ -298,9 +309,8 @@ func (m *Membership) start() {
 	}
 
 	prevCount, prevMember = pc.getSetAndClear(m.myLoc)
-	//p("myLoc:%s, 0-th round, prevMember='%s'", &m.myLoc, prevMember)
-
-	now := time.Now()
+	now := time.Now().UTC()
+	p("%v, myLoc:%s, 0-th round, prevMember='%s'", now, &m.myLoc, prevMember)
 
 	firstSeenLead := m.elec.getLeader()
 	xpire := firstSeenLead.LeaseExpires
@@ -354,7 +364,9 @@ func (m *Membership) start() {
 	for {
 		k++
 		// NB: replies to an
-		// allcall can/will change
+		// allcall will only update
+		// the pongCollectors.from set,
+		// and won't change
 		// what the current leader
 		// is in elec.
 		err = m.allcall()
@@ -372,6 +384,7 @@ func (m *Membership) start() {
 
 		select {
 		case <-time.After(m.Cfg.BeatDur):
+			// continue below, latest heartbeat session done.
 		case <-m.needReconnect:
 			err := m.setupNatsClient()
 			if err != nil {
@@ -392,7 +405,7 @@ func (m *Membership) start() {
 		// and we can compare prev and cur.
 		curCount, curMember = pc.getSetAndClear(m.myLoc)
 		//		if m.Cfg.MyRank == 1 {
-		//			p("port %v, k-th (k=%v) round, curMember='%s'", m.myLoc.Port, k, curMember)
+		p("%v, port %v, k-th (k=%v) round, curMember='%s'", time.Now().UTC(), m.myLoc.Port, k, curMember)
 		//		}
 
 		now = time.Now()
@@ -581,12 +594,12 @@ func (pc *pongCollector) receivePong(msg *nats.Msg) {
 	var loc ServerLoc
 	err := loc.fromBytes(msg.Data)
 	if err == nil {
-		pc.from.Amap.insert(&loc)
+		pc.from.DedupTree.insert(&loc)
 	} else {
 		panic(err)
 	}
 
-	//p("port %v, pong collector received '%#v'. pc.from is now '%s'", pc.mship.myLoc.Port, &loc, pc.from)
+	p("%v, port %v, pong collector received '%#v'. pc.from is now '%s'", time.Now().UTC(), pc.mship.myLoc.Port, &loc, pc.from)
 
 	pc.mu.Unlock()
 }
@@ -606,12 +619,12 @@ func (pc *pongCollector) getSetAndClear(myLoc ServerLoc) (int, *members) {
 	pc.clear()
 
 	// add myLoc to pc.from as a part of "reset"
-	pc.from.Amap.insert(&myLoc)
+	pc.from.DedupTree.insert(&myLoc)
 
-	//p("in getSetAndClear, here are the contents of mem.Amap: '%s'", mem.Amap)
+	p("%v, in getSetAndClear, here are the contents of mem.DedupTree: '%s'", time.Now().UTC(), mem.DedupTree)
 
 	// return the old member set
-	return mem.Amap.Len(), mem
+	return mem.DedupTree.Len(), mem
 }
 
 // leaderLeaseExpired evaluates the lease as of now,
@@ -624,10 +637,10 @@ func (pc *pongCollector) getSetAndClear(myLoc ServerLoc) (int, *members) {
 // If expired == false then the we return
 // the current leader in lead.
 //
-// PRE: there are only 0 or 1 leaders in m.Amap
+// PRE: there are only 0 or 1 leaders in m.DedupTree
 //      who have a non-zero LeaseExpires field.
 //
-// If m.Amap is empty, we return (true, nil).
+// If m.DedupTree is empty, we return (true, nil).
 //
 // This method is where the actual "election"
 // happens. See the ServerLocLessThan()
@@ -649,14 +662,14 @@ func (m *members) leaderLeaseExpired(
 		return false, prevLead
 	}
 
-	if m.Amap.Len() == 0 {
-		p("leaderLeaseExpired: m.Amap.Len is 0")
+	if m.DedupTree.Len() == 0 {
+		p("leaderLeaseExpired: m.DedupTree.Len is 0")
 		return false, prevLead
 	}
 
 	// INVAR: any lease has expired.
 
-	lead = m.Amap.minrank()
+	lead = m.DedupTree.minrank()
 	lead.IsLeader = true
 	lead.LeaseExpires = now.Add(leaseLen).UTC()
 
