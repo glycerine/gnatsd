@@ -340,9 +340,9 @@ func (m *Membership) start() {
 		m.elec.setLeader(lead0, now)
 	}
 	firstSeenLead := m.elec.getLeader()
-	if firstSeenLead.Id != "" {
+	if firstSeenLead.Id != m.myLoc.Id {
 
-		m.Cfg.Log.Debugf("health-agent: init: "+
+		m.dlog("health-agent: init: "+
 			"after one heartbeat, "+
 			"we detect current leader '%s'"+
 			" of rank %v with lease "+
@@ -352,7 +352,7 @@ func (m *Membership) start() {
 			firstSeenLead.LeaseExpires.Sub(now),
 		)
 	} else {
-		m.Cfg.Log.Debugf("health-agent: "+
+		m.dlog("health-agent: "+
 			"init: after one heartbeat,"+
 			" no leader found. waiting "+
 			"for a full leader lease "+
@@ -646,7 +646,7 @@ func (pc *pongCollector) receivePong(msg *nats.Msg) {
 	} else {
 		panic(err)
 	}
-	pc.mship.dlog("PONG COLLECTOR RECEIVED ALLCALL REPLY '%s'", &loc)
+	pc.mship.trace("PONG COLLECTOR RECEIVED ALLCALL REPLY '%s'", &loc)
 
 	pc.mu.Unlock()
 }
@@ -663,7 +663,7 @@ func (pc *pongCollector) clear() {
 // back just myLoc
 func (pc *pongCollector) getSetAndClear() (int, *members) {
 
-	mem := pc.fromWithTime.clone()
+	mem := pc.fromNoTime.clone()
 	pc.clear()
 
 	// we don't need to seed, since we'll hear
