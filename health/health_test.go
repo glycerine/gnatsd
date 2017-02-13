@@ -195,8 +195,8 @@ func Test103TiedRanksUseIdAndDoNotAlternate(t *testing.T) {
 
 			cfg := &MembershipCfg{
 				MaxClockSkew: 1 * time.Nanosecond,
-				LeaseTime:    80 * time.Millisecond,
-				BeatDur:      20 * time.Millisecond,
+				LeaseTime:    400 * time.Millisecond,
+				BeatDur:      100 * time.Millisecond,
 				NatsUrl:      fmt.Sprintf("nats://localhost:%v", TEST_PORT),
 				MyRank:       0,
 				historyCount: 10000,
@@ -219,18 +219,19 @@ func Test103TiedRanksUseIdAndDoNotAlternate(t *testing.T) {
 			defer m.Stop()
 		}
 
-		// let them all get past init phase.
-		time.Sleep(3 * (ms[0].Cfg.LeaseTime + ms[0].Cfg.MaxClockSkew))
+		// let them get past init phase.
+		time.Sleep(2 * (ms[0].Cfg.LeaseTime + ms[0].Cfg.MaxClockSkew))
 
 		// verify liveness, a leader exists.
 		p("at %v, verifying everyone thinks there is a leader:", time.Now().UTC())
 		for i := 0; i < n; i++ {
-			fmt.Printf("verifying %v thinks there is a leader\n", i)
-			//			cv.So(ms[i].elec.history.Avail(), cv.ShouldBeGreaterThan, 0)
+			fmt.Printf("verifying %v thinks there is a leader, avail history len= %v\n", i, ms[i].elec.history.Avail())
+			cv.So(ms[i].elec.history.Avail(), cv.ShouldBeGreaterThan, 0)
 		}
 
-		// sleep for 10 lease cycles - check for alternation
-		time.Sleep(20 * (ms[0].Cfg.LeaseTime + ms[0].Cfg.MaxClockSkew))
+		rounds := 10
+		// sleep for rounds lease cycles - check for alternation
+		time.Sleep(time.Duration(rounds+1) * (ms[0].Cfg.LeaseTime + ms[0].Cfg.MaxClockSkew))
 
 		// who should be winner after lease expiration...
 		zeroWins := ServerLocLessThan(&ms[0].myLoc, &ms[1].myLoc, time.Now().Add(time.Hour))
@@ -248,6 +249,7 @@ func Test103TiedRanksUseIdAndDoNotAlternate(t *testing.T) {
 			av := h.Avail()
 			p("ms[j=%v].myLoc.Id = %v", j, ms[j].myLoc.Id)
 			p("av: j=%v, available history len = %v", j, av)
+			cv.So(av, cv.ShouldBeGreaterThan, rounds)
 
 			// prints first:
 			for i := 0; i < av; i++ {
