@@ -544,3 +544,51 @@ func Test106ServerLocLessThan(t *testing.T) {
 		cv.So(ServerLocLessThan(&s1, &s2), cv.ShouldBeTrue)
 	})
 }
+
+func Test107OneNodeAloneWaitsLeaseTermBeforeRenewal(t *testing.T) {
+
+	cv.Convey("Given a cluster of one server, it should elect itself leader and then wait a full lease term before considering who to elect again", t, func() {
+		s := RunServerOnPort(TEST_PORT)
+		defer func() {
+			p("starting gnatsd shutdown...")
+			s.Shutdown()
+		}()
+
+		cfg := &MembershipCfg{
+			MaxClockSkew: 1 * time.Nanosecond,
+			LeaseTime:    100 * time.Millisecond,
+			BeatDur:      30 * time.Millisecond,
+			NatsUrl:      fmt.Sprintf("nats://localhost:%v", TEST_PORT),
+			MyRank:       0,
+			historyCount: 10000,
+		}
+
+		cli, srv, err := NewInternalClientPair()
+		panicOn(err)
+
+		s.InternalCliRegisterCallback(srv)
+		cfg.CliConn = cli
+
+		aLogger := logger.NewStdLogger(micros, debug, trace, colors, pid)
+		_ = aLogger
+		// to follow the prints, uncomment:
+		cfg.Log = aLogger
+
+		m := NewMembership(cfg)
+		err = m.Start()
+		if err != nil {
+			panic(err)
+		}
+		defer func() {
+			m.Stop()
+		}()
+
+		// let it get past init phase.
+		time.Sleep(3 * (m.Cfg.LeaseTime + m.Cfg.MaxClockSkew))
+
+		av := m.elec.history.Avail()
+		fmt.Printf("verifying at most 3 leader changes: %v\n", av)
+		cv.So(av, cv.ShouldBeLessThan, 4)
+
+	})
+}
