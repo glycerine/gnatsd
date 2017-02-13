@@ -183,6 +183,8 @@ func (e *leadHolder) setLeader(sloc *ServerLoc) (slocWon bool, alt ServerLoc) {
 	if !slocWon {
 		return false, e.sloc
 	}
+	p("port %v, 8888888 setLeader is appending to history, before is len %v",
+		e.m.myLoc.Port, e.history.Avail())
 
 	e.sloc = *sloc
 	histcp := *sloc
@@ -490,7 +492,6 @@ func pong(nc *nats.Conn, subj string, msg []byte) {
 // This gives a round-trip connectivity check.
 //
 func (m *Membership) allcall() error {
-	p("port %v, at 777 allcall sent", m.myLoc.Port)
 	// allcall broadcasts the current leader + lease
 	leadby := m.elec.getLeaderAsBytes()
 	return m.nc.PublishRequest(m.subjAllCall, m.subjAllReply, leadby)
@@ -526,8 +527,7 @@ func (pc *pongCollector) receivePong(msg *nats.Msg) {
 		panic(err)
 	}
 
-	p("port %v, pong collector received '%#v'. pc.from is now '%s'",
-		pc.mship.myLoc.Port, &loc, pc.from)
+	//p("port %v, pong collector received '%#v'. pc.from is now '%s'", pc.mship.myLoc.Port, &loc, pc.from)
 
 	pc.mu.Unlock()
 }
@@ -607,6 +607,8 @@ func (m *members) leaderLeaseExpired(
 	lead = sortme[0]
 	lead.IsLeader = true
 	lead.LeaseExpires = now.Add(leaseLen).UTC()
+
+	// debug:
 	p("port %v, leaderLeaseExpired has list of len %v:",
 		mship.myLoc.Port, len(sortme)) // TODO: racy read of mship.myLoc
 	for i := range sortme {
@@ -723,11 +725,9 @@ func (m *Membership) setupNatsClient(pc *pongCollector) (*nats.Conn, error) {
 	})
 
 	nc.Subscribe(m.subjAllCall, func(msg *nats.Msg) {
-		p("port %v, at 888 allcall received", m.myLoc.Port)
 		if m.deaf() {
 			return
 		}
-		p("port %v, at 999 allcall received, not deaf.", m.myLoc.Port)
 		loc, err := nc.ServerLocation()
 		if err != nil {
 			return // try again next time.
@@ -750,13 +750,11 @@ func (m *Membership) setupNatsClient(pc *pongCollector) (*nats.Conn, error) {
 		var lead ServerLoc
 		err = lead.fromBytes(msg.Data)
 		panicOn(err)
-		p("port %v, at 000 allcall received leader: '%s'", m.myLoc.Port, &lead)
 
 		if lead.Id != "" && !lead.LeaseExpires.IsZero() {
 			won, alt := m.elec.setLeader(&lead)
 			if !won {
-				p("port %v, at 111 in allcall handler: !won: rejected '%s' in favor of alt '%s'",
-					m.myLoc.Port, &lead, &alt)
+				//p("port %v, at 111 in allcall handler: !won: rejected '%s' in favor of alt '%s'", m.myLoc.Port, &lead, &alt)
 				// if we rejected, get our preferred leader.
 				lead = alt
 			}
@@ -773,7 +771,6 @@ func (m *Membership) setupNatsClient(pc *pongCollector) (*nats.Conn, error) {
 		hp, err := json.Marshal(loc)
 		panicOn(err)
 		if !m.deaf() {
-			p("port %v, at 222 in allcall handler: replying to allcall with our loc: '%s'", m.myLoc.Port, loc)
 			pong(nc, msg.Reply, hp)
 		}
 	})
