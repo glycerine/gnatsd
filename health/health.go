@@ -205,7 +205,7 @@ func (e *leadHolder) setLeader(sloc *ServerLoc) (slocWon bool, alt ServerLoc) {
 			alt = *sloc
 			e.sloc = *sloc
 
-			p("%v, port %v, 999999 setLeader sees same leader with longer lease, renewing its lease %v\n", now, e.m.myLoc.Port, &e.sloc)
+			p("%v, port %v, 999999 setLeader sees same leader with > lease, renewing its lease %v\n", now, e.m.myLoc.Port, &e.sloc)
 		} else {
 			slocWon = false
 			alt = e.sloc
