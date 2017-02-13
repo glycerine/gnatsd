@@ -714,23 +714,41 @@ func (p byRankThenId) Less(i, j int) bool {
 // then by Rank, Id, Host, and Port; in that order. The
 // longer leaseExpires wins (is less than).
 func ServerLocLessThan(i, j *ServerLoc, now time.Time) bool {
+
 	/*
 		nowu := now.UnixNano()
 		itm := i.LeaseExpires.UnixNano()
 		jtm := j.LeaseExpires.UnixNano()
 
-		// if both are expired, then its a tie.
+		// if both are in force, then
+		// we'll go ahead and force a
+		// choice based on the next
+		// criteria; rank, id, host, port.
+		// This speeds up convergence
+		// massively for the 102 test
+		// of healing after split brain.
+
+		// if both are expired,
+		// or both in force, then its a tie.
 		if jtm <= nowu {
 			jtm = 0
 		}
 		if itm <= nowu {
 			itm = 0
 		}
-		if itm != jtm {
-			return itm > jtm // we want an actual time to sort before a zero-time.
+
+		if (itm == 0 &&
+			jtm == 0) ||
+			(itm > nowu &&
+				jtm > nowu) {
+			// its a tie on leases
+			// proceed to rank
+		} else {
+			// we want an actual time to sort before a zero-time.
+			return itm > jtm
 		}
-		p("both expired")
 	*/
+
 	// recognize empty ServerLoc and sort them high, not low.
 	iempt := i.Id == ""
 	jempt := j.Id == ""

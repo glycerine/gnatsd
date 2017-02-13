@@ -98,7 +98,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 				LeaseTime:    100 * time.Millisecond,
 				BeatDur:      30 * time.Millisecond,
 				NatsUrl:      fmt.Sprintf("nats://localhost:%v", TEST_PORT),
-				MyRank:       i,         //min(1, i), // ranks 0,1,1,1,1,1,...
+				MyRank:       i,         // ranks 0,1,2,3,...
 				deaf:         DEAF_TRUE, // don't ping or pong
 				historyCount: 10000,
 			}
@@ -123,7 +123,9 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 				panic(err)
 			}
 			ms = append(ms, m)
-			defer m.Stop()
+			defer func() {
+				m.Stop()
+			}()
 		}
 
 		// let them all get past init phase.
@@ -146,7 +148,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 
 		// let the laggards get in a few more cycles, so
 		// we get enough history to evaluate.
-		time.Sleep(2 * (ms[0].Cfg.LeaseTime + ms[0].Cfg.MaxClockSkew))
+		time.Sleep(10 * (ms[0].Cfg.LeaseTime + ms[0].Cfg.MaxClockSkew))
 
 		// check that the history from the rank 0
 		// always shows rank 0 as lead.
@@ -189,7 +191,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 			av := h.Avail()
 			//p("ms[j=%v].myLoc.Port = %v has history av = %v", j, ms[j].myLoc.Port, av)
 			cv.So(ms[j].myLoc.Id, cv.ShouldNotEqual, "")
-			cv.So(av, cv.ShouldBeGreaterThan, 6)
+			cv.So(av, cv.ShouldBeGreaterThan, 10)
 			//p("av: available history len = %v", av)
 
 			// prints first:
