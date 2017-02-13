@@ -189,19 +189,33 @@ func (e *leadHolder) setLeader(sloc *ServerLoc, now time.Time) (slocWon bool, al
 	defer e.mu.Unlock()
 
 	if sloc == nil || sloc.Id == "" {
-		//p("port %v, 77777 setLeader is returning false because sloc==nil or sloc.Id==empty string", e.m.myLoc.Port)
+		p("port %v, 77777 setLeader is returning false because sloc==nil or sloc.Id==empty string", e.m.myLoc.Port)
 		return false, e.sloc
 	}
 
-	// check on expired leases: if old is expired
-	// we automatically take the new
+	// check on expired leases
 	nowu := now.UnixNano()
-	curexp := e.sloc.LeaseExpires.UnixNano()
+	cure := e.sloc.LeaseExpires.UnixNano()
+	newe := sloc.LeaseExpires.UnixNano()
+
+	curExpired := cure <= nowu
+	newExpired := newe <= nowu
+	bothExpired := curExpired && newExpired
+
+	if bothExpired {
+		p("%v, port %v, 33333 setLeader is returning false because both new and cur are expired leases.", now, e.m.myLoc.Port)
+		return false, e.sloc
+	}
+	if newExpired {
+		p("%v, port %v, 55555 setLeader is returning false because both new has expired lease.", now, e.m.myLoc.Port)
+		return false, e.sloc
+	}
 
 	var newWon, oldWon bool
-	if curexp <= nowu {
+	if curExpired {
 		newWon = true
 		oldWon = false
+		p("%v, port %v, 44444 setLeader finds old lease expired", now, e.m.myLoc.Port)
 	} else {
 		newWon = ServerLocLessThan(sloc, &e.sloc)
 		oldWon = ServerLocLessThan(&e.sloc, sloc)
@@ -325,7 +339,7 @@ func (m *Membership) start() {
 
 	prevCount, prevMember = pc.getSetAndClear(m.myLoc)
 	now := time.Now().UTC()
-	//p("%v, 0-th round, myLoc:%s, prevMember='%s'", now, &m.myLoc, prevMember)
+	p("%v, 0-th round, myLoc:%s, prevMember='%s'", now, &m.myLoc, prevMember)
 
 	lead0 := prevMember.minrank()
 	if lead0 != nil {
