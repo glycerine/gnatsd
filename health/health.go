@@ -189,42 +189,47 @@ func (e *leadHolder) setLeader(sloc *ServerLoc) (slocWon bool, alt ServerLoc) {
 	defer e.mu.Unlock()
 
 	if sloc == nil || sloc.Id == "" {
-		//if e.m.myLoc.Rank == 1 {
-		//	p("port %v, 77777 setLeader is returning false because sloc==nil or sloc.Id==empty string", e.m.myLoc.Port)
-		//}
+		p("port %v, 77777 setLeader is returning false because sloc==nil or sloc.Id==empty string", e.m.myLoc.Port)
 		return false, e.sloc
 	}
-	//eq := false
-	slocWon = ServerLocLessThan(sloc, &e.sloc)
-	if !slocWon {
-		// equal? still want to record those.
-		if slocEqual(sloc, &e.sloc) {
-			// for history keeping, and the
-			// tests that examine our history,
-			// record that we kept the same
-			// lead.
-			histcp := *sloc
-			e.history.Append(&histcp)
-			//eq = true
-		}
-		//if e.m.myLoc.Rank == 1 {
-		//if eq {
-		//	p("port %v, 999999 setLeader sees same leader update, keeping same but recorded in history.'%s'\nat time %v\n", e.m.myLoc.Port, &e.sloc, now.UTC())
-		//} else {
-		//	p("port %v, 999999 setLeader is failing to update the leader, rejecting the new contendor.\n\nsloc='%s'\n >= \n prev:'%s'\nat time %v\n", e.m.myLoc.Port, sloc, &e.sloc, now.UTC())
-		//}
-		//}
 
-		return false, e.sloc
+	eq := false
+	now := time.Now().UTC()
+	newWon := ServerLocLessThan(sloc, &e.sloc)
+	oldWon := ServerLocLessThan(&e.sloc, sloc)
+	switch {
+	case !newWon && !oldWon:
+		eq = true
+		// they are equal, pick the longer lease
+		// so we allow lease renewal
+		if sloc.LeaseExpires.After(e.sloc.LeaseExpires) {
+			slocWon = true
+			alt = *sloc
+			e.sloc = *sloc
+
+			p("%v, port %v, 999999 setLeader sees same leader with longer lease, renewing its lease %v\n", now, e.m.myLoc.Port, &e.sloc)
+		} else {
+			slocWon = false
+			alt = e.sloc
+
+			p("%v, port %v, 000000 setLeader is failing to update the leader, rejecting the new contendor.\n\nsloc='%s'\n >= \n prev:'%s'\n", now, e.m.myLoc.Port, sloc, &e.sloc)
+		}
+	case newWon:
+		slocWon = true
+		alt = *sloc
+		e.sloc = *sloc
+	default:
+		//oldWon
+		slocWon = false
+		alt = e.sloc
 	}
-	// debug:
-	//	if e.m.myLoc.Rank == 1 {
-	//		p("port %v, 8888888 setLeader is appending to history now len %v: this is new \n\nsloc='%s'\n <\n prev:'%s'\nat time %v\n", e.m.myLoc.Port, e.history.Avail(), sloc, &e.sloc, now.UTC())
-	//	}
-	e.sloc = *sloc
-	histcp := *sloc
-	e.history.Append(&histcp)
-	return true, e.sloc
+
+	if slocWon {
+		histcp := *sloc
+		e.history.Append(&histcp)
+	}
+
+	return
 }
 
 func (e *leadHolder) getLeaderAsBytes() []byte {
@@ -408,10 +413,10 @@ func (m *Membership) start() {
 		curCount, curMember = pc.getSetAndClear(m.myLoc)
 		now = time.Now().UTC()
 		//		if m.Cfg.MyRank == 1 {
-		p("%v, port %v, k-th (k=%v) round counclusion, curMember='%s'", now, m.myLoc.Port, k, curMember)
+		p("%v, port %v, k-th (k=%v) round conclusion, curMember='%s'", now, m.myLoc.Port, k, curMember)
 		//		}
 
-		expired, curLead = curMember.leaderLeaseExpired(
+		expired, curLead = curMember.leaderLeaseCheck(
 			now,
 			m.Cfg.LeaseTime,
 			&lastSeenLead,
@@ -419,10 +424,13 @@ func (m *Membership) start() {
 			m,
 		)
 
-		// tell pong
+		// record in our history
 		won, alt := m.elec.setLeader(curLead)
 		if !won {
+			p("%v, port %v, k-th (k=%v) round conclusion of trying to setLeader: rejected '%s' in favor of '%s'", now, m.myLoc.Port, k, curLead, &alt)
 			curLead = &alt
+		} else {
+			p("%v, port %v, k-th (k=%v) round conclusion of trying to setLeader: accepted as new lead '%s'", now, m.myLoc.Port, k, curLead)
 		}
 
 		loc, _ := m.getNatsServerLocation()
@@ -629,7 +637,7 @@ func (pc *pongCollector) getSetAndClear(myLoc ServerLoc) (int, *members) {
 	return mem.DedupTree.Len(), mem
 }
 
-// leaderLeaseExpired evaluates the lease as of now,
+// leaderLeaseCheck evaluates the lease as of now,
 // and returns the leader or best candiate. Returns
 // expired == true if any prior leader lease has
 // lapsed. In this case we return the best new
@@ -649,7 +657,7 @@ func (pc *pongCollector) getSetAndClear(myLoc ServerLoc) (int, *members) {
 // function below for exactly how
 // we rank candidates.
 //
-func (m *members) leaderLeaseExpired(
+func (m *members) leaderLeaseCheck(
 	now time.Time,
 	leaseLen time.Duration,
 	prevLead *ServerLoc,
@@ -660,12 +668,12 @@ func (m *members) leaderLeaseExpired(
 
 	if prevLead.LeaseExpires.Add(maxClockSkew).After(now) {
 		// honor the leases until they expire
-		//p("leaderLeaseExpired: honoring outstanding lease")
+		//p("leaderLeaseCheck: honoring outstanding lease")
 		return false, prevLead
 	}
 
 	if m.DedupTree.Len() == 0 {
-		p("leaderLeaseExpired: m.DedupTree.Len is 0")
+		p("leaderLeaseCheck: m.DedupTree.Len is 0")
 		return false, prevLead
 	}
 
@@ -677,7 +685,7 @@ func (m *members) leaderLeaseExpired(
 
 	// debug:
 	//	if mship.Cfg.MyRank == 1 {
-	//		p("port %v, leaderLeaseExpired has list of len %v:",
+	//		p("port %v, leaderLeaseCheck has list of len %v:",
 	//			mship.myLoc.Port, len(sortme)) // TODO: racy read of mship.myLoc
 	//		for i := range sortme {
 	//			fmt.Printf("port %v, sortme[%v]=%v\n", mship.myLoc.Port, i, sortme[i])
