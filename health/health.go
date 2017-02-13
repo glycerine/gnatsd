@@ -749,7 +749,7 @@ func (m *Membership) setupNatsClient() error {
 		m.Cfg.Log.Errorf(msg.Error())
 		return msg
 	}
-
+	m.nc = nc
 	loc, err := m.getNatsServerLocation()
 	if err != nil {
 		return err
@@ -863,7 +863,6 @@ func (m *Membership) setupNatsClient() error {
 			string(msg.Data))
 	})
 
-	m.nc = nc
 	return nil
 }
 
