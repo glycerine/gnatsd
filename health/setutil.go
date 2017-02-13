@@ -28,6 +28,10 @@ func (m *members) clear() {
 	m.DedupTree = newRanktree()
 }
 
+func (m *members) minrank() *ServerLoc {
+	return m.DedupTree.minrank()
+}
+
 func (m *members) clone() *members {
 	cp := newMembers()
 	cp.GroupName = m.GroupName

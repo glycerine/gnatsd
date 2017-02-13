@@ -327,6 +327,10 @@ func (m *Membership) start() {
 	now := time.Now().UTC()
 	//p("%v, 0-th round, myLoc:%s, prevMember='%s'", now, &m.myLoc, prevMember)
 
+	lead0 := prevMember.minrank()
+	if lead0 != nil {
+		m.elec.setLeader(lead0, now)
+	}
 	firstSeenLead := m.elec.getLeader()
 	xpire := firstSeenLead.LeaseExpires
 
@@ -345,7 +349,7 @@ func (m *Membership) start() {
 			limit,
 		)
 	} else {
-		m.Cfg.Log.Tracef("health-agent: "+
+		m.Cfg.Log.Debugf("health-agent: "+
 			"init: after one heartbeat,"+
 			" no leader found. waiting "+
 			"for a full leader lease "+
