@@ -19,7 +19,7 @@ import (
 // priority order and deduplicated.
 type ranktree struct {
 	*btree.BTree
-	tex sync.RWMutex
+	tex sync.Mutex
 }
 
 func (a *ServerLoc) Less(than btree.Item) bool {
@@ -44,9 +44,9 @@ func (t *ranktree) present(j *ServerLoc) bool {
 }
 
 func (t *ranktree) minrank() *ServerLoc {
-	t.tex.RLock()
+	t.tex.Lock()
 	min := t.Min()
-	t.tex.RUnlock()
+	t.tex.Unlock()
 
 	if min == nil {
 		return nil
@@ -104,7 +104,14 @@ func (t *ranktree) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// Len() is inherted from the btree
+// Len() is inherted from the btree,
+// but isn't protected by mutex.
+func (t *ranktree) size() int {
+	t.tex.Lock()
+	n := t.Len()
+	t.tex.Unlock()
+	return n
+}
 
 // return a minus b, where a and b are sets.
 func setDiff(a, b *members, curLead *ServerLoc) *members {
