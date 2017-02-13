@@ -186,6 +186,7 @@ func (e *leadHolder) setLeader(sloc *ServerLoc) (slocWon bool, alt ServerLoc) {
 		}
 		return false, e.sloc
 	}
+	eq := false
 	now := time.Now()
 	slocWon = ServerLocLessThan(sloc, &e.sloc, now)
 	if !slocWon {
@@ -197,9 +198,14 @@ func (e *leadHolder) setLeader(sloc *ServerLoc) (slocWon bool, alt ServerLoc) {
 			// lead.
 			histcp := *sloc
 			e.history.Append(&histcp)
+			eq = true
 		}
 		if e.m.myLoc.Rank == 0 {
-			p("port %v, 999999 setLeader is failing to update the leader, rejecting the new contendor.\n\nsloc='%s'\n >= \n prev:'%s'\nat time %v\n", e.m.myLoc.Port, sloc, &e.sloc, now.UTC())
+			if eq {
+				p("port %v, 999999 setLeader sees same leader update, keeping same but recorded in history.'%s'\nat time %v\n", e.m.myLoc.Port, &e.sloc, now.UTC())
+			} else {
+				p("port %v, 999999 setLeader is failing to update the leader, rejecting the new contendor.\n\nsloc='%s'\n >= \n prev:'%s'\nat time %v\n", e.m.myLoc.Port, sloc, &e.sloc, now.UTC())
+			}
 		}
 
 		return false, e.sloc
