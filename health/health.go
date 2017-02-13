@@ -180,11 +180,19 @@ func (e *leadHolder) setLeader(sloc *ServerLoc) (slocWon bool, alt ServerLoc) {
 	defer e.mu.Unlock()
 
 	if sloc == nil || sloc.Id == "" {
+		// debug
+		if e.m.myLoc.Rank == 0 {
+			p("port %v, 77777 setLeader is returning false because sloc==nil or sloc.Id==empty string", e.m.myLoc.Port)
+		}
 		return false, e.sloc
 	}
 	now := time.Now()
 	slocWon = ServerLocLessThan(sloc, &e.sloc, now)
 	if !slocWon {
+		if e.m.myLoc.Rank == 0 {
+			p("port %v, 999999 setLeader is failing to update the leader, rejecting the new contendor.\n\nsloc='%s'\n <\n prev:'%s'\nat time %v\n", e.m.myLoc.Port, sloc, &e.sloc, now.UTC())
+		}
+
 		return false, e.sloc
 	}
 	// debug:
@@ -278,7 +286,9 @@ func (m *Membership) start() {
 	}
 
 	prevCount, prevMember = pc.getSetAndClear(m.myLoc)
-	p("port %v, 0-th round, prevMember='%s'", m.myLoc.Port, prevMember)
+	if m.Cfg.MyRank == 0 {
+		p("port %v, 0-th round, prevMember='%s'", m.myLoc.Port, prevMember)
+	}
 
 	now := time.Now()
 
@@ -371,7 +381,9 @@ func (m *Membership) start() {
 		// cur responses should be back by now
 		// and we can compare prev and cur.
 		curCount, curMember = pc.getSetAndClear(m.myLoc)
-		p("port %v, k-th (k=%v) round, curMember='%s'", m.myLoc.Port, k, curMember)
+		if m.Cfg.MyRank == 0 {
+			p("port %v, k-th (k=%v) round, curMember='%s'", m.myLoc.Port, k, curMember)
+		}
 
 		now = time.Now()
 		expired, curLead = curMember.leaderLeaseExpired(
