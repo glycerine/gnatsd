@@ -608,7 +608,7 @@ func (pc *pongCollector) getSetAndClear(myLoc ServerLoc) (int, *members) {
 	// add myLoc to pc.from as a part of "reset"
 	pc.from.Amap.insert(&myLoc)
 
-	p("in getSetAndClear, here are the contents of mem.Amap: '%s'", mem.Amap)
+	//p("in getSetAndClear, here are the contents of mem.Amap: '%s'", mem.Amap)
 
 	// return the old member set
 	return mem.Amap.Len(), mem

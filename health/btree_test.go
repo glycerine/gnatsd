@@ -21,3 +21,17 @@ func Test201BtreeInsertDisplay(t *testing.T) {
 		t.Fatalf("missing serialization of set elements")
 	}
 }
+
+func Test202BtreeEqual(t *testing.T) {
+	s1 := &ServerLoc{Id: "abc"}
+	s2 := &ServerLoc{Id: "xyz"}
+	r := newRanktree()
+	r.insert(s2)
+	r.insert(s1)
+
+	s := r.clone()
+	same := setsEqual(&members{Amap: s}, &members{Amap: r})
+	if !same {
+		t.Fatalf("expected setsEqual to be true")
+	}
+}

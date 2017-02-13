@@ -36,6 +36,7 @@ func (t *ranktree) insert(j *ServerLoc) {
 	t.tex.Unlock()
 }
 
+// present locks, Has does not.
 func (t *ranktree) present(j *ServerLoc) bool {
 	t.tex.Lock()
 	b := t.Has(j)
@@ -157,7 +158,7 @@ func setsEqual(a, b *members) bool {
 	missing := false
 	a.Amap.AscendLessThan(&ServerLoc{}, func(item btree.Item) bool {
 		v := item.(*ServerLoc)
-		if !b.Amap.present(v) {
+		if !b.Amap.Has(v) {
 			missing = true
 			return false // stop iterating
 		}
