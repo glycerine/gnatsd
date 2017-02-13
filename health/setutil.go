@@ -2,7 +2,6 @@ package health
 
 import (
 	"fmt"
-	"reflect"
 )
 
 // utilities and sets stuff
@@ -60,8 +59,4 @@ func (m *members) mustJsonBytes() []byte {
 	by, err := m.DedupTree.MarshalJSON()
 	panicOn(err)
 	return by
-}
-
-func slocEqual(a, b *ServerLoc) bool {
-	return reflect.DeepEqual(a, b)
 }

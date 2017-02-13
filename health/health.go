@@ -24,42 +24,6 @@ import (
 //
 const sysMemberPrefix = "_nats.cluster.members."
 
-// ServerLoc conveys to interested parties
-// the Id and location of one gnatsd
-// server in the cluster.
-type ServerLoc struct {
-	Id   string `json:"serverId"`
-	Host string `json:"host"`
-	Port int    `json:"port"`
-
-	// Are we the leader?
-	IsLeader bool `json:"leader"`
-
-	// LeaseExpires is zero for any
-	// non-leader. For the leader,
-	// LeaseExpires tells you when
-	// the leaders lease expires.
-	LeaseExpires time.Time `json:"leaseExpires"`
-
-	// lower rank is leader until lease
-	// expires. Ties are broken by Id.
-	// Rank should be assignable on the
-	// gnatsd command line with -rank to
-	// let the operator prioritize
-	// leadership for certain hosts.
-	Rank int `json:"rank"`
-}
-
-func (s *ServerLoc) String() string {
-	by, err := json.Marshal(s)
-	panicOn(err)
-	return string(by)
-}
-
-func (s *ServerLoc) fromBytes(by []byte) error {
-	return json.Unmarshal(by, s)
-}
-
 // Membership tracks the nats server cluster
 // membership, issuing health checks and
 // choosing a leader.
@@ -440,7 +404,7 @@ func (m *Membership) start() {
 		// and we can compare prev and cur.
 		curCount, curMember = pc.getSetAndClear(m.myLoc)
 		now = time.Now().UTC()
-		//p("%v, port %v, k-th (k=%v) round conclusion, curMember='%s'", now, m.myLoc.Port, k, curMember)
+		p("%v, port %v, k-th (k=%v) round conclusion, curMember='%s'", now, m.myLoc.Port, k, curMember)
 
 		expired, curLead = curMember.leaderLeaseCheck(
 			now,
@@ -450,13 +414,15 @@ func (m *Membership) start() {
 			m,
 		)
 
-		// record in our history
-		won, alt := m.elec.setLeader(curLead, now)
-		if !won {
-			//p("%v, port %v, k-th (k=%v) round conclusion of trying to setLeader: rejected '%s' in favor of '%s'", now, m.myLoc.Port, k, curLead, &alt)
-			curLead = &alt
-		} else {
-			//p("%v, port %v, k-th (k=%v) round conclusion of trying to setLeader: accepted as new lead '%s'", now, m.myLoc.Port, k, curLead)
+		if expired {
+			// record in our history
+			won, alt := m.elec.setLeader(curLead, now)
+			if !won {
+				p("%v, port %v, k-th (k=%v) round conclusion of trying to setLeader: rejected '%s' in favor of '%s'", now, m.myLoc.Port, k, curLead, &alt)
+				curLead = &alt
+			} else {
+				p("%v, port %v, k-th (k=%v) round conclusion of trying to setLeader: accepted as new lead '%s'", now, m.myLoc.Port, k, curLead)
+			}
 		}
 
 		// logging
@@ -895,30 +861,15 @@ func (m *Membership) setupNatsClient() error {
 				loc))
 		}
 
-		/*
-			// allcall broadcasts the sender's leader
-			var lead ServerLoc
-			err = lead.fromBytes(msg.Data)
-			panicOn(err)
+		loc2 := natsLocConvert(loc)
 
-			if lead.Id != "" && !lead.LeaseExpires.IsZero() {
-				won, alt := m.elec.setLeader(&lead)
-				if !won {
-					//p("port %v, at 111 in allcall handler: !won: rejected '%s' in favor of alt '%s'", m.myLoc.Port, &lead, &alt)
-					// if we rejected, get our preferred leader.
-					lead = alt
-				}
+		// if we are the current lead, let the caller know.
+		lead := m.elec.getLeader()
+		if slocEqual(&lead, loc2) {
+			loc2.LeaseExpires = lead.LeaseExpires
+		}
 
-				if loc.Id == lead.Id {
-					loc.IsLeader = true
-					loc.LeaseExpires = lead.LeaseExpires
-				} else {
-					loc.IsLeader = false
-					loc.LeaseExpires = time.Time{}
-				}
-			}
-		*/
-		hp, err := json.Marshal(loc)
+		hp, err := json.Marshal(loc2)
 		panicOn(err)
 		if !m.deaf() {
 			pong(nc, msg.Reply, hp)
