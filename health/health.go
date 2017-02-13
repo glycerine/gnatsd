@@ -337,26 +337,19 @@ func (m *Membership) start() {
 
 	lead0 := prevMember.minrank()
 	if lead0 != nil {
-		p("setting lead to lead0 = %v", lead0)
 		m.elec.setLeader(lead0, now)
 	}
 	firstSeenLead := m.elec.getLeader()
-	xpire := firstSeenLead.LeaseExpires
-
-	limit := xpire.Add(m.Cfg.MaxClockSkew)
-	p("xpire=%v, limit=%v", xpire, limit)
-	if !xpire.IsZero() && limit.After(now) {
+	if firstSeenLead.Id != "" {
 
 		m.Cfg.Log.Debugf("health-agent: init: "+
 			"after one heartbeat, "+
 			"we detect current leader '%s'"+
-			" of rank %v with lease good "+
-			"for %v until expiration + "+
-			"maxClockSkew=='%v'",
+			" of rank %v with lease "+
+			"for %v",
 			firstSeenLead.Id,
 			firstSeenLead.Rank,
-			limit.Sub(now),
-			limit,
+			time.Now().UTC().Sub(firstSeenLead.LeaseExpires),
 		)
 	} else {
 		m.Cfg.Log.Debugf("health-agent: "+
@@ -653,6 +646,7 @@ func (pc *pongCollector) receivePong(msg *nats.Msg) {
 	} else {
 		panic(err)
 	}
+	pc.mship.dlog("PONG COLLECTOR RECEIVED ALLCALL REPLY '%s'", &loc)
 
 	pc.mu.Unlock()
 }
