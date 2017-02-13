@@ -1,6 +1,7 @@
 package health
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"testing"
@@ -290,4 +291,99 @@ func max(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func Test104RecevieOwnSends(t *testing.T) {
+
+	cv.Convey("If we transmit on a topic we are subscribed to, then we should receive our own send.", t, func() {
+
+		s := RunServerOnPort(TEST_PORT)
+		defer func() {
+			p("starting gnatsd shutdown...")
+			s.Shutdown()
+		}()
+		cli, srv, err := NewInternalClientPair()
+		panicOn(err)
+		s.InternalCliRegisterCallback(srv)
+
+		cfg := &MembershipCfg{
+			CliConn:      cli,
+			MaxClockSkew: 1 * time.Nanosecond,
+			LeaseTime:    30 * time.Millisecond,
+			BeatDur:      10 * time.Millisecond,
+			NatsUrl:      fmt.Sprintf("nats://localhost:%v", TEST_PORT),
+			MyRank:       0,
+		}
+
+		aLogger := logger.NewStdLogger(micros, true, trace, colors, pid)
+		cfg.Log = aLogger
+
+		m := NewMembership(cfg)
+
+		// like m.Start() but manually:
+		m.Cfg.SetDefaults()
+
+		// unroll setupNatsClient...
+
+		discon := func(nc *nats.Conn) {
+			m.Cfg.Log.Tracef("health-agent: Disconnected from nats!")
+		}
+		optdis := nats.DisconnectHandler(discon)
+		norand := nats.DontRandomize()
+
+		recon := func(nc *nats.Conn) {
+			loc, err := nc.ServerLocation()
+			panicOn(err)
+			m.Cfg.Log.Tracef("health-agent: Reconnect to nats!: loc = '%s'", loc)
+		}
+		optrecon := nats.ReconnectHandler(recon)
+
+		opts := []nats.Option{optdis, optrecon, norand}
+		if m.Cfg.CliConn != nil {
+			opts = append(opts, nats.Dialer(&m.Cfg))
+		}
+
+		nc, err := nats.Connect(m.Cfg.NatsUrl, opts...)
+		panicOn(err)
+
+		loc, err := nc.ServerLocation()
+		panicOn(err)
+
+		m.setLoc(loc)
+		m.Cfg.Log.Debugf("health-agent: HELLOWORLD: "+
+			"I am '%s' at '%v:%v'. "+
+			"rank %v",
+			m.myLoc.Id,
+			m.myLoc.Host,
+			m.myLoc.Port,
+			m.myLoc.Rank)
+
+		m.subjAllCall = sysMemberPrefix + "allcall"
+		m.subjAllReply = sysMemberPrefix + "allreply"
+		m.subjMemberLost = sysMemberPrefix + "lost"
+		m.subjMemberAdded = sysMemberPrefix + "added"
+		m.subjMembership = sysMemberPrefix + "list"
+		m.nc = nc
+
+		gotAllCall := make(chan bool)
+		repliedInAllCall := make(chan bool)
+		gotAllRep := make(chan bool)
+		nc.Subscribe(m.subjAllReply, func(msg *nats.Msg) {
+			p("I received on subjAllReply: msg='%#v'", msg)
+			close(gotAllRep)
+		})
+
+		nc.Subscribe(m.subjAllCall, func(msg *nats.Msg) {
+			close(gotAllCall)
+			p("test104, port %v, at 999 allcall received, not deaf.", m.myLoc.Port)
+			loc, err := nc.ServerLocation()
+			panicOn(err)
+			hp, err := json.Marshal(loc)
+			panicOn(err)
+			p("test104, port %v, at 222 in allcall handler: replying to allcall with our loc: '%s'", m.myLoc.Port, loc)
+			pong(nc, msg.Reply, hp)
+			close(repliedInAllCall)
+		})
+
+	})
 }

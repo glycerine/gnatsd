@@ -260,6 +260,7 @@ func (m *Membership) start(nc *nats.Conn, pc *pongCollector) {
 	}
 
 	prevCount, prevMember = pc.getSetAndClear(m.myLoc)
+	p("port %v, 0-th round, prevMember='%s'", m.myLoc.Port, prevMember)
 
 	now := time.Now()
 
@@ -300,7 +301,9 @@ func (m *Membership) start(nc *nats.Conn, pc *pongCollector) {
 	var prevLead *ServerLoc
 	var nextLeadReportTm time.Time
 
+	k := 0
 	for {
+		k++
 		// NB: replies to an
 		// allcall can/will change
 		// what the current leader
@@ -328,6 +331,8 @@ func (m *Membership) start(nc *nats.Conn, pc *pongCollector) {
 		// cur responses should be back by now
 		// and we can compare prev and cur.
 		curCount, curMember = pc.getSetAndClear(m.myLoc)
+		p("port %v, k-th (k=%v) round, curMember='%s'",
+			m.myLoc.Port, k, curMember)
 
 		now = time.Now()
 		expired, curLead = curMember.leaderLeaseExpired(
@@ -469,7 +474,8 @@ func (m *Membership) start(nc *nats.Conn, pc *pongCollector) {
 func pong(nc *nats.Conn, subj string, msg []byte) {
 	err := nc.Publish(subj, msg)
 	panicOn(err)
-	nc.FlushTimeout(2 * time.Second)
+	nc.Flush()
+	//nc.FlushTimeout(2 * time.Second)
 	// ignore error on nc.Flush().
 	// might be: nats: connection closed on shutdown.
 }
@@ -747,6 +753,8 @@ func (m *Membership) setupNatsClient(pc *pongCollector) (*nats.Conn, error) {
 		if lead.Id != "" && !lead.LeaseExpires.IsZero() {
 			won, alt := m.elec.setLeader(&lead)
 			if !won {
+				p("port %v, at 111 in allcall handler: !won: rejected '%s' in favor of alt '%s'",
+					m.myLoc.Port, &lead, &alt)
 				// if we rejected, get our preferred leader.
 				lead = alt
 			}
@@ -763,6 +771,7 @@ func (m *Membership) setupNatsClient(pc *pongCollector) (*nats.Conn, error) {
 		hp, err := json.Marshal(loc)
 		panicOn(err)
 		if !m.deaf() {
+			p("port %v, at 222 in allcall handler: replying to allcall with our loc: '%s'", m.myLoc.Port, loc)
 			pong(nc, msg.Reply, hp)
 		}
 	})
