@@ -44,7 +44,7 @@ func main() {
 	const micros, pid = true, true
 	const trace = true
 	const debug = true
-	aLogger := logger.NewStdLogger(micros, debug, trace, colors, pid)
+	aLogger := logger.NewStdLogger(micros, debug, trace, colors, pid, log.LUTC)
 
 	cfg := &health.MembershipCfg{
 		NatsUrl: "nats://" + args[0], // "nats://127.0.0.1:4222"

@@ -1,6 +1,7 @@
 package health
 
 import (
+	"log"
 	"net"
 	"time"
 
@@ -66,7 +67,7 @@ func (cfg *MembershipCfg) SetDefaults() {
 	}
 	if cfg.Log == nil {
 		// stderr
-		cfg.Log = logger.NewStdLogger(micros, debug, trace, colors, pid)
+		cfg.Log = logger.NewStdLogger(micros, debug, trace, colors, pid, log.LUTC)
 	}
 }
 

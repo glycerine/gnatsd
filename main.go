@@ -235,7 +235,7 @@ func configureLogger(s *server.Server, opts *server.Options) {
 	var log server.Logger
 
 	if opts.LogFile != "" {
-		log = logger.NewFileLogger(opts.LogFile, opts.Logtime, opts.Debug, opts.Trace, true)
+		log = logger.NewFileLogger(opts.LogFile, opts.Logtime, opts.Debug, opts.Trace, true, 0)
 	} else if opts.RemoteSyslog != "" {
 		log = logger.NewRemoteSysLogger(opts.RemoteSyslog, opts.Debug, opts.Trace)
 	} else if opts.Syslog {
@@ -248,7 +248,7 @@ func configureLogger(s *server.Server, opts *server.Options) {
 		if err != nil || (stat.Mode()&os.ModeCharDevice) == 0 {
 			colors = false
 		}
-		log = logger.NewStdLogger(opts.Logtime, opts.Debug, opts.Trace, colors, true)
+		log = logger.NewStdLogger(opts.Logtime, opts.Debug, opts.Trace, colors, true, 0)
 	}
 
 	s.SetLogger(log, opts.Debug, opts.Trace)
