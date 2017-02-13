@@ -56,6 +56,14 @@ type Membership struct {
 	needReconnect chan bool
 }
 
+func (m *Membership) trace(f string, arg ...interface{}) {
+	m.Cfg.Log.Tracef(fmt.Sprintf("my.Port:%v. ", m.myLoc.Port)+f, arg...)
+}
+
+func (m *Membership) dlog(f string, arg ...interface{}) {
+	m.Cfg.Log.Debugf(fmt.Sprintf("my.Port:%v. ", m.myLoc.Port)+f, arg...)
+}
+
 func (m *Membership) getMyLocWithAnyLease() ServerLoc {
 	m.mu.Lock()
 	myLoc := m.myLoc
@@ -589,7 +597,7 @@ func pong(nc *nats.Conn, subj string, msg []byte) {
 //
 func (m *Membership) allcall() error {
 	lead := m.elec.getLeader()
-	p("%v, port %v, ISSUING ALLCALL on '%s' with leader '%s'\n", time.Now().UTC(), m.myLoc.Port, m.subjAllCall, lead)
+	p("%v, port %v, ISSUING ALLCALL on '%s' with leader '%s'\n", time.Now().UTC(), m.myLoc.Port, m.subjAllCall, &lead)
 
 	leadby, err := json.Marshal(&lead)
 	panicOn(err)
@@ -838,7 +846,8 @@ func (m *Membership) setupNatsClient() error {
 
 	// allcall says: "who is out there? Are you a lead?"
 	nc.Subscribe(m.subjAllCall, func(msg *nats.Msg) {
-		p("%v, port %v, ALLCALL RECEIVED. \n", time.Now().UTC(), m.myLoc.Port)
+		p("%v, port %v, ALLCALL RECEIVED. msg:'%s' \n",
+			time.Now().UTC(), m.myLoc.Port, string(msg.Data))
 		if m.deaf() {
 			return
 		}
@@ -870,7 +879,7 @@ func (m *Membership) setupNatsClient() error {
 		hp, err := json.Marshal(&locWithLease)
 		panicOn(err)
 		if !m.deaf() {
-			p("%v, port %v, REPLYING TO ALLCALL on '%s' with my details: '%s'\n", time.Now().UTC(), locWithLease.Port, msg.Reply, locWithLease)
+			m.dlog("REPLYING TO ALLCALL on '%s' with my details: '%s'", msg.Reply, &locWithLease)
 			pong(nc, msg.Reply, hp)
 		}
 	})
