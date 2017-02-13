@@ -188,7 +188,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 			av := h.Avail()
 			p("ms[j=%v].myLoc.Port = %v has history av = %v", j, ms[j].myLoc.Port, av)
 			cv.So(ms[j].myLoc.Id, cv.ShouldNotEqual, "")
-			cv.So(av, cv.ShouldBeGreaterThan, 8)
+			cv.So(av, cv.ShouldBeGreaterThan, 6)
 			p("av: available history len = %v", av)
 
 			// prints first:
@@ -198,19 +198,24 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 				fmt.Printf("history print i = %v. sloc.Id=%v / sloc.Rank=%v, port=%v\n", i, sloc.Id, sloc.Rank, sloc.Port)
 			}
 			// checks second:
-			for i := 0; i < av; i++ {
+
+			// after the preample of leases, everybody
+			// should have chosen the rank 0 leader.
+			// start scanning from 4,5,6,...
+			for i := 4; i < av; i++ {
 				sloc := h.A[h.Kth(i)].(*ServerLoc)
-				fmt.Printf("history check Id at i = %v. sloc.Port=%v vs.  ms[0].myLoc.Port=%v\n", i, sloc.Port, ms[0].myLoc.Port)
+				fmt.Printf("j=%v, history check Id at i = %v. sloc.Port=%v vs.  ms[0].myLoc.Port=%v\n", j, i, sloc.Port, ms[0].myLoc.Port)
 				// ports will be the only thing different when
 				// running off of the one gnatsd that has the
 				// same rank and Id for all clients.
-				//cv.So(sloc.Port, cv.ShouldEqual, ms[j].myLoc.Port)
+				cv.So(sloc.Port, cv.ShouldEqual, ms[0].myLoc.Port)
 			}
 
-			for i := 0; i < av; i++ {
+			for i := 4; i < av; i++ {
 				sloc := h.A[h.Kth(i)].(*ServerLoc)
-				p("history check Rank at i = %v. sloc.Rank=%v", i, sloc.Rank)
-				//cv.So(sloc.Rank, cv.ShouldEqual, 0)
+				p("j=%v history check Rank at i = %v. sloc.Rank=%v",
+					j, i, sloc.Rank)
+				cv.So(sloc.Rank, cv.ShouldEqual, 0)
 			}
 		}
 	})
