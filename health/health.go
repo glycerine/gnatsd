@@ -79,6 +79,19 @@ func (m *Membership) getMyLocWithAnyLease() AgentLoc {
 	return myLoc
 }
 
+func (m *Membership) getMyLocWithZeroLease() AgentLoc {
+	m.mu.Lock()
+	myLoc := m.myLoc
+	m.mu.Unlock()
+	myLoc.LeaseExpires = time.Time{}
+	myLoc.IsLeader = false
+	return myLoc
+}
+
+// deaf means we don't ping or pong.
+// It is used to simulate network
+// partition and healing.
+//
 func (m *Membership) deaf() bool {
 	v := atomic.LoadInt64(&m.Cfg.deaf)
 	return v == DEAF_TRUE
@@ -599,12 +612,18 @@ func (pc *pongCollector) getSetAndClear() (int, *members) {
 	mem := pc.fromNoTime.clone()
 	pc.clear()
 
-	// we don't need to seed, since we'll hear
-	// our own allcall.
+	// we don't necessarily need to seed,
+	// since we'll hear our own allcall.
+	// But we may want to seed in case
+	// the connection to gnatsd is down
+	// This happens under test when we
+	// are deaf. Hence we seed so we
+	// can elect ourselves when the
+	// connection to gnatsd is not available.
 	//
-	// //add myLoc to pc.from as a part of "reset"
-	//	myLoc := pc.mship.getMyLocWithAnyLease()
-	//	pc.from.DedupTree.insert(&myLoc)
+	// add myLoc to pc.from as a part of the reset:
+	myLoc := pc.mship.getMyLocWithZeroLease()
+	pc.insert(myLoc)
 
 	pc.mship.trace("in getSetAndClear, here are the contents of mem.DedupTree: '%s'", mem.DedupTree)
 

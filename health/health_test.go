@@ -83,7 +83,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 			s.Shutdown()
 		}()
 
-		n := 20
+		n := 2
 		tot := 50
 		pause := make([]int, n)
 		for i := 0; i < n; i++ {
@@ -133,9 +133,9 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 		time.Sleep(4 * (ms[0].Cfg.LeaseTime + ms[0].Cfg.MaxClockSkew))
 
 		// verify liveness, a leader exists.
-		//p("verifying everyone thinks there is a leader:")
+		p("verifying everyone thinks there is a leader:")
 		for i := 0; i < n; i++ {
-			fmt.Printf("verifying %v thinks there is a leader\n", i)
+			fmt.Printf("verifying %v thinks there is a leader. avail = %v\n", i, ms[i].elec.history.Avail())
 			cv.So(ms[i].elec.history.Avail(), cv.ShouldBeGreaterThan, 0)
 		}
 

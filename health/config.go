@@ -75,8 +75,9 @@ const colors = false
 const micros, pid = true, true
 const trace = false
 
-//const debug = true
-const debug = false
+const debug = true
+
+//const debug = false
 
 func (cfg *MembershipCfg) Dial(network, address string) (net.Conn, error) {
 	return cfg.CliConn, nil
