@@ -19,24 +19,22 @@ func panicOn(err error) {
 }
 
 type members struct {
-	GroupName string    `json:"GroupName"`
 	DedupTree *ranktree `json:"Mem"`
 }
 
-func (m *members) insert(s *ServerLoc) {
+func (m *members) insert(s ServerLoc) {
 	m.DedupTree.insert(s)
 }
 func (m *members) clear() {
 	m.DedupTree = newRanktree()
 }
 
-func (m *members) minrank() *ServerLoc {
+func (m *members) minrank() ServerLoc {
 	return m.DedupTree.minrank()
 }
 
 func (m *members) clone() *members {
 	cp := newMembers()
-	cp.GroupName = m.GroupName
 	if m.DedupTree == nil {
 		return cp
 	}

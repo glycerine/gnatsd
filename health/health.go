@@ -169,11 +169,11 @@ func (e *leadHolder) getLeader() ServerLoc {
 // then alt contains a copy of sloc. We
 // return a value in alt to avoid data races.
 //
-func (e *leadHolder) setLeader(sloc *ServerLoc, now time.Time) (slocWon bool, alt ServerLoc) {
+func (e *leadHolder) setLeader(sloc ServerLoc, now time.Time) (slocWon bool, alt ServerLoc) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	if sloc == nil || sloc.Id == "" {
+	if sloc.Id == "" {
 		e.m.trace("setLeader returning false because sloc==nil or sloc.Id==\"\"")
 		return false, e.sloc
 	}
@@ -196,8 +196,8 @@ func (e *leadHolder) setLeader(sloc *ServerLoc, now time.Time) (slocWon bool, al
 		return false, e.sloc
 
 	case neitherExpired:
-		newWon = ServerLocLessThan(sloc, &e.sloc)
-		oldWon = ServerLocLessThan(&e.sloc, sloc)
+		newWon = ServerLocLessThan(&sloc, &e.sloc)
+		oldWon = ServerLocLessThan(&e.sloc, &sloc)
 
 	case newExpired:
 		e.m.trace("55555 setLeader is returning false because new has expired lease.")
@@ -215,8 +215,8 @@ func (e *leadHolder) setLeader(sloc *ServerLoc, now time.Time) (slocWon bool, al
 		// so we allow lease renewal
 		if sloc.LeaseExpires.After(e.sloc.LeaseExpires) {
 			slocWon = true
-			alt = *sloc
-			e.sloc = *sloc
+			alt = sloc
+			e.sloc = sloc
 
 			e.m.trace("999999 setLeader: same leader, > lease, renewing lease for %v\n", &e.sloc)
 		} else {
@@ -227,8 +227,8 @@ func (e *leadHolder) setLeader(sloc *ServerLoc, now time.Time) (slocWon bool, al
 		}
 	case newWon:
 		slocWon = true
-		alt = *sloc
-		e.sloc = *sloc
+		alt = sloc
+		e.sloc = sloc
 
 		e.m.trace("11111 setLeader updated the leader, accepting new proposal.\n\nsloc='%s'\n < \n prev:'%s'\n", sloc, &e.sloc)
 
@@ -240,7 +240,7 @@ func (e *leadHolder) setLeader(sloc *ServerLoc, now time.Time) (slocWon bool, al
 
 	// update history
 	if slocWon {
-		histcp := *sloc
+		histcp := sloc
 		e.history.Append(&histcp)
 	}
 
@@ -295,7 +295,7 @@ func (m *Membership) start() {
 	prevCount, curCount := 0, 0
 	prevMember := newMembers()
 	var curMember *members
-	var curLead *ServerLoc
+	var curLead ServerLoc
 
 	/*
 		// do an initial allcall() to discover any
@@ -384,7 +384,7 @@ func (m *Membership) start() {
 	var err error
 	var now time.Time
 	var expired bool
-	var prevLead *ServerLoc
+	var prevLead ServerLoc
 	var nextLeadReportTm time.Time
 
 	k := -1
@@ -439,7 +439,7 @@ func (m *Membership) start() {
 		expired, curLead = curMember.leaderLeaseCheck(
 			now,
 			m.Cfg.LeaseTime,
-			&lastSeenLead,
+			lastSeenLead,
 			m.Cfg.MaxClockSkew,
 			m,
 		)
@@ -449,7 +449,7 @@ func (m *Membership) start() {
 			won, alt := m.elec.setLeader(curLead, now)
 			if !won {
 				m.trace("k-th (k=%v) round conclusion of trying to setLeader: rejected '%s' in favor of '%s'", k, curLead, &alt)
-				curLead = &alt
+				curLead = alt
 			} else {
 				m.trace("k-th (k=%v) round conclusion of trying to setLeader: accepted as new lead '%s'", k, curLead)
 			}
@@ -461,7 +461,7 @@ func (m *Membership) start() {
 			if loc.Id == curLead.Id {
 
 				if now.After(nextLeadReportTm) ||
-					prevLead == nil ||
+					prevLead.Id == "" ||
 					prevLead.Id != curLead.Id {
 
 					left := curLead.LeaseExpires.Sub(now)
@@ -478,8 +478,7 @@ func (m *Membership) start() {
 					nextLeadReportTm = now.Add(left).Add(m.Cfg.MaxClockSkew)
 				}
 			} else {
-				if prevLead != nil &&
-					prevLead.Id == loc.Id {
+				if prevLead.Id == loc.Id {
 
 					m.dlog("health-agent: "+
 						"I am no longer lead, "+
@@ -492,9 +491,8 @@ func (m *Membership) start() {
 						curLead.LeaseExpires.Sub(now))
 
 				} else {
-					if curLead != nil &&
-						(nextLeadReportTm.IsZero() ||
-							now.After(nextLeadReportTm)) {
+					if nextLeadReportTm.IsZero() ||
+						now.After(nextLeadReportTm) {
 
 						left := curLead.LeaseExpires.Sub(now)
 						if curLead.Id == "" {
@@ -521,8 +519,8 @@ func (m *Membership) start() {
 			}
 		}
 
-		lost := setDiff(prevMember, curMember, curLead)
-		gained := setDiff(curMember, prevMember, curLead)
+		lost := setDiff(prevMember, curMember)
+		gained := setDiff(curMember, prevMember)
 		same := setsEqual(prevMember, curMember)
 
 		if same {
@@ -631,13 +629,13 @@ func (m *Membership) newPongCollector() *pongCollector {
 	}
 }
 
-func (pc *pongCollector) insert(sloc *ServerLoc) {
+func (pc *pongCollector) insert(sloc ServerLoc) {
 	// insert into both our trees, one
 	// keeping the lease time, the other not.
-	cp := *sloc
+	cp := sloc
 	cp.LeaseExpires = time.Time{}
 	cp.IsLeader = false
-	pc.fromNoTime.insert(&cp)
+	pc.fromNoTime.insert(cp)
 
 	pc.fromWithTime.insert(sloc)
 }
@@ -651,7 +649,7 @@ func (pc *pongCollector) receivePong(msg *nats.Msg) {
 	var loc ServerLoc
 	err := loc.fromBytes(msg.Data)
 	if err == nil {
-		pc.insert(&loc)
+		pc.insert(loc)
 	} else {
 		panic(err)
 	}
@@ -711,11 +709,11 @@ func (pc *pongCollector) getSetAndClear() (int, *members) {
 func (mems *members) leaderLeaseCheck(
 	now time.Time,
 	leaseLen time.Duration,
-	prevLead *ServerLoc,
+	prevLead ServerLoc,
 	maxClockSkew time.Duration,
 	m *Membership,
 
-) (expired bool, lead *ServerLoc) {
+) (expired bool, lead ServerLoc) {
 
 	if prevLead.LeaseExpires.Add(maxClockSkew).After(now) {
 		// honor the leases until they expire
@@ -729,12 +727,12 @@ func (mems *members) leaderLeaseCheck(
 	}
 
 	// INVAR: any lease has expired.
-
+	expired = true
 	lead = mems.DedupTree.minrank()
 	lead.IsLeader = true
 	lead.LeaseExpires = now.Add(leaseLen).UTC()
 
-	return true, lead
+	return
 }
 
 type byRankThenId struct {

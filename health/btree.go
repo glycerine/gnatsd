@@ -22,40 +22,37 @@ type ranktree struct {
 	tex sync.Mutex
 }
 
-func (a *ServerLoc) Less(than btree.Item) bool {
-	b := than.(*ServerLoc)
-	return ServerLocLessThan(a, b)
+func (a ServerLoc) Less(than btree.Item) bool {
+	b := than.(ServerLoc)
+	return ServerLocLessThan(&a, &b)
 }
 
 // insert is idemopotent so it is safe
 // to insert the same sloc multiple times and
 // duplicates will be ignored.
-func (t *ranktree) insert(j *ServerLoc) {
+func (t *ranktree) insert(j ServerLoc) {
 	t.tex.Lock()
 	t.ReplaceOrInsert(j)
 	t.tex.Unlock()
 }
 
 // present locks, Has does not.
-func (t *ranktree) present(j *ServerLoc) bool {
+func (t *ranktree) present(j ServerLoc) bool {
 	t.tex.Lock()
 	b := t.Has(j)
 	t.tex.Unlock()
 	return b
 }
 
-func (t *ranktree) minrank() *ServerLoc {
+func (t *ranktree) minrank() (min ServerLoc) {
 	t.tex.Lock()
-	min := t.Min()
+	min = t.Min().(ServerLoc)
 	t.tex.Unlock()
 
-	if min == nil {
-		return nil
-	}
-	return min.(*ServerLoc)
+	return
 }
 
-func (t *ranktree) deleteSloc(j *ServerLoc) {
+func (t *ranktree) deleteSloc(j ServerLoc) {
 	t.tex.Lock()
 	t.Delete(j)
 	t.tex.Unlock()
@@ -72,7 +69,7 @@ func (t *ranktree) String() string {
 
 	s := "["
 	t.AscendLessThan(&ServerLoc{}, func(item btree.Item) bool {
-		cur := item.(*ServerLoc)
+		cur := item.(ServerLoc)
 		s += cur.String() + ","
 		return true
 	})
@@ -91,7 +88,7 @@ func (t *ranktree) clone() *ranktree {
 	t.tex.Lock()
 
 	t.AscendLessThan(&ServerLoc{}, func(item btree.Item) bool {
-		cur := item.(*ServerLoc)
+		cur := item.(ServerLoc)
 		r.insert(cur)
 		return true
 	})
@@ -115,34 +112,18 @@ func (t *ranktree) size() int {
 }
 
 // return a minus b, where a and b are sets.
-func setDiff(a, b *members, curLead *ServerLoc) *members {
+func setDiff(a, b *members) *members {
 
 	res := a.DedupTree.clone()
 	a.DedupTree.tex.Lock()
 	b.DedupTree.tex.Lock()
 
-	var vlead []*ServerLoc
-
 	b.DedupTree.AscendLessThan(&ServerLoc{}, func(item btree.Item) bool {
-		v := item.(*ServerLoc)
+		v := item.(ServerLoc)
 		res.deleteSloc(v)
-		if curLead != nil {
-			if v.Id == curLead.Id {
-				vlead = append(vlead, v)
-			}
-		}
 		return true // keep iterating
 	})
 
-	// annotate leader(s)
-	if curLead != nil && len(vlead) > 0 {
-		for _, v := range vlead {
-			if v.Id == curLead.Id {
-				v.IsLeader = true
-				v.LeaseExpires = curLead.LeaseExpires
-			}
-		}
-	}
 	b.DedupTree.tex.Unlock()
 	a.DedupTree.tex.Unlock()
 	return &members{DedupTree: res}
@@ -165,7 +146,7 @@ func setsEqual(a, b *members) bool {
 
 	missing := false
 	a.DedupTree.AscendLessThan(&ServerLoc{}, func(item btree.Item) bool {
-		v := item.(*ServerLoc)
+		v := item.(ServerLoc)
 		if !b.DedupTree.Has(v) {
 			missing = true
 			return false // stop iterating
