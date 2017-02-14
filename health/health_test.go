@@ -96,7 +96,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 		tot := 50
 		pause := make([]int, n)
 		for i := 0; i < n; i++ {
-			pause[i] = 100 + rand.Intn(100)
+			pause[i] = 20 + rand.Intn(50)
 			tot += pause[i]
 		}
 
@@ -105,8 +105,8 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 
 			cfg := &MembershipCfg{
 				MaxClockSkew: 1 * time.Nanosecond,
-				LeaseTime:    500 * time.Millisecond,
-				BeatDur:      100 * time.Millisecond,
+				LeaseTime:    800 * time.Millisecond,
+				BeatDur:      200 * time.Millisecond,
 				NatsUrl:      fmt.Sprintf("nats://localhost:%v", tport),
 				MyRank:       i,         // ranks 0,1,2,3,...
 				deaf:         DEAF_TRUE, // don't ping or pong
