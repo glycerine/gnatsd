@@ -5,8 +5,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/nats-io/gnatsd/logger"
-	"github.com/nats-io/gnatsd/server"
+	"github.com/glycerine/gnatsd/logger"
+	"github.com/glycerine/gnatsd/server"
 )
 
 // deafTrue means the node will won't ping or pong.

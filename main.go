@@ -10,10 +10,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/nats-io/gnatsd/auth"
-	"github.com/nats-io/gnatsd/health"
-	"github.com/nats-io/gnatsd/logger"
-	"github.com/nats-io/gnatsd/server"
+	"github.com/glycerine/gnatsd/auth"
+	"github.com/glycerine/gnatsd/health"
+	"github.com/glycerine/gnatsd/logger"
+	"github.com/glycerine/gnatsd/server"
 )
 
 var usageStr = `

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nats-io/go-nats"
+	"github.com/glycerine/go-nats"
 )
 
 const PING_CLIENT_PORT = 11228

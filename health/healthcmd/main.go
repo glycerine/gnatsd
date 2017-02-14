@@ -7,8 +7,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/nats-io/gnatsd/health"
-	"github.com/nats-io/gnatsd/logger"
+	"github.com/glycerine/gnatsd/health"
+	"github.com/glycerine/gnatsd/logger"
 )
 
 // healthcmd runs an allcall election from a standalone

@@ -5,7 +5,7 @@ package server
 import (
 	"time"
 
-	"github.com/nats-io/nuid"
+	"github.com/glycerine/nuid"
 )
 
 // Use nuid.

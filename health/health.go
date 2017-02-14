@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/nats-io/go-nats"
+	"github.com/glycerine/go-nats"
 )
 
 // sysMemberPrefix creates a namespace

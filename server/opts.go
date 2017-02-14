@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nats-io/gnatsd/conf"
+	"github.com/glycerine/gnatsd/conf"
 )
 
 // For multiple accounts/users.

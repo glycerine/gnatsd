@@ -5,7 +5,7 @@ package test
 import (
 	"testing"
 
-	"github.com/nats-io/gnatsd/server"
+	"github.com/glycerine/gnatsd/server"
 )
 
 func runPedanticServer() *server.Server {

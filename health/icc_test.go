@@ -4,7 +4,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/nats-io/gnatsd/server"
+	"github.com/glycerine/gnatsd/server"
 )
 
 func TestIccTypeSwitchWorks(t *testing.T) {

@@ -14,7 +14,7 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/nats-io/go-nats"
+	"github.com/glycerine/go-nats"
 )
 
 const CLIENT_PORT = 11224

@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/nats-io/go-nats"
+	"github.com/glycerine/go-nats"
 )
 
 // AgentLoc conveys to interested parties

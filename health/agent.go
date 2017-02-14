@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/nats-io/gnatsd/server"
+	"github.com/glycerine/gnatsd/server"
 )
 
 // Agent implements the InternalClient interface.

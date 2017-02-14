@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nats-io/go-nats"
+	"github.com/glycerine/go-nats"
 )
 
 func TestMaxPayload(t *testing.T) {
