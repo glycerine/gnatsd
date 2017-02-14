@@ -12,47 +12,47 @@ import (
 // ranktree is an in-memory, sorted,
 // balanced tree that is implemented
 // as a left-learning red-black tree.
-// It holds *ServerLoc
+// It holds AgentLoc
 // from candidate servers in the cluster,
 // sorting them based on
-// ServerLocLessThan() so they are in
+// AgentLocLessThan() so they are in
 // priority order and deduplicated.
 type ranktree struct {
 	*btree.BTree
 	tex sync.Mutex
 }
 
-func (a ServerLoc) Less(than btree.Item) bool {
-	b := than.(ServerLoc)
-	return ServerLocLessThan(&a, &b)
+func (a AgentLoc) Less(than btree.Item) bool {
+	b := than.(AgentLoc)
+	return AgentLocLessThan(&a, &b)
 }
 
 // insert is idemopotent so it is safe
 // to insert the same sloc multiple times and
 // duplicates will be ignored.
-func (t *ranktree) insert(j ServerLoc) {
+func (t *ranktree) insert(j AgentLoc) {
 	t.tex.Lock()
 	t.ReplaceOrInsert(j)
 	t.tex.Unlock()
 }
 
 // present locks, Has does not.
-func (t *ranktree) present(j ServerLoc) bool {
+func (t *ranktree) present(j AgentLoc) bool {
 	t.tex.Lock()
 	b := t.Has(j)
 	t.tex.Unlock()
 	return b
 }
 
-func (t *ranktree) minrank() (min ServerLoc) {
+func (t *ranktree) minrank() (min AgentLoc) {
 	t.tex.Lock()
-	min = t.Min().(ServerLoc)
+	min = t.Min().(AgentLoc)
 	t.tex.Unlock()
 
 	return
 }
 
-func (t *ranktree) deleteSloc(j ServerLoc) {
+func (t *ranktree) deleteSloc(j AgentLoc) {
 	t.tex.Lock()
 	t.Delete(j)
 	t.tex.Unlock()
@@ -68,8 +68,8 @@ func (t *ranktree) String() string {
 	t.tex.Lock()
 
 	s := "["
-	t.AscendLessThan(&ServerLoc{}, func(item btree.Item) bool {
-		cur := item.(ServerLoc)
+	t.AscendLessThan(AgentLoc{}, func(item btree.Item) bool {
+		cur := item.(AgentLoc)
 		s += cur.String() + ","
 		return true
 	})
@@ -87,8 +87,8 @@ func (t *ranktree) clone() *ranktree {
 	r := newRanktree()
 	t.tex.Lock()
 
-	t.AscendLessThan(&ServerLoc{}, func(item btree.Item) bool {
-		cur := item.(ServerLoc)
+	t.AscendLessThan(AgentLoc{}, func(item btree.Item) bool {
+		cur := item.(AgentLoc)
 		r.insert(cur)
 		return true
 	})
@@ -118,8 +118,8 @@ func setDiff(a, b *members) *members {
 	a.DedupTree.tex.Lock()
 	b.DedupTree.tex.Lock()
 
-	b.DedupTree.AscendLessThan(&ServerLoc{}, func(item btree.Item) bool {
-		v := item.(ServerLoc)
+	b.DedupTree.AscendLessThan(AgentLoc{}, func(item btree.Item) bool {
+		v := item.(AgentLoc)
 		res.deleteSloc(v)
 		return true // keep iterating
 	})
@@ -145,8 +145,8 @@ func setsEqual(a, b *members) bool {
 	}
 
 	missing := false
-	a.DedupTree.AscendLessThan(&ServerLoc{}, func(item btree.Item) bool {
-		v := item.(ServerLoc)
+	a.DedupTree.AscendLessThan(AgentLoc{}, func(item btree.Item) bool {
+		v := item.(AgentLoc)
 		if !b.DedupTree.Has(v) {
 			missing = true
 			return false // stop iterating

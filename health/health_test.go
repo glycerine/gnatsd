@@ -162,13 +162,13 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 		// prints first:
 
 		for i := 0; i < av; i++ {
-			sloc := h.A[h.Kth(i)].(*ServerLoc)
+			sloc := h.A[h.Kth(i)].(AgentLoc)
 			_ = sloc
 			//fmt.Printf("history print i = %v. sloc.Id=%v / sloc.Rank=%v, port=%v\n", i, sloc.Id, sloc.Rank, sloc.Port)
 		}
 		// checks second:
 		for i := 0; i < av; i++ {
-			sloc := h.A[h.Kth(i)].(*ServerLoc)
+			sloc := h.A[h.Kth(i)].(AgentLoc)
 			//fmt.Printf("history check Id at i = %v. sloc.Id=%v\n", i, sloc.Id)
 			cv.So(sloc.Id, cv.ShouldEqual, ms[0].myLoc.Id)
 			// ports will be the only thing different when
@@ -178,7 +178,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 		}
 
 		for i := 0; i < av; i++ {
-			sloc := h.A[h.Kth(i)].(*ServerLoc)
+			sloc := h.A[h.Kth(i)].(AgentLoc)
 			//p("history check Rank at i = %v. sloc.Rank=%v", i, sloc.Rank)
 			cv.So(sloc.Rank, cv.ShouldEqual, 0)
 		}
@@ -197,7 +197,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 			// prints first:
 
 			for i := 0; i < av; i++ {
-				sloc := h.A[h.Kth(i)].(*ServerLoc)
+				sloc := h.A[h.Kth(i)].(AgentLoc)
 				_ = sloc
 				//fmt.Printf("history print i = %v. sloc.Id=%v / sloc.Rank=%v, port=%v\n", i, sloc.Id, sloc.Rank, sloc.Port)
 			}
@@ -207,7 +207,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 			// should have chosen the rank 0 leader.
 			// start scanning from 6,...
 			for i := 6; i < av; i++ {
-				sloc := h.A[h.Kth(i)].(*ServerLoc)
+				sloc := h.A[h.Kth(i)].(AgentLoc)
 				//fmt.Printf("j=%v, history check Id at i = %v. sloc.Port=%v vs.  ms[0].myLoc.Port=%v\n", j, i, sloc.Port, ms[0].myLoc.Port)
 
 				// ports will be the only thing different when
@@ -217,7 +217,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 			}
 
 			for i := 6; i < av; i++ {
-				sloc := h.A[h.Kth(i)].(*ServerLoc)
+				sloc := h.A[h.Kth(i)].(AgentLoc)
 				//p("j=%v history check Rank at i = %v. sloc.Rank=%v", j, i, sloc.Rank)
 				cv.So(sloc.Rank, cv.ShouldEqual, 0)
 			}
@@ -282,7 +282,7 @@ func Test103TiedRanksUseIdAndDoNotAlternate(t *testing.T) {
 		time.Sleep(time.Duration(rounds+1) * (ms[0].Cfg.LeaseTime + ms[0].Cfg.MaxClockSkew))
 
 		// who should be winner after lease expiration...
-		zeroWins := ServerLocLessThan(&ms[0].myLoc, &ms[1].myLoc)
+		zeroWins := AgentLocLessThan(&ms[0].myLoc, &ms[1].myLoc)
 		p("zeroWins: %v, [0].myLoc=%v  [1].myLoc=%v", zeroWins, &ms[0].myLoc, &ms[1].myLoc)
 		winner := &ms[1].myLoc
 		if zeroWins {
@@ -301,7 +301,7 @@ func Test103TiedRanksUseIdAndDoNotAlternate(t *testing.T) {
 
 			// prints first:
 			for i := 0; i < av; i++ {
-				sloc := h.A[h.Kth(i)].(*ServerLoc)
+				sloc := h.A[h.Kth(i)].(AgentLoc)
 				fmt.Printf("server j=%v, history print i = %v. / sloc.Port=%v, winner.Port=%v\n", j, i, sloc.Port, winner.Port)
 			}
 		}
@@ -314,7 +314,7 @@ func Test103TiedRanksUseIdAndDoNotAlternate(t *testing.T) {
 
 			// checks second:
 			for i := 0; i < av; i++ {
-				sloc := h.A[h.Kth(i)].(*ServerLoc)
+				sloc := h.A[h.Kth(i)].(AgentLoc)
 				fmt.Printf("server j=%v, history check Id at i = %v. sloc.Port=%v,  winner.Port=%v\n", j, i, sloc.Port, winner.Port)
 				cv.So(sloc.Port, cv.ShouldEqual, winner.Port)
 			}
@@ -455,7 +455,7 @@ func Test104ReceiveOwnSends(t *testing.T) {
 
 		now := time.Now().UTC()
 		// send on subjAllCall
-		sl := ServerLoc{
+		sl := AgentLoc{
 			Id:           "abc",
 			Host:         "here",
 			Port:         99,
@@ -536,13 +536,13 @@ func getAvailPort() (int, net.Listener) {
 	return r.(*net.TCPAddr).Port, l
 }
 
-func Test106ServerLocLessThan(t *testing.T) {
+func Test106AgentLocLessThan(t *testing.T) {
 
-	cv.Convey("To properly handle empty ServerLoc, ServerLocLessThan should sort sloc with and Id as smaller (more preferred) compared to an sloc (ServerLoc) with an empty string Id, even if their ranks are different.", t, func() {
-		var s1, s2 ServerLoc
+	cv.Convey("To properly handle empty AgentLoc, AgentLocLessThan should sort sloc with and Id as smaller (more preferred) compared to an sloc (AgentLoc) with an empty string Id, even if their ranks are different.", t, func() {
+		var s1, s2 AgentLoc
 		s1.Id = "a"
 		s1.Rank = 1
-		cv.So(ServerLocLessThan(&s1, &s2), cv.ShouldBeTrue)
+		cv.So(AgentLocLessThan(&s1, &s2), cv.ShouldBeTrue)
 	})
 }
 

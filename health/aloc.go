@@ -2,19 +2,16 @@ package health
 
 import (
 	"encoding/json"
+	"os"
 	"time"
 
 	"github.com/nats-io/go-nats"
 )
 
-// compile time check that the ServerLoc
-// and nats.ServerLoc are still in sync.
-var myCompileTimeSyncCheck ServerLoc = ServerLoc(nats.ServerLoc{})
-
-// ServerLoc conveys to interested parties
+// AgentLoc conveys to interested parties
 // the Id and location of one gnatsd
 // server in the cluster.
-type ServerLoc struct {
+type AgentLoc struct {
 	Id   string `json:"serverId"`
 	Host string `json:"host"`
 	Port int    `json:"port"`
@@ -35,25 +32,35 @@ type ServerLoc struct {
 	// let the operator prioritize
 	// leadership for certain hosts.
 	Rank int `json:"rank"`
+
+	// Pid or process id is the only
+	// way to tell apart two processes
+	// sometimes, if they share the
+	// same nats server.
+	//
+	// Pid is the one difference between
+	// a nats.ServerLoc and a health.AgentLoc.
+	//
+	Pid int `json:"pid"`
 }
 
-func (s *ServerLoc) String() string {
+func (s *AgentLoc) String() string {
 	by, err := json.Marshal(s)
 	panicOn(err)
 	return string(by)
 }
 
-func (s *ServerLoc) fromBytes(by []byte) error {
+func (s *AgentLoc) fromBytes(by []byte) error {
 	return json.Unmarshal(by, s)
 }
 
-func slocEqual(a, b *ServerLoc) bool {
-	aless := ServerLocLessThan(a, b)
-	bless := ServerLocLessThan(b, a)
+func slocEqual(a, b *AgentLoc) bool {
+	aless := AgentLocLessThan(a, b)
+	bless := AgentLocLessThan(b, a)
 	return !aless && !bless
 }
 
-func slocEqualIgnoreLease(a, b *ServerLoc) bool {
+func slocEqualIgnoreLease(a, b *AgentLoc) bool {
 	a0 := *a
 	b0 := *b
 	a0.LeaseExpires = time.Time{}
@@ -61,21 +68,22 @@ func slocEqualIgnoreLease(a, b *ServerLoc) bool {
 	b0.LeaseExpires = time.Time{}
 	b0.IsLeader = false
 
-	aless := ServerLocLessThan(&a0, &b0)
-	bless := ServerLocLessThan(&b0, &a0)
+	aless := AgentLocLessThan(&a0, &b0)
+	bless := AgentLocLessThan(&b0, &a0)
 	return !aless && !bless
 }
 
 // the 2 types should be kept in sync.
-// We return a brand new &ServerLoc{}
+// We return a brand new &AgentLoc{}
 // with contents filled from loc.
-func natsLocConvert(loc *nats.ServerLoc) *ServerLoc {
-	return &ServerLoc{
+func natsLocConvert(loc *nats.ServerLoc) *AgentLoc {
+	return &AgentLoc{
 		Id:           loc.Id,
 		Host:         loc.Host,
 		Port:         loc.Port,
 		IsLeader:     loc.IsLeader,
 		LeaseExpires: loc.LeaseExpires,
 		Rank:         loc.Rank,
+		Pid:          os.Getpid(),
 	}
 }

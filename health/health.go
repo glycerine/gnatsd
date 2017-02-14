@@ -3,6 +3,7 @@ package health
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -41,7 +42,7 @@ type Membership struct {
 	// change only after a lease term.
 	elec  *leadHolder
 	nc    *nats.Conn
-	myLoc ServerLoc
+	myLoc AgentLoc
 
 	subjAllCall     string
 	subjAllReply    string
@@ -64,7 +65,7 @@ func (m *Membership) dlog(f string, arg ...interface{}) {
 	m.Cfg.Log.Debugf(fmt.Sprintf("my.Port:%v. ", m.myLoc.Port)+f, arg...)
 }
 
-func (m *Membership) getMyLocWithAnyLease() ServerLoc {
+func (m *Membership) getMyLocWithAnyLease() AgentLoc {
 	m.mu.Lock()
 	myLoc := m.myLoc
 	m.mu.Unlock()
@@ -108,7 +109,7 @@ func NewMembership(cfg *MembershipCfg) *Membership {
 // access between various goroutines.
 type leadHolder struct {
 	mu   sync.Mutex
-	sloc ServerLoc
+	sloc AgentLoc
 
 	myId            string
 	myRank          int
@@ -131,7 +132,7 @@ func (m *Membership) newLeadHolder(histsz int) *leadHolder {
 	}
 }
 
-func (e *leadHolder) setMyLoc(myLoc *ServerLoc) {
+func (e *leadHolder) setMyLoc(myLoc *AgentLoc) {
 	e.mu.Lock()
 	if e.myLocHasBeenSet {
 		panic("no double set!")
@@ -143,7 +144,7 @@ func (e *leadHolder) setMyLoc(myLoc *ServerLoc) {
 }
 
 // getLeader retreives the stored e.sloc value.
-func (e *leadHolder) getLeader() ServerLoc {
+func (e *leadHolder) getLeader() AgentLoc {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	return e.sloc
@@ -155,13 +156,13 @@ func (e *leadHolder) getLeader() ServerLoc {
 // However we reject any attempt to replace
 // a leader with a one that doesn't rank lower, where rank
 // includes the LeaseExpires time
-// (see the ServerLocLessThan() function).
+// (see the AgentLocLessThan() function).
 //
 // If we accept sloc
 // we return slocWon true. If we reject sloc then
 // we return slocWon false. In short, we will only
-// accept sloc if ServerLocLessThan(sloc, e.sloc),
-// and we return ServerLocLessThan(sloc, e.sloc).
+// accept sloc if AgentLocLessThan(sloc, e.sloc),
+// and we return AgentLocLessThan(sloc, e.sloc).
 //
 // If we return slocWon false, alt contains the
 // value we favored, which is the current value
@@ -169,7 +170,7 @@ func (e *leadHolder) getLeader() ServerLoc {
 // then alt contains a copy of sloc. We
 // return a value in alt to avoid data races.
 //
-func (e *leadHolder) setLeader(sloc ServerLoc, now time.Time) (slocWon bool, alt ServerLoc) {
+func (e *leadHolder) setLeader(sloc AgentLoc, now time.Time) (slocWon bool, alt AgentLoc) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
@@ -196,8 +197,8 @@ func (e *leadHolder) setLeader(sloc ServerLoc, now time.Time) (slocWon bool, alt
 		return false, e.sloc
 
 	case neitherExpired:
-		newWon = ServerLocLessThan(&sloc, &e.sloc)
-		oldWon = ServerLocLessThan(&e.sloc, &sloc)
+		newWon = AgentLocLessThan(&sloc, &e.sloc)
+		oldWon = AgentLocLessThan(&e.sloc, &sloc)
 
 	case newExpired:
 		e.m.trace("55555 setLeader is returning false because new has expired lease.")
@@ -295,7 +296,7 @@ func (m *Membership) start() {
 	prevCount, curCount := 0, 0
 	prevMember := newMembers()
 	var curMember *members
-	var curLead ServerLoc
+	var curLead AgentLoc
 
 	/*
 		// do an initial allcall() to discover any
@@ -384,7 +385,7 @@ func (m *Membership) start() {
 	var err error
 	var now time.Time
 	var expired bool
-	var prevLead ServerLoc
+	var prevLead AgentLoc
 	var nextLeadReportTm time.Time
 
 	k := -1
@@ -592,7 +593,7 @@ func pong(nc *nats.Conn, subj string, msg []byte) {
 // allcall sends out a health ping on the
 // subjAllCall topic.
 //
-// The ping consists of sending the ServerLoc
+// The ping consists of sending the AgentLoc
 // forf the current leader, which provides lease
 // and full contact info for the leader.
 //
@@ -629,7 +630,7 @@ func (m *Membership) newPongCollector() *pongCollector {
 	}
 }
 
-func (pc *pongCollector) insert(sloc ServerLoc) {
+func (pc *pongCollector) insert(sloc AgentLoc) {
 	// insert into both our trees, one
 	// keeping the lease time, the other not.
 	cp := sloc
@@ -646,7 +647,7 @@ func (pc *pongCollector) receivePong(msg *nats.Msg) {
 
 	pc.replies++
 
-	var loc ServerLoc
+	var loc AgentLoc
 	err := loc.fromBytes(msg.Data)
 	if err == nil {
 		pc.insert(loc)
@@ -702,18 +703,18 @@ func (pc *pongCollector) getSetAndClear() (int, *members) {
 // If m.DedupTree is empty, we return (true, nil).
 //
 // This method is where the actual "election"
-// happens. See the ServerLocLessThan()
+// happens. See the AgentLocLessThan()
 // function below for exactly how
 // we rank candidates.
 //
 func (mems *members) leaderLeaseCheck(
 	now time.Time,
 	leaseLen time.Duration,
-	prevLead ServerLoc,
+	prevLead AgentLoc,
 	maxClockSkew time.Duration,
 	m *Membership,
 
-) (expired bool, lead ServerLoc) {
+) (expired bool, lead AgentLoc) {
 
 	if prevLead.LeaseExpires.Add(maxClockSkew).After(now) {
 		// honor the leases until they expire
@@ -736,7 +737,7 @@ func (mems *members) leaderLeaseCheck(
 }
 
 type byRankThenId struct {
-	s   []*ServerLoc
+	s   []*AgentLoc
 	now time.Time
 }
 
@@ -747,15 +748,15 @@ func (p byRankThenId) Swap(i, j int) { p.s[i], p.s[j] = p.s[j], p.s[i] }
 // applicable globally: it is how we choose a leader
 // in a stable fashion.
 func (p byRankThenId) Less(i, j int) bool {
-	return ServerLocLessThan(p.s[i], p.s[j])
+	return AgentLocLessThan(p.s[i], p.s[j])
 }
 
-// ServerLocLessThan returns true iff i < j, in
+// AgentLocLessThan returns true iff i < j, in
 // terms of leader preference where lowest is
 // more electable/preferred as leader.
-func ServerLocLessThan(i, j *ServerLoc) bool {
+func AgentLocLessThan(i, j *AgentLoc) bool {
 
-	// recognize empty ServerLoc and sort them high, not low.
+	// recognize empty AgentLoc and sort them high, not low.
 	iempt := i.Id == ""
 	jempt := j.Id == ""
 	if iempt && jempt {
@@ -779,6 +780,9 @@ func ServerLocLessThan(i, j *ServerLoc) bool {
 	}
 	if i.Port != j.Port {
 		return i.Port < j.Port
+	}
+	if i.Pid != j.Pid {
+		return i.Pid < j.Pid
 	}
 	itm := i.LeaseExpires.UnixNano()
 	jtm := j.LeaseExpires.UnixNano()
@@ -962,6 +966,7 @@ func (m *Membership) setLoc(b *nats.ServerLoc) {
 	m.myLoc.Rank = b.Rank
 	m.myLoc.Host = b.Host
 	m.myLoc.Port = b.Port
+	m.myLoc.Pid = os.Getpid()
 	m.mu.Unlock()
 	m.elec.setMyLoc(&m.myLoc)
 }
