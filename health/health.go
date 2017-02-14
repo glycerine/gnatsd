@@ -476,7 +476,7 @@ func (m *Membership) start() {
 						loc.Rank,
 						loc.Port,
 						loc.Host,
-
+						m.pid,
 						left)
 
 					nextLeadReportTm = now.Add(left).Add(m.Cfg.MaxClockSkew)
