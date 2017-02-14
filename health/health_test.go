@@ -130,7 +130,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 		}
 
 		// let them all get past init phase.
-		time.Sleep(4 * (ms[0].Cfg.LeaseTime + ms[0].Cfg.MaxClockSkew))
+		time.Sleep(5 * (ms[0].Cfg.LeaseTime + ms[0].Cfg.MaxClockSkew))
 
 		// verify liveness, a leader exists.
 		p("verifying everyone thinks there is a leader:")
@@ -150,7 +150,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 
 		// let the laggards get in a few more cycles, so
 		// we get enough history to evaluate.
-		time.Sleep(10 * (ms[0].Cfg.LeaseTime + ms[0].Cfg.MaxClockSkew))
+		time.Sleep(20 * (ms[0].Cfg.LeaseTime + ms[0].Cfg.MaxClockSkew))
 
 		// check that the history from the rank 0
 		// always shows rank 0 as lead.
@@ -193,7 +193,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 			av := h.Avail()
 			//p("ms[j=%v].myLoc.Port = %v has history av = %v", j, ms[j].myLoc.Port, av)
 			cv.So(ms[j].myLoc.Id, cv.ShouldNotEqual, "")
-			cv.So(av, cv.ShouldBeGreaterThan, 10)
+			cv.So(av, cv.ShouldBeGreaterThan, 12)
 			//p("av: available history len = %v", av)
 
 			// prints first:
@@ -207,8 +207,8 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 
 			// after the preample of heartbeats, everybody
 			// should have chosen the rank 0 leader.
-			// start scanning from 7,...
-			for i := 7; i < av; i++ {
+			// start scanning from 10,...
+			for i := 10; i < av; i++ {
 				sloc := h.A[h.Kth(i)].(*AgentLoc)
 				fmt.Printf("j=%v, history check Id at i = %v. sloc.Port=%v/rank %v vs.  ms[0].myLoc.Port=%v/rank %v\n", j, i, sloc.Port, sloc.Rank, ms[0].myLoc.Port, ms[0].myLoc.Rank)
 
@@ -218,7 +218,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 				cv.So(sloc.Port, cv.ShouldEqual, ms[0].myLoc.Port)
 			}
 
-			for i := 6; i < av; i++ {
+			for i := 10; i < av; i++ {
 				sloc := h.A[h.Kth(i)].(*AgentLoc)
 				p("j=%v history check Rank at i = %v. sloc.Rank=%v", j, i, sloc.Rank)
 				cv.So(sloc.Rank, cv.ShouldEqual, 0)
@@ -239,7 +239,7 @@ func Test103TiedRanksUseIdAndDoNotAlternate(t *testing.T) {
 
 		n := 2
 
-		aLogger := logger.NewStdLogger(micros, true, trace, colors, pid, log.LUTC)
+		aLogger := logger.NewStdLogger(micros, debug, trace, colors, pid, log.LUTC)
 		var ms []*Membership
 		for i := 0; i < n; i++ {
 
@@ -392,7 +392,7 @@ func Test104ReceiveOwnSends(t *testing.T) {
 			MyRank:       0,
 		}
 
-		aLogger := logger.NewStdLogger(micros, true, trace, colors, pid, log.LUTC)
+		aLogger := logger.NewStdLogger(micros, debug, trace, colors, pid, log.LUTC)
 		cfg.Log = aLogger
 
 		m := NewMembership(cfg)
@@ -502,7 +502,7 @@ func Test105OnlyConnectToOriginalGnatsd(t *testing.T) {
 			BeatDur:      10 * time.Millisecond,
 			NatsUrl:      fmt.Sprintf("nats://localhost:%v", TEST_PORT),
 		}
-		aLogger := logger.NewStdLogger(micros, true, trace, colors, pid, log.LUTC)
+		aLogger := logger.NewStdLogger(micros, debug, trace, colors, pid, log.LUTC)
 		cfg.Log = aLogger
 
 		m := NewMembership(cfg)
@@ -573,7 +573,7 @@ func Test107OneNodeAloneWaitsLeaseTermBeforeRenewal(t *testing.T) {
 		s.InternalCliRegisterCallback(srv)
 		cfg.CliConn = cli
 
-		aLogger := logger.NewStdLogger(micros, true, trace, colors, pid, log.LUTC)
+		aLogger := logger.NewStdLogger(micros, debug, trace, colors, pid, log.LUTC)
 		_ = aLogger
 		// to follow the prints, uncomment:
 		cfg.Log = aLogger

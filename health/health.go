@@ -533,11 +533,11 @@ func (m *Membership) start() {
 }
 
 func pong(nc *nats.Conn, subj string, msg []byte) {
-	err := nc.Publish(subj, msg)
-	panicOn(err)
+	nc.Publish(subj, msg)
 	nc.Flush()
-	// ignore error on nc.Flush().
-	// might be: nats: connection closed on shutdown.
+	// ignore errors, probably shutting down.
+	// e.g. "nats: connection closed on shutdown."
+	// or "nats: connection closed"
 }
 
 // allcall sends out a health ping on the
