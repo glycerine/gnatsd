@@ -588,7 +588,9 @@ func Test107OneNodeAloneWaitsLeaseTermBeforeRenewal(t *testing.T) {
 		// let it get past init phase.
 		time.Sleep(3 * (m.Cfg.LeaseTime + m.Cfg.MaxClockSkew))
 
+		m.elec.mu.Lock()
 		av := m.elec.history.Avail()
+		m.elec.mu.Unlock()
 		fmt.Printf("verifying at most 3 leader changes: %v\n", av)
 		cv.So(av, cv.ShouldBeLessThan, 4)
 
