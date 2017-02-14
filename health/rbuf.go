@@ -6,21 +6,21 @@ package health
 
 import "io"
 
-// RingBuf:
+// ringBuf:
 //
 //    a fixed-size circular ring buffer. Just what it says.
 //
-type RingBuf struct {
+type ringBuf struct {
 	A        []interface{}
 	N        int // MaxViewInBytes, the size of A
 	Beg      int // start of data in A
 	Readable int // number of bytes available to read in A
 }
 
-// NewRingBuf constructs a new RingBuf.
-func NewRingBuf(maxViewInBytes int) *RingBuf {
+// newRingBuf constructs a new ringBuf.
+func newRingBuf(maxViewInBytes int) *ringBuf {
 	n := maxViewInBytes
-	r := &RingBuf{
+	r := &ringBuf{
 		N:        n,
 		Beg:      0,
 		Readable: 0,
@@ -30,10 +30,22 @@ func NewRingBuf(maxViewInBytes int) *RingBuf {
 	return r
 }
 
+// clone makes a copy of b.
+func (b *ringBuf) clone() *ringBuf {
+	a := &ringBuf{}
+	for i := range b.A {
+		a.A = append(a.A, b.A[i])
+	}
+	a.N = b.N
+	a.Beg = b.Beg
+	a.Readable = b.Readable
+	return a
+}
+
 // Reset quickly forgets any data stored in the ring buffer. The
 // data is still there, but the ring buffer will ignore it and
 // overwrite those buffers as new data comes in.
-func (b *RingBuf) Reset() {
+func (b *ringBuf) Reset() {
 	b.Beg = 0
 	b.Readable = 0
 }
@@ -42,7 +54,7 @@ func (b *RingBuf) Reset() {
 // because we don't have to unwrap our buffer and pay the cpu time
 // for the copy that unwrapping may need.
 // Useful in conjuction/after ReadWithoutAdvance() above.
-func (b *RingBuf) Advance(n int) {
+func (b *ringBuf) Advance(n int) {
 	if n <= 0 {
 		return
 	}
@@ -61,13 +73,13 @@ func intMin(a, b int) int {
 	}
 }
 
-func (f *RingBuf) Avail() int {
+func (f *ringBuf) Avail() int {
 	return f.Readable
 }
 
 // returns the earliest index, or -1 if
 // the ring is empty
-func (f *RingBuf) First() int {
+func (f *ringBuf) First() int {
 	if f.Readable == 0 {
 		return -1
 	}
@@ -76,7 +88,7 @@ func (f *RingBuf) First() int {
 
 // returns the index of the last element,
 // or -1 if the ring is empty.
-func (f *RingBuf) Last() int {
+func (f *ringBuf) Last() int {
 	if f.Readable == 0 {
 		return -1
 	}
@@ -101,7 +113,7 @@ func (f *RingBuf) Last() int {
 // f.Beg itself lives at k = 0. If k is
 // out of bounds, or the ring is empty,
 // -1 is returned.
-func (f *RingBuf) Kth(k int) int {
+func (f *ringBuf) Kth(k int) int {
 	if f.Readable == 0 || k < 0 || k >= f.Readable {
 		return -1
 	}
@@ -113,7 +125,7 @@ func (f *RingBuf) Kth(k int) int {
 // space in the ring. Otherwise it returns nil
 // and writes p into the ring in last position.
 //
-func (b *RingBuf) Append(p interface{}) error {
+func (b *ringBuf) Append(p interface{}) error {
 	writeCapacity := b.N - b.Readable
 	if writeCapacity <= 0 {
 		// we are all full up already.

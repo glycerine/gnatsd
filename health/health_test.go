@@ -83,7 +83,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 			s.Shutdown()
 		}()
 
-		n := 2
+		n := 7
 		tot := 50
 		pause := make([]int, n)
 		for i := 0; i < n; i++ {
@@ -135,8 +135,9 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 		// verify liveness, a leader exists.
 		p("verifying everyone thinks there is a leader:")
 		for i := 0; i < n; i++ {
-			fmt.Printf("verifying %v thinks there is a leader. avail = %v\n", i, ms[i].elec.history.Avail())
-			cv.So(ms[i].elec.history.Avail(), cv.ShouldBeGreaterThan, 0)
+			h := ms[i].elec.copyLeadHistory()
+			fmt.Printf("verifying %v thinks there is a leader. avail = %v\n", i, h.Avail())
+			cv.So(h.Avail(), cv.ShouldBeGreaterThan, 0)
 		}
 
 		// bring in jobs after their random pause time
@@ -153,7 +154,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 
 		// check that the history from the rank 0
 		// always shows rank 0 as lead.
-		h := ms[0].elec.history
+		h := ms[0].elec.copyLeadHistory()
 		av := h.Avail()
 		//p("ms[0].myLoc.Port = %v", ms[0].myLoc.Port)
 		cv.So(ms[0].myLoc.Id, cv.ShouldNotEqual, "")
@@ -188,7 +189,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 		// histories that converge
 		// on the rank 0 process quickly
 		for j := 1; j < n; j++ {
-			h := ms[j].elec.history
+			h := ms[j].elec.copyLeadHistory()
 			av := h.Avail()
 			//p("ms[j=%v].myLoc.Port = %v has history av = %v", j, ms[j].myLoc.Port, av)
 			cv.So(ms[j].myLoc.Id, cv.ShouldNotEqual, "")
@@ -200,16 +201,16 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 			for i := 0; i < av; i++ {
 				sloc := h.A[h.Kth(i)].(*AgentLoc)
 				_ = sloc
-				//fmt.Printf("history print i = %v. sloc.Id=%v / sloc.Rank=%v, port=%v\n", i, sloc.Id, sloc.Rank, sloc.Port)
+				fmt.Printf("history print i = %v. sloc.Id=%v / sloc.Rank=%v, port=%v\n", i, sloc.Id, sloc.Rank, sloc.Port)
 			}
 			// checks second:
 
-			// after the preample of leases, everybody
+			// after the preample of heartbeats, everybody
 			// should have chosen the rank 0 leader.
-			// start scanning from 6,...
-			for i := 6; i < av; i++ {
+			// start scanning from 7,...
+			for i := 7; i < av; i++ {
 				sloc := h.A[h.Kth(i)].(*AgentLoc)
-				//fmt.Printf("j=%v, history check Id at i = %v. sloc.Port=%v vs.  ms[0].myLoc.Port=%v\n", j, i, sloc.Port, ms[0].myLoc.Port)
+				fmt.Printf("j=%v, history check Id at i = %v. sloc.Port=%v/rank %v vs.  ms[0].myLoc.Port=%v/rank %v\n", j, i, sloc.Port, sloc.Rank, ms[0].myLoc.Port, ms[0].myLoc.Rank)
 
 				// ports will be the only thing different when
 				// running off of the one gnatsd that has the
@@ -219,7 +220,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 
 			for i := 6; i < av; i++ {
 				sloc := h.A[h.Kth(i)].(*AgentLoc)
-				//p("j=%v history check Rank at i = %v. sloc.Rank=%v", j, i, sloc.Rank)
+				p("j=%v history check Rank at i = %v. sloc.Rank=%v", j, i, sloc.Rank)
 				cv.So(sloc.Rank, cv.ShouldEqual, 0)
 			}
 		}
@@ -274,8 +275,9 @@ func Test103TiedRanksUseIdAndDoNotAlternate(t *testing.T) {
 		// verify liveness, a leader exists.
 		p("at %v, verifying everyone thinks there is a leader:", time.Now().UTC())
 		for i := 0; i < n; i++ {
-			fmt.Printf("verifying %v thinks there is a leader, avail history len= %v\n", i, ms[i].elec.history.Avail())
-			cv.So(ms[i].elec.history.Avail(), cv.ShouldBeGreaterThan, 0)
+			h := ms[i].elec.copyLeadHistory()
+			fmt.Printf("verifying %v thinks there is a leader, avail history len= %v\n", i, h.Avail())
+			cv.So(h.Avail(), cv.ShouldBeGreaterThan, 0)
 		}
 
 		rounds := 10

@@ -129,7 +129,7 @@ type leadHolder struct {
 	myRank          int
 	myLocHasBeenSet bool
 
-	history *RingBuf
+	history *ringBuf
 	histsz  int
 
 	m *Membership
@@ -140,7 +140,7 @@ func (m *Membership) newLeadHolder(histsz int) *leadHolder {
 		histsz = 100
 	}
 	return &leadHolder{
-		history: NewRingBuf(histsz),
+		history: newRingBuf(histsz),
 		histsz:  histsz,
 		m:       m,
 	}
@@ -261,6 +261,13 @@ func (e *leadHolder) setLeader(sloc AgentLoc, now time.Time) (slocWon bool, alt 
 	}
 
 	return
+}
+
+func (e *leadHolder) copyLeadHistory() *ringBuf {
+	e.mu.Lock()
+	r := e.history.clone()
+	e.mu.Unlock()
+	return r
 }
 
 func (e *leadHolder) getLeaderAsBytes() []byte {
