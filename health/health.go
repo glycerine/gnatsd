@@ -43,6 +43,7 @@ type Membership struct {
 	elec  *leadHolder
 	nc    *nats.Conn
 	myLoc AgentLoc
+	pid   int
 
 	subjAllCall     string
 	subjAllReply    string
@@ -95,7 +96,7 @@ func NewMembership(cfg *MembershipCfg) *Membership {
 	m := &Membership{
 		Cfg:  *cfg,
 		halt: newHalter(),
-
+		pid:  os.Getpid(),
 		// needReconnect should be sent on, not closed.
 		needReconnect: make(chan bool),
 	}
@@ -459,7 +460,8 @@ func (m *Membership) start() {
 		// logging
 		loc, _ := m.getNatsServerLocation()
 		if loc != nil {
-			if loc.Id == curLead.Id {
+			if loc.Id == curLead.Id &&
+				curLead.Pid == m.pid {
 
 				if now.After(nextLeadReportTm) ||
 					prevLead.Id == "" ||
@@ -468,27 +470,30 @@ func (m *Membership) start() {
 					left := curLead.LeaseExpires.Sub(now)
 					m.dlog("health-agent: "+
 						"I am LEAD, my Id: '%s', "+
-						"rank %v port %v host %v. lease expires "+
+						"rank %v port %v host %v pid %v. lease expires "+
 						"in %s",
 						loc.Id,
 						loc.Rank,
 						loc.Port,
 						loc.Host,
+
 						left)
 
 					nextLeadReportTm = now.Add(left).Add(m.Cfg.MaxClockSkew)
 				}
 			} else {
-				if prevLead.Id == loc.Id {
+				if prevLead.Id == loc.Id &&
+					prevLead.Pid == m.pid {
 
 					m.dlog("health-agent: "+
 						"I am no longer lead, "+
 						"new LEAD is '%s', rank %v. "+
-						"port %v. host %v. lease expires in %s",
+						"port %v host %v pid %v lease expires in %s",
 						curLead.Id,
 						curLead.Rank,
 						curLead.Port,
 						curLead.Host,
+						curLead.Pid,
 						curLead.LeaseExpires.Sub(now))
 
 				} else {
@@ -507,10 +512,12 @@ func (m *Membership) start() {
 						} else {
 							m.dlog("health-agent: "+
 								"I am not lead. lead is '%s', "+
-								"rank %v, port %v, for %v",
+								"rank %v host %v port %v pid %v for %v",
 								curLead.Id,
 								curLead.Rank,
+								curLead.Host,
 								curLead.Port,
+								curLead.Pid,
 								left)
 
 						}
