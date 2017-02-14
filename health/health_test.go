@@ -288,7 +288,7 @@ func Test103TiedRanksUseIdAndDoNotAlternate(t *testing.T) {
 		p("at %v, verifying everyone thinks there is a leader:", time.Now().UTC())
 		for i := 0; i < n; i++ {
 			h := ms[i].elec.copyLeadHistory()
-			fmt.Printf("verifying %v thinks there is a leader, avail history len= %v\n", i, h.Avail())
+			//fmt.Printf("verifying %v thinks there is a leader, avail history len= %v\n", i, h.Avail())
 			cv.So(h.Avail(), cv.ShouldBeGreaterThan, 0)
 		}
 
@@ -317,7 +317,8 @@ func Test103TiedRanksUseIdAndDoNotAlternate(t *testing.T) {
 			// prints first:
 			for i := 0; i < av; i++ {
 				sloc := h.A[h.Kth(i)].(*AgentLoc)
-				fmt.Printf("server j=%v, history print i = %v. / sloc.Port=%v, winner.Port=%v\n", j, i, sloc.Port, winner.Port)
+				_ = sloc
+				//fmt.Printf("server j=%v, history print i = %v. / sloc.Port=%v, winner.Port=%v\n", j, i, sloc.Port, winner.Port)
 			}
 		}
 		for j := 0; j < n; j++ {
@@ -330,7 +331,7 @@ func Test103TiedRanksUseIdAndDoNotAlternate(t *testing.T) {
 			// checks second:
 			for i := 0; i < av; i++ {
 				sloc := h.A[h.Kth(i)].(*AgentLoc)
-				fmt.Printf("server j=%v, history check Id at i = %v. sloc.Port=%v,  winner.Port=%v\n", j, i, sloc.Port, winner.Port)
+				//fmt.Printf("server j=%v, history check Id at i = %v. sloc.Port=%v,  winner.Port=%v\n", j, i, sloc.Port, winner.Port)
 				cv.So(sloc.Port, cv.ShouldEqual, winner.Port)
 			}
 
