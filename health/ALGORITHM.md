@@ -1,25 +1,15 @@
-# The ALLCALL leased-leader election algorithm.
+# The ALLCALL leader election algorithm.
 
 Jason E. Aten
 
 February 2017
 
-definitions, with example values.
+definition, with example value.
 -----------
 
-Let heartBeat = 1 sec. This is how frequently
+Let heartBeat = 3 sec. This is how frequently
 we will assess cluster health by
 sending out an allcall ping.
-
-Let leaseTime = 10 sec. This is how long a leader's lease
-lasts for. A failed leader won't be replaced until its
-lease (+maxClockSkew) has expired. The lease
-also lets leaders efficiently serve reads
-without doing quorum checks.
-
-Let maxClockSkew = 1 sec. The maxClockSkew
-is a bound on how far out of sync our local
-clocks may drift.
 
 givens
 --------
@@ -27,15 +17,10 @@ givens
 * Given: Let each server have a numeric integer rank, that is distinct
 and unique to that server. If necessary an extremely long
 true random number is used to break ties between server ranks, so
-that we may assert, with probability 1, that all ranks are distinct integers,
-and that each server, absent an in-force lease, can be put into a strict total order.
+that we may assert, with probability 1, that all ranks are distinct.
+Server can be put into a strict total order.
 
 * Rule: The lower the rank is preferred for being the leader.
-
-* Ordering by rank then lease time: we order the pair (rank,leaseExpires) first
-by lowest rank, and then breaking any ties by largest leaseExpires time.
-If both leases have expired, then neither lease is accepted
-as a valid leader claim.
 
 
 ALLCALL Algorithm 
@@ -44,54 +29,30 @@ ALLCALL Algorithm
 ### I. In a continuous loop
 
 The server always accepts and respond
-to allcalls() from other cluster members.
+to allcall broadcasts from other cluster members.
 
-The allcall() ping will contain
-the current (lease, leader-rank) and leader-id
-according to the issuer of the allcall().
+The allcall() ping asks each member of
+the server cluster to reply. Replies
+provide the responder's own assigned rank
+and identity.
 
-Every recipient of the allcall updates
-her local information of who she thinks the leader is, so long as the
-received information is monotone in the (lease, leader-rank)
-ordering; so a later unexpired lease will replace an
-earlier unexpired lease, and if both are expired then
-the lower rank will replace the larger rank as winner
-of the current leader role.
+### II. Election 
 
-Each server issues its own allcall() pings every
-heartBeat seconds.
+Election are computed locally, after accumulating
+responses.
 
-### II. Election and Lease determination
+After issuing an allcall, the server
+listens for a heartbeat interval.
 
-Election and leasing are computed locally, by each
-node, one heartBeat after receiving any replies
-from the allcall(). The localnode who issued
-the allcall sorts the respondents, including
-itself, and if all leases have expired, it
-determines who is the new leader and marks
-their lease as starting from now. Lease
-and leader computation is done locally
-and independently on each server.
-Once in ping phase, this new determination
-is broadcast at the next heartbeat when
-the local node issues an allcall().
+At the end of the interval, it sorts
+the respondents by rank. Since
+the replies are on a broadcast
+channel, more than one simultaneous
+allcall reply may be incorporated into
+the set of respondents.
 
-If a node receives an allcall with a leader
-claim, and that leader claim has a shorter
-lease expirtaion time than the existing
-leader, the new proposed leader is rejected
-in favor of the current leader. This
-favors continuity of leadership until
-the end of the current leaders term.
-
-## Properties of the allcall
-
-The allcalls() are heard by all active cluster members, and
-contain the sender's computed result of who the current leader is,
-and replies answer back with the recipient's own rank and id. Each
-recipient of an allcall() replies to all cluster members.
-Both the sending and the replying to the allcall are
-broadcasts that are published to distinct well known topics.
+The lowest ranking server is elected
+as leader.
 
 ## Safety/Convergence: ALLCALL converges to one leader
 
@@ -110,12 +71,17 @@ most one heartbeat term after the network join.
 
 Given the total order among nodes, exactly one
 will be lowest rank and thus be the preferred
-leader at the end of the any current leader's
-lease, even if the current lease holder
-has failed. Hence, with at least one live
-node, the system can run for at most one
-lease term before electing a leader.
+leader. If the leader fails, the next
+heartbeat of allcall will omit that
+server from the candidate list, and
+the next ranking server will be chosen.
 
+Hence, with at least one live
+node, the system can run for at most one
+heartbeat term before electing a leader.
+Since there is a total order on
+all live (non-failed) servers, only
+one will be chosen.
 
 ## commentary
 
@@ -125,12 +91,13 @@ in the face of network partition is
 desirable in many cases, and ALLCALL is
 appropriate for these. This is congruent
 with Nats design as an always-on system.
+
 ALLCALL does not guarantee that a
 leader will always be present, but
 with live nodes it does provide
 that the cluster will have a leader
-after one lease term + maxClockSkew
-has expired.
+after one heartbeat term has
+been initiated and completed.
 
 By design, ALLCALL functions well
 in a cluster with any number of nodes.
@@ -149,15 +116,32 @@ availability is more important
 than having a single writer. When
 writes are idempotent or deduplicated
 downstream, this is typically preferred.
-It is better for availability and
-uptime to run an always-on leadership
-system.
+
+prior art
+----------
+
+ALLCALL is a simplified version of
+the well known Bully Algorithm[1][2]
+for election in a distributed system
+of arbitrary graph.
+
+ALLCALL does less bullying, and lets
+nodes arrive at their own conclusions.
+The essential broadcast and ranking
+mechanism, however, is identical.
+
+[1] Hector Garcia-Molina, Elections in a
+Distributed Computing System, IEEE
+Transactions on Computers,
+Vol. C-31, No. 1, January (1982) 48–59
+
+[2] https://en.wikipedia.org/wiki/Bully_algorithm
 
 implementation
 ------------
 
 ALLCALL is implented on top of
-the Nats system, see the health/
+the Nats (https://nats.io) system, see the health/
 subdirectory of
 
 https://github.com/nats-io/gnatsd
