@@ -92,11 +92,11 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 			s.Shutdown()
 		}()
 
-		n := 20
+		n := 10
 		tot := 50
 		pause := make([]int, n)
 		for i := 0; i < n; i++ {
-			pause[i] = 20 + rand.Intn(50)
+			pause[i] = 100 + rand.Intn(100)
 			tot += pause[i]
 		}
 
@@ -105,7 +105,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 
 			cfg := &MembershipCfg{
 				MaxClockSkew: 1 * time.Nanosecond,
-				LeaseTime:    300 * time.Millisecond,
+				LeaseTime:    500 * time.Millisecond,
 				BeatDur:      100 * time.Millisecond,
 				NatsUrl:      fmt.Sprintf("nats://localhost:%v", tport),
 				MyRank:       i,         // ranks 0,1,2,3,...
@@ -142,10 +142,10 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 		time.Sleep(5 * (ms[0].Cfg.LeaseTime + ms[0].Cfg.MaxClockSkew))
 
 		// verify liveness, a leader exists.
-		p("verifying everyone thinks there is a leader:")
+		//p("verifying everyone thinks there is a leader:")
 		for i := 0; i < n; i++ {
 			h := ms[i].elec.copyLeadHistory()
-			fmt.Printf("verifying %v thinks there is a leader. avail = %v\n", i, h.Avail())
+			//fmt.Printf("verifying %v thinks there is a leader. avail = %v\n", i, h.Avail())
 			cv.So(h.Avail(), cv.ShouldBeGreaterThan, 0)
 		}
 
@@ -210,7 +210,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 			for i := 0; i < av; i++ {
 				sloc := h.A[h.Kth(i)].(*AgentLoc)
 				_ = sloc
-				fmt.Printf("history print i = %v. sloc.Id=%v / sloc.Rank=%v, port=%v\n", i, sloc.Id, sloc.Rank, sloc.Port)
+				//fmt.Printf("history print i = %v. sloc.Id=%v / sloc.Rank=%v, port=%v\n", i, sloc.Id, sloc.Rank, sloc.Port)
 			}
 			// checks second:
 
@@ -219,7 +219,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 			// start scanning from 10,...
 			for i := 10; i < av; i++ {
 				sloc := h.A[h.Kth(i)].(*AgentLoc)
-				fmt.Printf("j=%v, history check Id at i = %v. sloc.Port=%v/rank %v vs.  ms[0].myLoc.Port=%v/rank %v\n", j, i, sloc.Port, sloc.Rank, ms[0].myLoc.Port, ms[0].myLoc.Rank)
+				//fmt.Printf("j=%v, history check Id at i = %v. sloc.Port=%v/rank %v vs.  ms[0].myLoc.Port=%v/rank %v\n", j, i, sloc.Port, sloc.Rank, ms[0].myLoc.Port, ms[0].myLoc.Rank)
 
 				// ports will be the only thing different when
 				// running off of the one gnatsd that has the
@@ -229,7 +229,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 
 			for i := 10; i < av; i++ {
 				sloc := h.A[h.Kth(i)].(*AgentLoc)
-				p("j=%v history check Rank at i = %v. sloc.Rank=%v", j, i, sloc.Rank)
+				//p("j=%v history check Rank at i = %v. sloc.Rank=%v", j, i, sloc.Rank)
 				cv.So(sloc.Rank, cv.ShouldEqual, 0)
 			}
 		}
