@@ -1,0 +1,2 @@
+github.com/glycerine/go-nats/*_test.go:SA2002
+github.com/glycerine/go-nats/*/*_test.go:SA2002

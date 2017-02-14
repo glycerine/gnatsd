@@ -1,0 +1,217 @@
+{
+	"comment": "",
+	"ignore": "",
+	"package": [
+		{
+			"checksumSHA1": "LUWjnNh113/Nl3DDze3/gDWIVaA=",
+			"path": "github.com/glycerine/gnatsd",
+			"revision": "5b57b8a5a5f11edc6ed615ed2753e1db9b9a99fd",
+			"revisionTime": "2017-02-14T05:25:22Z"
+		},
+		{
+			"checksumSHA1": "iQjx056w8sh3Y2UTr9pJwXW8rvI=",
+			"path": "github.com/glycerine/gnatsd/auth",
+			"revision": "5b57b8a5a5f11edc6ed615ed2753e1db9b9a99fd",
+			"revisionTime": "2017-02-14T05:25:22Z"
+		},
+		{
+			"checksumSHA1": "bDhiO2Imz7sWWe4USgRyW4bPag8=",
+			"path": "github.com/glycerine/gnatsd/conf",
+			"revision": "5b57b8a5a5f11edc6ed615ed2753e1db9b9a99fd",
+			"revisionTime": "2017-02-14T05:25:22Z"
+		},
+		{
+			"checksumSHA1": "f3MXpSU4eD2I2vAXPw24HKVMUv4=",
+			"path": "github.com/glycerine/gnatsd/health",
+			"revision": "5b57b8a5a5f11edc6ed615ed2753e1db9b9a99fd",
+			"revisionTime": "2017-02-14T05:25:22Z"
+		},
+		{
+			"checksumSHA1": "pALJDNPsnH/1rtpQrlCnOuA0H0w=",
+			"path": "github.com/glycerine/gnatsd/health/healthcmd",
+			"revision": "5b57b8a5a5f11edc6ed615ed2753e1db9b9a99fd",
+			"revisionTime": "2017-02-14T05:25:22Z"
+		},
+		{
+			"checksumSHA1": "xPVc9H9d7413Dmc4ouKEHmg/UUo=",
+			"path": "github.com/glycerine/gnatsd/logger",
+			"revision": "5b57b8a5a5f11edc6ed615ed2753e1db9b9a99fd",
+			"revisionTime": "2017-02-14T05:25:22Z"
+		},
+		{
+			"checksumSHA1": "HW93MIGop1Harw1Qr4X0LvUZg6c=",
+			"path": "github.com/glycerine/gnatsd/server",
+			"revision": "5b57b8a5a5f11edc6ed615ed2753e1db9b9a99fd",
+			"revisionTime": "2017-02-14T05:25:22Z"
+		},
+		{
+			"checksumSHA1": "AMpWmjcoUwsnPdrl0wRucMvyf2w=",
+			"path": "github.com/glycerine/gnatsd/server/pse",
+			"revision": "5b57b8a5a5f11edc6ed615ed2753e1db9b9a99fd",
+			"revisionTime": "2017-02-14T05:25:22Z"
+		},
+		{
+			"checksumSHA1": "55WZCXA43FtLDMgbNMKOjK8wRnA=",
+			"path": "github.com/glycerine/gnatsd/test",
+			"revision": "5b57b8a5a5f11edc6ed615ed2753e1db9b9a99fd",
+			"revisionTime": "2017-02-14T05:25:22Z"
+		},
+		{
+			"checksumSHA1": "xLvFIlVQ/0RlvlRX2EmpGOH2vq4=",
+			"path": "github.com/glycerine/gnatsd/util",
+			"revision": "5b57b8a5a5f11edc6ed615ed2753e1db9b9a99fd",
+			"revisionTime": "2017-02-14T05:25:22Z"
+		},
+		{
+			"checksumSHA1": "Zm+sWRCvGra9QAlr5lXSDu3JPHk=",
+			"path": "github.com/glycerine/go-nats",
+			"revision": "557cc584f350aef60104322cd44d294d4d5bee68",
+			"revisionTime": "2017-02-14T05:26:15Z"
+		},
+		{
+			"checksumSHA1": "wymXzvdGhUiW4ahhAeP/UCo6UXQ=",
+			"path": "github.com/glycerine/go-nats/encoders/builtin",
+			"revision": "557cc584f350aef60104322cd44d294d4d5bee68",
+			"revisionTime": "2017-02-14T05:26:15Z"
+		},
+		{
+			"checksumSHA1": "fzCSi9EPnEYR00oRfbqnM3V8nHY=",
+			"path": "github.com/glycerine/go-nats/encoders/protobuf",
+			"revision": "557cc584f350aef60104322cd44d294d4d5bee68",
+			"revisionTime": "2017-02-14T05:26:15Z"
+		},
+		{
+			"checksumSHA1": "ZwqB240PiSiOPe+Ba8mN12ZgprA=",
+			"path": "github.com/glycerine/go-nats/encoders/protobuf/testdata",
+			"revision": "557cc584f350aef60104322cd44d294d4d5bee68",
+			"revisionTime": "2017-02-14T05:26:15Z"
+		},
+		{
+			"checksumSHA1": "nVszgHc3zWzDMKd85sNI2PW59UY=",
+			"path": "github.com/glycerine/go-nats/test",
+			"revision": "557cc584f350aef60104322cd44d294d4d5bee68",
+			"revisionTime": "2017-02-14T05:26:15Z"
+		},
+		{
+			"checksumSHA1": "t0VMJD7V/mQzhq0rdX9Qp0RU8OY=",
+			"path": "github.com/glycerine/go-nats/util",
+			"revision": "557cc584f350aef60104322cd44d294d4d5bee68",
+			"revisionTime": "2017-02-14T05:26:15Z"
+		},
+		{
+			"checksumSHA1": "YkB3RWFuq/XoPL1n1tUATl1tU0M=",
+			"path": "github.com/glycerine/goconvey/convey",
+			"revision": "b782d357132a984d00d2fa42b37956e4889c6c13",
+			"revisionTime": "2015-02-02T07:58:51Z"
+		},
+		{
+			"checksumSHA1": "h9U1HoMzumP94G0jkX6KeS1o3S8=",
+			"path": "github.com/glycerine/goconvey/convey/assertions",
+			"revision": "b782d357132a984d00d2fa42b37956e4889c6c13",
+			"revisionTime": "2015-02-02T07:58:51Z"
+		},
+		{
+			"checksumSHA1": "zkm/a7U83VXJnEFfdwZDC7NYfDY=",
+			"path": "github.com/glycerine/goconvey/convey/assertions/oglematchers",
+			"revision": "b782d357132a984d00d2fa42b37956e4889c6c13",
+			"revisionTime": "2015-02-02T07:58:51Z"
+		},
+		{
+			"checksumSHA1": "faVDjf1RapE0bupwYUax/v5wtSE=",
+			"path": "github.com/glycerine/goconvey/convey/assertions/oglemock",
+			"revision": "b782d357132a984d00d2fa42b37956e4889c6c13",
+			"revisionTime": "2015-02-02T07:58:51Z"
+		},
+		{
+			"checksumSHA1": "YM662wJfG3XS1EfEWpGzcjGh0po=",
+			"path": "github.com/glycerine/goconvey/convey/assertions/ogletest",
+			"revision": "b782d357132a984d00d2fa42b37956e4889c6c13",
+			"revisionTime": "2015-02-02T07:58:51Z"
+		},
+		{
+			"checksumSHA1": "dZUXUSqjhxBILzygJxAQzU1QXVc=",
+			"path": "github.com/glycerine/goconvey/convey/gotest",
+			"revision": "b782d357132a984d00d2fa42b37956e4889c6c13",
+			"revisionTime": "2015-02-02T07:58:51Z"
+		},
+		{
+			"checksumSHA1": "biSd6zVJFrtLDvDin7ww8mH4HLU=",
+			"path": "github.com/glycerine/goconvey/convey/reporting",
+			"revision": "b782d357132a984d00d2fa42b37956e4889c6c13",
+			"revisionTime": "2015-02-02T07:58:51Z"
+		},
+		{
+			"checksumSHA1": "mMa/3BB5Kt4aqx5CieYg/lNz6vI=",
+			"path": "github.com/glycerine/nuid",
+			"revision": "289cccf02c178dc782430d534e3c1f5b72af807f",
+			"revisionTime": "2016-09-27T04:49:45Z"
+		},
+		{
+			"checksumSHA1": "OVfqk5qyKVLHFirVbQOfxSkFBPo=",
+			"path": "github.com/golang/protobuf/proto",
+			"revision": "8ee79997227bf9b34611aee7946ae64735e6fd93",
+			"revisionTime": "2016-11-17T03:31:26Z"
+		},
+		{
+			"checksumSHA1": "qyalT+838zrkZMjOA62VGus0VcI=",
+			"path": "github.com/golang/protobuf/proto/proto3_proto",
+			"revision": "8ee79997227bf9b34611aee7946ae64735e6fd93",
+			"revisionTime": "2016-11-17T03:31:26Z"
+		},
+		{
+			"checksumSHA1": "hKyIpAqeYU2nAl/oXcpATnNaiBI=",
+			"path": "github.com/golang/protobuf/proto/testdata",
+			"revision": "8ee79997227bf9b34611aee7946ae64735e6fd93",
+			"revisionTime": "2016-11-17T03:31:26Z"
+		},
+		{
+			"checksumSHA1": "AjyXQ5eohrCPS/jSWZFPn5E8wnQ=",
+			"path": "github.com/golang/protobuf/protoc-gen-go/descriptor",
+			"revision": "8ee79997227bf9b34611aee7946ae64735e6fd93",
+			"revisionTime": "2016-11-17T03:31:26Z"
+		},
+		{
+			"checksumSHA1": "Y89zrH1jPTV2yIjp2JtYJ/v3e1s=",
+			"path": "github.com/golang/protobuf/ptypes",
+			"revision": "8ee79997227bf9b34611aee7946ae64735e6fd93",
+			"revisionTime": "2016-11-17T03:31:26Z"
+		},
+		{
+			"checksumSHA1": "lZFWy27Qo6+m/keDjNFYTxSmvZw=",
+			"path": "github.com/golang/protobuf/ptypes/any",
+			"revision": "8ee79997227bf9b34611aee7946ae64735e6fd93",
+			"revisionTime": "2016-11-17T03:31:26Z"
+		},
+		{
+			"checksumSHA1": "8gDNKfvEupesDdOCXio3AK/XVaA=",
+			"path": "github.com/golang/protobuf/ptypes/duration",
+			"revision": "8ee79997227bf9b34611aee7946ae64735e6fd93",
+			"revisionTime": "2016-11-17T03:31:26Z"
+		},
+		{
+			"checksumSHA1": "sfoot+dHmmOgWZS6GJ5X79ClZM0=",
+			"path": "github.com/golang/protobuf/ptypes/timestamp",
+			"revision": "8ee79997227bf9b34611aee7946ae64735e6fd93",
+			"revisionTime": "2016-11-17T03:31:26Z"
+		},
+		{
+			"checksumSHA1": "rxw1sIom9GBK0dgWvCs2ygFrAUc=",
+			"path": "github.com/google/btree",
+			"revision": "316fb6d3f031ae8f4d457c6c5186b9e3ded70435",
+			"revisionTime": "2016-12-17T18:35:37Z"
+		},
+		{
+			"checksumSHA1": "d22rgDYcZ/l1RPHtCokJRHAh0QI=",
+			"path": "github.com/gopherjs/gopherjs/js",
+			"revision": "5c8f21741620ef6a52e185bbc920499581901c9e",
+			"revisionTime": "2017-01-28T23:01:07Z"
+		},
+		{
+			"checksumSHA1": "3tpCIywCgmASqlnNyJ16XXSpzMw=",
+			"path": "github.com/jtolds/gls",
+			"revision": "bb0351aa7eb6f322f32667d51375f26a2bca6628",
+			"revisionTime": "2016-12-28T00:43:38Z"
+		}
+	],
+	"rootPath": "github.com/glycerine/gnatsd"
+}
