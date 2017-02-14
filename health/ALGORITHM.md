@@ -32,46 +32,36 @@ and that each server, absent an in-force lease, can be put into a strict total o
 
 * Rule: The lower the rank is preferred for being the leader.
 
-* Ordering by lease time then rank: we order the pair (leaseExpires, rank) first
-by largest leaseExpires time, then by lower rank. If
-both leases have expired, then lease time is not considered as
-a part of the ordering, and rank alone determines the
-new leader.
+* Ordering by rank then lease time: we order the pair (rank,leaseExpires) first
+by lowest rank, and then breaking any ties by largest leaseExpires time.
+If both leases have expired, then neither lease is accepted
+as a valid leader claim.
 
-ALLCALL Algorithm phases
+
+ALLCALL Algorithm 
 ===========================
 
-### I. Init phase
+### I. In a continuous loop
 
-When a server joins the cluster,
-it does not issue allcalls (a ping of all members)
-until after leaseTime + maxClockSkew time has elapsed.
+The server always accepts and respond
+to allcalls() from other cluster members.
 
-During init, the server does, however,
-accept and respond to allcalls() from
-other cluster members. The allcall() ping will contain
+The allcall() ping will contain
 the current (lease, leader-rank) and leader-id
-according to the issuer of the allcall(). Every
-recipient of the allcall updates her local information
-of who she thinks the leader is, so long as the
+according to the issuer of the allcall().
+
+Every recipient of the allcall updates
+her local information of who she thinks the leader is, so long as the
 received information is monotone in the (lease, leader-rank)
 ordering; so a later unexpired lease will replace an
 earlier unexpired lease, and if both are expired then
 the lower rank will replace the larger rank as winner
 of the current leader role.
 
-### II. regular ping phase
-
-After a server has finished its Init phase, it
-enters its ping phase, where is stays until it
-is shut down.
-
-During ping phase, the server continues to accept and respond
-to allcall requests from other servers. Now in addition,
-the server also issues its own allcall() pings every
+Each server issues its own allcall() pings every
 heartBeat seconds.
 
-### III. Election and Lease determination
+### II. Election and Lease determination
 
 Election and leasing are computed locally, by each
 node, one heartBeat after receiving any replies
@@ -92,10 +82,7 @@ lease expirtaion time than the existing
 leader, the new proposed leader is rejected
 in favor of the current leader. This
 favors continuity of leadership until
-the end of the current leaders term, and
-is a product of the sort order
-described above where we sort 
-candidates by lease time then rank.
+the end of the current leaders term.
 
 ## Properties of the allcall
 
@@ -104,7 +91,7 @@ contain the sender's computed result of who the current leader is,
 and replies answer back with the recipient's own rank and id. Each
 recipient of an allcall() replies to all cluster members.
 Both the sending and the replying to the allcall are
-broadcasts that are published to a well known topic.
+broadcasts that are published to distinct well known topics.
 
 ## Safety/Convergence: ALLCALL converges to one leader
 
@@ -112,13 +99,12 @@ Suppose two nodes are partitioned and so both are leaders on
 their own side of the network. Then suppose the network
 is joined again, so the two leaders are brought together
 by a healing of the network, or by adding a new link
-between the networks. The two nodes exchange Ids and lease
-times, and the node with the shorter valid lease time
-adopts the node with the longer lease as leader,
-since that is the sort order. The adoption takes
-effect as soon as the loser's current lease expires.
+between the networks. The two nodes exchange Ids and
+ranks via responding to allcalls, and compute
+who is the new leader.
+
 Hence the two leader situation persists for at
-most one lease term after the network join.
+most one heartbeat term after the network join.
 
 ## Liveness: a leader will be chosen
 
