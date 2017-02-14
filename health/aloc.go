@@ -54,7 +54,7 @@ func (s *AgentLoc) fromBytes(by []byte) error {
 	return json.Unmarshal(by, s)
 }
 
-func slocEqual(a, b *AgentLoc) bool {
+func alocEqual(a, b *AgentLoc) bool {
 	aless := AgentLocLessThan(a, b)
 	bless := AgentLocLessThan(b, a)
 	return !aless && !bless

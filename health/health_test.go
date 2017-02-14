@@ -3,6 +3,7 @@ package health
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"math/rand"
 	"net"
 	"testing"
@@ -111,7 +112,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 
 			if i == 0 {
 				cfg.deaf = DEAF_FALSE
-				aLogger := logger.NewStdLogger(micros, debug, trace, colors, pid)
+				aLogger := logger.NewStdLogger(micros, debug, trace, colors, pid, log.LUTC)
 				_ = aLogger
 				// to follow the prints, uncomment:
 				cfg.Log = aLogger
@@ -162,13 +163,13 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 		// prints first:
 
 		for i := 0; i < av; i++ {
-			sloc := h.A[h.Kth(i)].(AgentLoc)
+			sloc := h.A[h.Kth(i)].(*AgentLoc)
 			_ = sloc
 			//fmt.Printf("history print i = %v. sloc.Id=%v / sloc.Rank=%v, port=%v\n", i, sloc.Id, sloc.Rank, sloc.Port)
 		}
 		// checks second:
 		for i := 0; i < av; i++ {
-			sloc := h.A[h.Kth(i)].(AgentLoc)
+			sloc := h.A[h.Kth(i)].(*AgentLoc)
 			//fmt.Printf("history check Id at i = %v. sloc.Id=%v\n", i, sloc.Id)
 			cv.So(sloc.Id, cv.ShouldEqual, ms[0].myLoc.Id)
 			// ports will be the only thing different when
@@ -178,7 +179,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 		}
 
 		for i := 0; i < av; i++ {
-			sloc := h.A[h.Kth(i)].(AgentLoc)
+			sloc := h.A[h.Kth(i)].(*AgentLoc)
 			//p("history check Rank at i = %v. sloc.Rank=%v", i, sloc.Rank)
 			cv.So(sloc.Rank, cv.ShouldEqual, 0)
 		}
@@ -197,7 +198,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 			// prints first:
 
 			for i := 0; i < av; i++ {
-				sloc := h.A[h.Kth(i)].(AgentLoc)
+				sloc := h.A[h.Kth(i)].(*AgentLoc)
 				_ = sloc
 				//fmt.Printf("history print i = %v. sloc.Id=%v / sloc.Rank=%v, port=%v\n", i, sloc.Id, sloc.Rank, sloc.Port)
 			}
@@ -207,7 +208,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 			// should have chosen the rank 0 leader.
 			// start scanning from 6,...
 			for i := 6; i < av; i++ {
-				sloc := h.A[h.Kth(i)].(AgentLoc)
+				sloc := h.A[h.Kth(i)].(*AgentLoc)
 				//fmt.Printf("j=%v, history check Id at i = %v. sloc.Port=%v vs.  ms[0].myLoc.Port=%v\n", j, i, sloc.Port, ms[0].myLoc.Port)
 
 				// ports will be the only thing different when
@@ -217,7 +218,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 			}
 
 			for i := 6; i < av; i++ {
-				sloc := h.A[h.Kth(i)].(AgentLoc)
+				sloc := h.A[h.Kth(i)].(*AgentLoc)
 				//p("j=%v history check Rank at i = %v. sloc.Rank=%v", j, i, sloc.Rank)
 				cv.So(sloc.Rank, cv.ShouldEqual, 0)
 			}
@@ -237,7 +238,7 @@ func Test103TiedRanksUseIdAndDoNotAlternate(t *testing.T) {
 
 		n := 2
 
-		aLogger := logger.NewStdLogger(micros, true, trace, colors, pid)
+		aLogger := logger.NewStdLogger(micros, true, trace, colors, pid, log.LUTC)
 		var ms []*Membership
 		for i := 0; i < n; i++ {
 
@@ -301,7 +302,7 @@ func Test103TiedRanksUseIdAndDoNotAlternate(t *testing.T) {
 
 			// prints first:
 			for i := 0; i < av; i++ {
-				sloc := h.A[h.Kth(i)].(AgentLoc)
+				sloc := h.A[h.Kth(i)].(*AgentLoc)
 				fmt.Printf("server j=%v, history print i = %v. / sloc.Port=%v, winner.Port=%v\n", j, i, sloc.Port, winner.Port)
 			}
 		}
@@ -314,7 +315,7 @@ func Test103TiedRanksUseIdAndDoNotAlternate(t *testing.T) {
 
 			// checks second:
 			for i := 0; i < av; i++ {
-				sloc := h.A[h.Kth(i)].(AgentLoc)
+				sloc := h.A[h.Kth(i)].(*AgentLoc)
 				fmt.Printf("server j=%v, history check Id at i = %v. sloc.Port=%v,  winner.Port=%v\n", j, i, sloc.Port, winner.Port)
 				cv.So(sloc.Port, cv.ShouldEqual, winner.Port)
 			}
@@ -389,7 +390,7 @@ func Test104ReceiveOwnSends(t *testing.T) {
 			MyRank:       0,
 		}
 
-		aLogger := logger.NewStdLogger(micros, true, trace, colors, pid)
+		aLogger := logger.NewStdLogger(micros, true, trace, colors, pid, log.LUTC)
 		cfg.Log = aLogger
 
 		m := NewMembership(cfg)
@@ -462,7 +463,7 @@ func Test104ReceiveOwnSends(t *testing.T) {
 			Rank:         -100,
 			LeaseExpires: now.Add(time.Hour),
 		}
-		won, _ := m.elec.setLeader(&sl, now)
+		won, _ := m.elec.setLeader(sl, now)
 		if !won {
 			panic("must be able to set leader")
 		}
@@ -499,7 +500,7 @@ func Test105OnlyConnectToOriginalGnatsd(t *testing.T) {
 			BeatDur:      10 * time.Millisecond,
 			NatsUrl:      fmt.Sprintf("nats://localhost:%v", TEST_PORT),
 		}
-		aLogger := logger.NewStdLogger(micros, true, trace, colors, pid)
+		aLogger := logger.NewStdLogger(micros, true, trace, colors, pid, log.LUTC)
 		cfg.Log = aLogger
 
 		m := NewMembership(cfg)
@@ -570,7 +571,7 @@ func Test107OneNodeAloneWaitsLeaseTermBeforeRenewal(t *testing.T) {
 		s.InternalCliRegisterCallback(srv)
 		cfg.CliConn = cli
 
-		aLogger := logger.NewStdLogger(micros, true, trace, colors, pid)
+		aLogger := logger.NewStdLogger(micros, true, trace, colors, pid, log.LUTC)
 		_ = aLogger
 		// to follow the prints, uncomment:
 		cfg.Log = aLogger
