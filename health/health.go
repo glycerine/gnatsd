@@ -555,8 +555,8 @@ func (m *Membership) start() {
 		if curCount < prevCount {
 			m.Cfg.Log.Debugf("health-agent: ---- "+
 				"PAGE PAGE PAGE!! we went "+
-				"down a server, from %v -> %v."+
-				"\nlost: '%s'\nprev: '%s'\ncur:'%s'",
+				"down a server, from %v -> %v. "+
+				"lost: '%s'",
 				prevCount,
 				curCount,
 				lost,
