@@ -559,9 +559,7 @@ func (m *Membership) start() {
 				"lost: '%s'",
 				prevCount,
 				curCount,
-				lost,
-				prevMember,
-				curMember)
+				lost)
 
 		} else if curCount > prevCount && prevCount > 0 {
 			m.Cfg.Log.Debugf("health-agent: ++++  "+
