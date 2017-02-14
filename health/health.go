@@ -180,7 +180,8 @@ func (e *leadHolder) setLeader(sloc AgentLoc, now time.Time) (slocWon bool, alt 
 		return false, e.sloc
 	}
 
-	// check on expired leases
+	// check on expired leases: any new leader must
+	// have a lease that is not expired.
 	nowu := now.UnixNano()
 	cure := e.sloc.LeaseExpires.UnixNano()
 	newe := sloc.LeaseExpires.UnixNano()
@@ -299,90 +300,6 @@ func (m *Membership) start() {
 	var curMember *members
 	var curLead AgentLoc
 
-	/*
-		// do an initial allcall() to discover any
-		// current leader.
-		m.Cfg.Log.Debugf("health-agent: " +
-			"init: doing initial allcall " +
-			"to discover any existing leader...")
-
-		err := m.allcall()
-		if err != nil {
-			m.Cfg.Log.Debugf("health-agent: "+
-				"error back from allcall, "+
-				"terminating on: %s", err)
-			return
-		}
-
-		select {
-		case <-time.After(m.Cfg.BeatDur):
-			// continue below, initial heartbeat done.
-		case <-m.needReconnect:
-			err := m.setupNatsClient()
-			if err != nil {
-				m.Cfg.Log.Debugf("health-agent: "+
-					"fatal error: could not reconnect to, "+
-					"our url '%s', error: %s",
-					m.Cfg.NatsUrl, err)
-
-				m.halt.ReqStop.Close()
-				return
-			}
-		case <-m.halt.ReqStop.Chan:
-			return
-		}
-
-		prevCount, prevMember = pc.getSetAndClear()
-		now := time.Now().UTC()
-		m.dlog("0-th round, myLoc:%s, prevMember='%s'", &m.myLoc, prevMember)
-
-		lead0 := prevMember.minrank()
-		if lead0 != nil {
-			m.elec.setLeader(lead0, now)
-		}
-		firstSeenLead := m.elec.getLeader()
-		if lead0 != nil &&
-			firstSeenLead.Id != "" &&
-			firstSeenLead.Id != m.myLoc.Id &&
-			!firstSeenLead.LeaseExpires.IsZero() &&
-			firstSeenLead.LeaseExpires.After(now) {
-
-			m.dlog("health-agent: init: "+
-				"after one heartbeat, "+
-				"we detect current leader '%s'"+
-				" of rank %v with lease "+
-				"for %v",
-				firstSeenLead.Id,
-				firstSeenLead.Rank,
-				firstSeenLead.LeaseExpires.Sub(now),
-			)
-		} else {
-			m.dlog("health-agent: "+
-				"init: after one heartbeat,"+
-				" no leader found. waiting "+
-				"for a full leader lease "+
-				"term of %s to expire...",
-				m.Cfg.LeaseTime)
-
-			select {
-			case <-time.After(m.Cfg.LeaseTime):
-			case <-m.needReconnect:
-				err := m.setupNatsClient()
-				if err != nil {
-					m.Cfg.Log.Debugf("health-agent: "+
-						"fatal error: could not reconnect to, "+
-						"our url '%s', error: %s",
-						m.Cfg.NatsUrl, err)
-
-					m.halt.ReqStop.Close()
-					return
-				}
-			case <-m.halt.ReqStop.Chan:
-				return
-			}
-		}
-	*/
-	// prev responses should be back by now.
 	var err error
 	var now time.Time
 	var expired bool
@@ -450,10 +367,18 @@ func (m *Membership) start() {
 			// record in our history
 			won, alt := m.elec.setLeader(curLead, now)
 			if !won {
-				m.trace("k-th (k=%v) round conclusion of trying to setLeader: rejected '%s' in favor of '%s'", k, curLead, &alt)
+				m.trace("k-th (k=%v) round "+
+					"conclusion of trying to "+
+					"setLeader: rejected '%s'"+
+					" in favor of '%s'",
+					k, curLead, &alt)
 				curLead = alt
 			} else {
-				m.trace("k-th (k=%v) round conclusion of trying to setLeader: accepted as new lead '%s'", k, curLead)
+				m.trace("k-th (k=%v) round "+
+					"conclusion of trying to "+
+					"setLeader: accepted as "+
+					"new lead '%s'",
+					k, curLead)
 			}
 		}
 
@@ -470,7 +395,8 @@ func (m *Membership) start() {
 					left := curLead.LeaseExpires.Sub(now)
 					m.dlog("health-agent: "+
 						"I am LEAD, my Id: '%s', "+
-						"rank %v port %v host %v pid %v. lease expires "+
+						"rank %v port %v host %v "+
+						"pid %v. lease expires "+
 						"in %s",
 						loc.Id,
 						loc.Rank,
@@ -553,7 +479,7 @@ func (m *Membership) start() {
 			}
 		}
 		if curCount < prevCount {
-			m.Cfg.Log.Debugf("health-agent: ---- "+
+			m.dlog("health-agent: ---- "+
 				"PAGE PAGE PAGE!! we went "+
 				"down a server, from %v -> %v. "+
 				"lost: '%s'",
@@ -562,7 +488,7 @@ func (m *Membership) start() {
 				lost)
 
 		} else if curCount > prevCount && prevCount > 0 {
-			m.Cfg.Log.Debugf("health-agent: ++++  "+
+			m.dlog("health-agent: ++++  "+
 				"MORE ROBUSTNESS GAINED; "+
 				"we went from %v -> %v. "+
 				"gained: '%s'",
@@ -590,7 +516,6 @@ func pong(nc *nats.Conn, subj string, msg []byte) {
 	err := nc.Publish(subj, msg)
 	panicOn(err)
 	nc.Flush()
-	//nc.FlushTimeout(2 * time.Second)
 	// ignore error on nc.Flush().
 	// might be: nats: connection closed on shutdown.
 }
@@ -620,8 +545,7 @@ func (m *Membership) allcall() error {
 type pongCollector struct {
 	replies int
 
-	fromWithTime *members
-	fromNoTime   *members
+	fromNoTime *members
 
 	mu    sync.Mutex
 	mship *Membership
@@ -629,9 +553,8 @@ type pongCollector struct {
 
 func (m *Membership) newPongCollector() *pongCollector {
 	return &pongCollector{
-		fromWithTime: newMembers(),
-		fromNoTime:   newMembers(),
-		mship:        m,
+		fromNoTime: newMembers(),
+		mship:      m,
 	}
 }
 
@@ -642,8 +565,6 @@ func (pc *pongCollector) insert(sloc AgentLoc) {
 	cp.LeaseExpires = time.Time{}
 	cp.IsLeader = false
 	pc.fromNoTime.insert(cp)
-
-	pc.fromWithTime.insert(sloc)
 }
 
 // acumulate pong responses
@@ -666,7 +587,6 @@ func (pc *pongCollector) receivePong(msg *nats.Msg) {
 
 func (pc *pongCollector) clear() {
 	pc.mu.Lock()
-	pc.fromWithTime.clear()
 	pc.fromNoTime.clear()
 	pc.mu.Unlock()
 }
