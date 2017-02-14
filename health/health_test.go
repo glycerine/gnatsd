@@ -16,9 +16,11 @@ import (
 	"github.com/nats-io/go-nats"
 )
 
-const TEST_PORT = 8392
+const TEST_PORT = 8198
 const DefaultTimeout = 2 * time.Second
 
+// warning: don't assume TEST_PORT is correct now...
+// we use a dynamic port to avoid test conflicts.
 var cliOpts = nats.Options{
 	Url:            fmt.Sprintf("nats://localhost:%d", TEST_PORT),
 	AllowReconnect: true,
@@ -28,6 +30,8 @@ var cliOpts = nats.Options{
 }
 
 // DefaultTestOptions are default options for the unit tests.
+// Warning: don't assume TEST_PORT is correct now...
+// we use a dynamic port to avoid test conflicts.
 var serverOpts = server.Options{
 	Host:           "localhost",
 	Port:           TEST_PORT,
@@ -40,7 +44,9 @@ func Test101StressTestManyClients(t *testing.T) {
 
 	cv.Convey("when stress testing with 50 clients coming up and shutting down, we should survive and prosper", t, func() {
 
-		s := RunServerOnPort(TEST_PORT)
+		tport, ls := getAvailPort()
+		ls.Close()
+		s := RunServerOnPort(tport)
 		defer s.Shutdown()
 
 		n := 50
@@ -55,7 +61,7 @@ func Test101StressTestManyClients(t *testing.T) {
 				MaxClockSkew: 1 * time.Nanosecond,
 				LeaseTime:    30 * time.Millisecond,
 				BeatDur:      10 * time.Millisecond,
-				NatsUrl:      fmt.Sprintf("nats://localhost:%v", TEST_PORT),
+				NatsUrl:      fmt.Sprintf("nats://localhost:%v", tport),
 				MyRank:       i, // ranks 0..n-1
 			}
 
@@ -77,13 +83,16 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 
 	cv.Convey("Given a cluster of one server with rank 0, no matter what other servers arrive thinking they are the leader (say, after a partition is healed), as long as those other nodes have rank 1, our rank 0 process will persist in leading and all other arrivals will give up their leadership claims (after their leases expire). In addition to safety, this is also a liveness check: After a single lease term + clockskew, a leader will have been chosen.", t, func() {
 
-		s := RunServerOnPort(TEST_PORT)
+		tport, ls := getAvailPort()
+		ls.Close()
+
+		s := RunServerOnPort(tport)
 		defer func() {
 			p("starting gnatsd shutdown...")
 			s.Shutdown()
 		}()
 
-		n := 7
+		n := 50
 		tot := 50
 		pause := make([]int, n)
 		for i := 0; i < n; i++ {
@@ -98,7 +107,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 				MaxClockSkew: 1 * time.Nanosecond,
 				LeaseTime:    100 * time.Millisecond,
 				BeatDur:      30 * time.Millisecond,
-				NatsUrl:      fmt.Sprintf("nats://localhost:%v", TEST_PORT),
+				NatsUrl:      fmt.Sprintf("nats://localhost:%v", tport),
 				MyRank:       i,         // ranks 0,1,2,3,...
 				deaf:         DEAF_TRUE, // don't ping or pong
 				historyCount: 10000,
@@ -231,7 +240,10 @@ func Test103TiedRanksUseIdAndDoNotAlternate(t *testing.T) {
 
 	cv.Convey("Given a cluster of two servers with rank 0 and different IDs, one should win after the initial period, and they should not alternate leadership as they carry forward.", t, func() {
 
-		s := RunServerOnPort(TEST_PORT)
+		tport, ls := getAvailPort()
+		ls.Close()
+
+		s := RunServerOnPort(tport)
 		defer func() {
 			p("starting gnatsd shutdown...")
 			s.Shutdown()
@@ -247,7 +259,7 @@ func Test103TiedRanksUseIdAndDoNotAlternate(t *testing.T) {
 				MaxClockSkew: 1 * time.Nanosecond,
 				LeaseTime:    400 * time.Millisecond,
 				BeatDur:      100 * time.Millisecond,
-				NatsUrl:      fmt.Sprintf("nats://localhost:%v", TEST_PORT),
+				NatsUrl:      fmt.Sprintf("nats://localhost:%v", tport),
 				MyRank:       0,
 				historyCount: 10000,
 			}
@@ -296,7 +308,7 @@ func Test103TiedRanksUseIdAndDoNotAlternate(t *testing.T) {
 
 			// check that the history doesn't alternate
 			// between ports / servers.
-			h := ms[j].elec.history
+			h := ms[j].elec.copyLeadHistory()
 			av := h.Avail()
 			p("ms[j=%v].myLoc.Id = %v", j, ms[j].myLoc.Id)
 			p("av: j=%v, available history len = %v", j, av)
@@ -312,7 +324,7 @@ func Test103TiedRanksUseIdAndDoNotAlternate(t *testing.T) {
 
 			// check that the history doesn't alternate
 			// between ports / servers.
-			h := ms[j].elec.history
+			h := ms[j].elec.copyLeadHistory()
 			av := h.Avail()
 
 			// checks second:
@@ -374,7 +386,10 @@ func Test104ReceiveOwnSends(t *testing.T) {
 
 	cv.Convey("If we transmit on a topic we are subscribed to, then we should receive our own send.", t, func() {
 
-		s := RunServerOnPort(TEST_PORT)
+		tport, ls := getAvailPort()
+		ls.Close()
+
+		s := RunServerOnPort(tport)
 		defer func() {
 			p("starting gnatsd shutdown...")
 			s.Shutdown()
@@ -388,7 +403,7 @@ func Test104ReceiveOwnSends(t *testing.T) {
 			MaxClockSkew: 1 * time.Nanosecond,
 			LeaseTime:    30 * time.Millisecond,
 			BeatDur:      10 * time.Millisecond,
-			NatsUrl:      fmt.Sprintf("nats://localhost:%v", TEST_PORT),
+			NatsUrl:      fmt.Sprintf("nats://localhost:%v", tport),
 			MyRank:       0,
 		}
 
@@ -480,6 +495,10 @@ func Test104ReceiveOwnSends(t *testing.T) {
 func Test105OnlyConnectToOriginalGnatsd(t *testing.T) {
 
 	cv.Convey("If a heath-agent is disconnected from gnatsd, it should only ever reconnect to that same gnatsd--the server whose health it is responsible for monitoring.", t, func() {
+		tport, ls := getAvailPort()
+		ls.Close()
+		tport2, ls2 := getAvailPort()
+		ls2.Close()
 
 		cluster1Port, lsn1 := getAvailPort()
 		cluster2Port, lsn2 := getAvailPort()
@@ -488,8 +507,8 @@ func Test105OnlyConnectToOriginalGnatsd(t *testing.T) {
 		lsn1.Close()
 		lsn2.Close()
 		routesString := fmt.Sprintf("nats://127.0.0.1:%v", cluster1Port)
-		s := StartClusterOnPort(TEST_PORT, cluster1Port)
-		s2 := AddToClusterOnPort(TEST_PORT+1, cluster2Port, routesString)
+		s := StartClusterOnPort(tport, cluster1Port)
+		s2 := AddToClusterOnPort(tport2, cluster2Port, routesString)
 		defer s2.Shutdown()
 
 		cli, srv, err := NewInternalClientPair()
@@ -500,7 +519,7 @@ func Test105OnlyConnectToOriginalGnatsd(t *testing.T) {
 			MaxClockSkew: 1 * time.Nanosecond,
 			LeaseTime:    30 * time.Millisecond,
 			BeatDur:      10 * time.Millisecond,
-			NatsUrl:      fmt.Sprintf("nats://localhost:%v", TEST_PORT),
+			NatsUrl:      fmt.Sprintf("nats://localhost:%v", tport),
 		}
 		aLogger := logger.NewStdLogger(micros, debug, trace, colors, pid, log.LUTC)
 		cfg.Log = aLogger
@@ -552,7 +571,11 @@ func Test106AgentLocLessThan(t *testing.T) {
 func Test107OneNodeAloneWaitsLeaseTermBeforeRenewal(t *testing.T) {
 
 	cv.Convey("Given a cluster of one server, it should elect itself leader and then wait a full lease term before considering who to elect again", t, func() {
-		s := RunServerOnPort(TEST_PORT)
+
+		tport, ls := getAvailPort()
+		ls.Close()
+
+		s := RunServerOnPort(tport)
 		defer func() {
 			p("starting gnatsd shutdown...")
 			s.Shutdown()
@@ -562,7 +585,7 @@ func Test107OneNodeAloneWaitsLeaseTermBeforeRenewal(t *testing.T) {
 			MaxClockSkew: 1 * time.Nanosecond,
 			LeaseTime:    3000 * time.Millisecond,
 			BeatDur:      1000 * time.Millisecond,
-			NatsUrl:      fmt.Sprintf("nats://localhost:%v", TEST_PORT),
+			NatsUrl:      fmt.Sprintf("nats://localhost:%v", tport),
 			MyRank:       0,
 			historyCount: 10000,
 		}
@@ -590,18 +613,10 @@ func Test107OneNodeAloneWaitsLeaseTermBeforeRenewal(t *testing.T) {
 		// let it get past init phase.
 		time.Sleep(3 * (m.Cfg.LeaseTime + m.Cfg.MaxClockSkew))
 
-		m.elec.mu.Lock()
-		av := m.elec.history.Avail()
-		m.elec.mu.Unlock()
+		h := m.elec.copyLeadHistory()
+		av := h.Avail()
 		fmt.Printf("verifying at most 3 leader changes: %v\n", av)
 		cv.So(av, cv.ShouldBeLessThan, 4)
 
-	})
-}
-
-func Test108ResponseToAllCallShouldIncludeLeaderAndLeaseMarkings(t *testing.T) {
-
-	cv.Convey("Given a cluster of one server, it should elect itself leader and then wait a full lease term before considering who to elect again", t, func() {
-		// RunServerOnPort(TEST_PORT)
 	})
 }
