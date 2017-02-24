@@ -18,7 +18,7 @@ givens
 and unique to that server. If necessary an extremely long
 true random number is used to break ties between server ranks, so
 that we may assert, with probability 1, that all ranks are distinct.
-Server can be put into a strict total order.
+Servers can be put into a strict total order.
 
 * Rule: The lower the rank is preferred for being the leader.
 
