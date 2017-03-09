@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/glycerine/gnatsd/server"
-	"github.com/glycerine/go-nats"
+	"github.com/glycerine/hnatsd/server"
+	"github.com/glycerine/nats"
 )
 
 const CLIENT_PORT = 11422

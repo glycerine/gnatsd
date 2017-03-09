@@ -14,7 +14,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/glycerine/gnatsd/server/pse"
+	"github.com/glycerine/hnatsd/server/pse"
 )
 
 // Snapshot this

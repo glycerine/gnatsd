@@ -3,7 +3,7 @@
 package auth
 
 import (
-	"github.com/glycerine/gnatsd/server"
+	"github.com/glycerine/hnatsd/server"
 	"golang.org/x/crypto/bcrypt"
 )
 

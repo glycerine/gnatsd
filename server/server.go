@@ -21,7 +21,7 @@ import (
 	// Allow dynamic profiling.
 	_ "net/http/pprof"
 
-	"github.com/glycerine/gnatsd/util"
+	"github.com/glycerine/hnatsd/util"
 )
 
 // Info is the information sent to clients to help them understand information

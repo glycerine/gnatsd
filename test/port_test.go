@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/glycerine/gnatsd/server"
+	"github.com/glycerine/hnatsd/server"
 )
 
 func TestResolveRandomPort(t *testing.T) {

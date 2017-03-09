@@ -16,7 +16,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/glycerine/gnatsd/server"
+	"github.com/glycerine/hnatsd/server"
 )
 
 const clientProtoInfo = 1

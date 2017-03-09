@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/glycerine/gnatsd/auth"
-	"github.com/glycerine/gnatsd/server"
+	"github.com/glycerine/hnatsd/auth"
+	"github.com/glycerine/hnatsd/server"
 )
 
 const natsServerExe = "../gnatsd"

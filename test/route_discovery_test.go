@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/glycerine/gnatsd/server"
+	"github.com/glycerine/hnatsd/server"
 )
 
 func runSeedServer(t *testing.T) (*server.Server, *server.Options) {

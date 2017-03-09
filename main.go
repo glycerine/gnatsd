@@ -10,14 +10,14 @@ import (
 	"os"
 	"time"
 
-	"github.com/glycerine/gnatsd/auth"
-	"github.com/glycerine/gnatsd/health"
-	"github.com/glycerine/gnatsd/logger"
-	"github.com/glycerine/gnatsd/server"
+	"github.com/glycerine/hnatsd/auth"
+	"github.com/glycerine/hnatsd/health"
+	"github.com/glycerine/hnatsd/logger"
+	"github.com/glycerine/hnatsd/server"
 )
 
 var usageStr = `
-Usage: gnatsd [options]
+Usage: hnatsd [options]
 
 Server Options:
     -a, --addr <host>                Bind to host address (default: 0.0.0.0)

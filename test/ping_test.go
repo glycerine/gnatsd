@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/glycerine/gnatsd/server"
+	"github.com/glycerine/hnatsd/server"
 )
 
 const (

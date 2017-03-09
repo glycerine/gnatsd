@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	cv "github.com/glycerine/goconvey/convey"
-	"github.com/glycerine/gnatsd/logger"
-	"github.com/glycerine/gnatsd/server"
-	gnatsd "github.com/glycerine/gnatsd/test"
 	"github.com/glycerine/go-nats"
+	cv "github.com/glycerine/goconvey/convey"
+	"github.com/glycerine/hnatsd/logger"
+	"github.com/glycerine/hnatsd/server"
+	gnatsd "github.com/glycerine/hnatsd/test"
 )
 
 const testPort = 8198

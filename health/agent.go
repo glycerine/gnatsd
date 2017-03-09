@@ -5,13 +5,13 @@ import (
 	"net"
 	"time"
 
-	"github.com/glycerine/gnatsd/server"
+	"github.com/glycerine/hnatsd/server"
 )
 
 // Agent implements the InternalClient interface.
 // It provides health status checks and
 // leader election from among the candidate
-// gnatsd instances in a cluster.
+// hnatsd instances in a cluster.
 type Agent struct {
 	opts  *server.Options
 	mship *Membership

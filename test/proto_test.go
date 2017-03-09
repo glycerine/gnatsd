@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/glycerine/gnatsd/server"
+	"github.com/glycerine/hnatsd/server"
 )
 
 const PROTO_TEST_PORT = 9922

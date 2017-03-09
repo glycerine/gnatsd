@@ -6,7 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/glycerine/gnatsd/logger"
+	"github.com/glycerine/hnatsd/logger"
 )
 
 // Package globals for performance checks

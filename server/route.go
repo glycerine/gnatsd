@@ -16,7 +16,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/glycerine/gnatsd/util"
+	"github.com/glycerine/hnatsd/util"
 )
 
 // RouteType designates the router type
