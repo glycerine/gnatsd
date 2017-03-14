@@ -1,0 +1,4 @@
+0000000000000000000000000000000000000000 f30ba911751de29d7138a8f9310965d444b36ea6 Jason E. Aten <j.e.aten@gmail.com> 1477175774 -0500	branch: Created from HEAD
+f30ba911751de29d7138a8f9310965d444b36ea6 72ad1a8311a32fc29458e0210925af134a754a1d Jason E. Aten <j.e.aten@gmail.com> 1477243207 -0500	commit: atg. all tests green
+72ad1a8311a32fc29458e0210925af134a754a1d b4e79def7167b40acd46b9aa9b7dea63823a7bc4 Jason E. Aten <j.e.aten@gmail.com> 1477243216 -0500	commit (amend): atg. all tests green, but loud
+b4e79def7167b40acd46b9aa9b7dea63823a7bc4 654b3a2f722335fbdcabd516e48d02d7b060aade Jason E. Aten <j.e.aten@gmail.com> 1477245002 -0500	commit: atg. all tests green and quiet

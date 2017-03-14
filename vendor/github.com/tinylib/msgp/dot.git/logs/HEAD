@@ -1,0 +1,219 @@
+0000000000000000000000000000000000000000 30aae4326ec7d45a41eaee121947aafb9507c060 jaten <jaten@betable.com> 1451200991 -0800	clone: from https://github.com/tinylib/msgp
+30aae4326ec7d45a41eaee121947aafb9507c060 30aae4326ec7d45a41eaee121947aafb9507c060 jaten <jaten@betable.com> 1451200992 -0800	checkout: moving from master to master
+30aae4326ec7d45a41eaee121947aafb9507c060 0d29f4bb1d9c5d1ad8ad54e0507ca54c0fa50482 jaten <jaten@betable.com> 1452714737 -0800	pull --ff-only: Fast-forward
+0d29f4bb1d9c5d1ad8ad54e0507ca54c0fa50482 0d29f4bb1d9c5d1ad8ad54e0507ca54c0fa50482 jaten <jaten@betable.com> 1452714737 -0800	checkout: moving from master to master
+0d29f4bb1d9c5d1ad8ad54e0507ca54c0fa50482 0d29f4bb1d9c5d1ad8ad54e0507ca54c0fa50482 jaten <jaten@jatens-MacBook-Pro.local> 1454704827 -0800	checkout: moving from master to master
+0d29f4bb1d9c5d1ad8ad54e0507ca54c0fa50482 0d29f4bb1d9c5d1ad8ad54e0507ca54c0fa50482 jaten <jaten@jatens-MacBook-Pro.local> 1454704916 -0800	checkout: moving from master to master
+0d29f4bb1d9c5d1ad8ad54e0507ca54c0fa50482 ea499db36354e83c592bd685e0796a0a280ac405 jaten <jaten@betable.com> 1459060321 -0700	commit: support for aliased imports. Fixes #146.
+ea499db36354e83c592bd685e0796a0a280ac405 9ad421bffc9f1f09b149dfdd22e788c9de59bffe Jason E. Aten <j.e.aten@gmail.com> 1459060744 -0700	commit (amend): support for aliased imports. Fixes #146.
+9ad421bffc9f1f09b149dfdd22e788c9de59bffe 58d334d948735fbc930e06def9d6870de827e07d Jason E. Aten <j.e.aten@gmail.com> 1459133269 -0700	pull: Fast-forward
+58d334d948735fbc930e06def9d6870de827e07d cf4d6d402b01d9b359f52fc88be0f582402177c0 Jason E. Aten <j.e.aten@gmail.com> 1460956194 -0700	pull --ff-only: Fast-forward
+cf4d6d402b01d9b359f52fc88be0f582402177c0 ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20 Jason E. Aten <j.e.aten@gmail.com> 1476461441 -0500	pull: Fast-forward
+ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20 ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20 Jason E. Aten <j.e.aten@gmail.com> 1476594704 -0500	checkout: moving from master to omitempty
+ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20 1f4da8ee82d57edc671c296450f0cdfede70eef7 Jason E. Aten <j.e.aten@gmail.com> 1476596029 -0500	commit: omitempty tags implemented. Fixes #103
+1f4da8ee82d57edc671c296450f0cdfede70eef7 1f4da8ee82d57edc671c296450f0cdfede70eef7 Jason E. Aten <j.e.aten@gmail.com> 1476596184 -0500	checkout: moving from omitempty to nozeb
+1f4da8ee82d57edc671c296450f0cdfede70eef7 fdcc3dce90ca764b3cf38519a2c01ae133a7c09e Jason E. Aten <j.e.aten@gmail.com> 1476596366 -0500	commit: omitempty only
+fdcc3dce90ca764b3cf38519a2c01ae133a7c09e fdcc3dce90ca764b3cf38519a2c01ae133a7c09e Jason E. Aten <j.e.aten@gmail.com> 1476596388 -0500	checkout: moving from nozeb to tag_omitempty
+fdcc3dce90ca764b3cf38519a2c01ae133a7c09e 1f4da8ee82d57edc671c296450f0cdfede70eef7 Jason E. Aten <j.e.aten@gmail.com> 1476596431 -0500	checkout: moving from tag_omitempty to omitempty
+1f4da8ee82d57edc671c296450f0cdfede70eef7 3af6e7b8388c6930fbc3675925d65c6d09bd8579 Jason E. Aten <j.e.aten@gmail.com> 1476596523 -0500	commit: working omitempty
+3af6e7b8388c6930fbc3675925d65c6d09bd8579 fdcc3dce90ca764b3cf38519a2c01ae133a7c09e Jason E. Aten <j.e.aten@gmail.com> 1476596567 -0500	checkout: moving from omitempty to tag_omitempty
+fdcc3dce90ca764b3cf38519a2c01ae133a7c09e 1f4da8ee82d57edc671c296450f0cdfede70eef7 Jason E. Aten <j.e.aten@gmail.com> 1476596619 -0500	rebase -i (start): checkout ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20
+1f4da8ee82d57edc671c296450f0cdfede70eef7 e7da56d7d759b85a082c9fbb02a50e46ebbf20d8 Jason E. Aten <j.e.aten@gmail.com> 1476596619 -0500	rebase -i (squash): omitempty tags implemented.
+e7da56d7d759b85a082c9fbb02a50e46ebbf20d8 e7da56d7d759b85a082c9fbb02a50e46ebbf20d8 Jason E. Aten <j.e.aten@gmail.com> 1476596763 -0500	rebase -i (finish): returning to refs/heads/tag_omitempty
+e7da56d7d759b85a082c9fbb02a50e46ebbf20d8 3af6e7b8388c6930fbc3675925d65c6d09bd8579 Jason E. Aten <j.e.aten@gmail.com> 1476598108 -0500	checkout: moving from tag_omitempty to omitempty
+3af6e7b8388c6930fbc3675925d65c6d09bd8579 eb170a2b41ada652e5ae04804bd4112a0d4321ba Jason E. Aten <j.e.aten@gmail.com> 1476598211 -0500	commit: zebra starting point
+eb170a2b41ada652e5ae04804bd4112a0d4321ba eb170a2b41ada652e5ae04804bd4112a0d4321ba Jason E. Aten <j.e.aten@gmail.com> 1476598224 -0500	checkout: moving from omitempty to zebra0
+eb170a2b41ada652e5ae04804bd4112a0d4321ba e7da56d7d759b85a082c9fbb02a50e46ebbf20d8 Jason E. Aten <j.e.aten@gmail.com> 1476598496 -0500	checkout: moving from zebra0 to tag_omitempty
+e7da56d7d759b85a082c9fbb02a50e46ebbf20d8 9ad421bffc9f1f09b149dfdd22e788c9de59bffe Jason E. Aten <j.e.aten@gmail.com> 1476598504 -0500	checkout: moving from tag_omitempty to glyc/master
+9ad421bffc9f1f09b149dfdd22e788c9de59bffe e7da56d7d759b85a082c9fbb02a50e46ebbf20d8 Jason E. Aten <j.e.aten@gmail.com> 1476598521 -0500	merge tag_omitempty: Fast-forward
+e7da56d7d759b85a082c9fbb02a50e46ebbf20d8 9ad421bffc9f1f09b149dfdd22e788c9de59bffe Jason E. Aten <j.e.aten@gmail.com> 1476598547 -0500	checkout: moving from e7da56d7d759b85a082c9fbb02a50e46ebbf20d8 to glyc/master
+9ad421bffc9f1f09b149dfdd22e788c9de59bffe e7da56d7d759b85a082c9fbb02a50e46ebbf20d8 Jason E. Aten <j.e.aten@gmail.com> 1476598565 -0500	merge tag_omitempty: Fast-forward
+e7da56d7d759b85a082c9fbb02a50e46ebbf20d8 e7da56d7d759b85a082c9fbb02a50e46ebbf20d8 Jason E. Aten <j.e.aten@gmail.com> 1476598768 -0500	checkout: moving from e7da56d7d759b85a082c9fbb02a50e46ebbf20d8 to master
+e7da56d7d759b85a082c9fbb02a50e46ebbf20d8 eb170a2b41ada652e5ae04804bd4112a0d4321ba Jason E. Aten <j.e.aten@gmail.com> 1476599340 -0500	checkout: moving from master to zebra0
+eb170a2b41ada652e5ae04804bd4112a0d4321ba e7da56d7d759b85a082c9fbb02a50e46ebbf20d8 Jason E. Aten <j.e.aten@gmail.com> 1476601423 -0500	checkout: moving from zebra0 to tag_omitempty
+e7da56d7d759b85a082c9fbb02a50e46ebbf20d8 5e2280e7424efede243d115e106b5c04630c9c29 Jason E. Aten <j.e.aten@gmail.com> 1476602633 -0500	commit: address comments
+5e2280e7424efede243d115e106b5c04630c9c29 e7da56d7d759b85a082c9fbb02a50e46ebbf20d8 Jason E. Aten <j.e.aten@gmail.com> 1476602648 -0500	rebase -i (start): checkout ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20
+e7da56d7d759b85a082c9fbb02a50e46ebbf20d8 afddfbaa7c1cd1765016371f4fcd138e5c214138 Jason E. Aten <j.e.aten@gmail.com> 1476602648 -0500	rebase -i (squash): omitempty tags implemented.
+afddfbaa7c1cd1765016371f4fcd138e5c214138 afddfbaa7c1cd1765016371f4fcd138e5c214138 Jason E. Aten <j.e.aten@gmail.com> 1476602657 -0500	rebase -i (finish): returning to refs/heads/tag_omitempty
+afddfbaa7c1cd1765016371f4fcd138e5c214138 a2b8222f3e7d335010532794142a7a5ec8e3b70f Jason E. Aten <j.e.aten@gmail.com> 1476604407 -0500	commit: doc tuple overrides omitempty + sub-structs never
+a2b8222f3e7d335010532794142a7a5ec8e3b70f afddfbaa7c1cd1765016371f4fcd138e5c214138 Jason E. Aten <j.e.aten@gmail.com> 1476604426 -0500	rebase -i (start): checkout ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20
+afddfbaa7c1cd1765016371f4fcd138e5c214138 d92a832bb6f0dfb332a57c86e2eb7dee64f19bff Jason E. Aten <j.e.aten@gmail.com> 1476604426 -0500	rebase -i (squash): omitempty tags implemented.
+d92a832bb6f0dfb332a57c86e2eb7dee64f19bff d92a832bb6f0dfb332a57c86e2eb7dee64f19bff Jason E. Aten <j.e.aten@gmail.com> 1476604436 -0500	rebase -i (finish): returning to refs/heads/tag_omitempty
+d92a832bb6f0dfb332a57c86e2eb7dee64f19bff b1412fe7be66819ec10f0145c969f29cccb6180a Jason E. Aten <j.e.aten@gmail.com> 1476605518 -0500	commit: clarify README on tuples > omitempty
+b1412fe7be66819ec10f0145c969f29cccb6180a d92a832bb6f0dfb332a57c86e2eb7dee64f19bff Jason E. Aten <j.e.aten@gmail.com> 1476605545 -0500	rebase -i (start): checkout ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20
+d92a832bb6f0dfb332a57c86e2eb7dee64f19bff efd8ffd2ff0d2336ce342d888db9b81ffdeca4ca Jason E. Aten <j.e.aten@gmail.com> 1476605545 -0500	rebase -i (squash): omitempty tags implemented.
+efd8ffd2ff0d2336ce342d888db9b81ffdeca4ca efd8ffd2ff0d2336ce342d888db9b81ffdeca4ca Jason E. Aten <j.e.aten@gmail.com> 1476605554 -0500	rebase -i (finish): returning to refs/heads/tag_omitempty
+efd8ffd2ff0d2336ce342d888db9b81ffdeca4ca e7da56d7d759b85a082c9fbb02a50e46ebbf20d8 Jason E. Aten <j.e.aten@gmail.com> 1476606409 -0500	checkout: moving from tag_omitempty to master
+e7da56d7d759b85a082c9fbb02a50e46ebbf20d8 efd8ffd2ff0d2336ce342d888db9b81ffdeca4ca Jason E. Aten <j.e.aten@gmail.com> 1476606462 -0500	checkout: moving from master to tag_omitempty
+efd8ffd2ff0d2336ce342d888db9b81ffdeca4ca efd8ffd2ff0d2336ce342d888db9b81ffdeca4ca Jason E. Aten <j.e.aten@gmail.com> 1476606467 -0500	checkout: moving from tag_omitempty to master
+efd8ffd2ff0d2336ce342d888db9b81ffdeca4ca 83e37d6e5754a3c476c940c4d4c6c68cbf1a1192 Jason E. Aten <j.e.aten@gmail.com> 1476606829 -0500	commit: more readme
+83e37d6e5754a3c476c940c4d4c6c68cbf1a1192 efd8ffd2ff0d2336ce342d888db9b81ffdeca4ca Jason E. Aten <j.e.aten@gmail.com> 1476606839 -0500	rebase -i (start): checkout ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20
+efd8ffd2ff0d2336ce342d888db9b81ffdeca4ca e45a84e18a50c854dbae5d0d614b2bd828ab0234 Jason E. Aten <j.e.aten@gmail.com> 1476606840 -0500	rebase -i (squash): omitempty tags implemented.
+e45a84e18a50c854dbae5d0d614b2bd828ab0234 e45a84e18a50c854dbae5d0d614b2bd828ab0234 Jason E. Aten <j.e.aten@gmail.com> 1476606847 -0500	rebase -i (finish): returning to refs/heads/master
+e45a84e18a50c854dbae5d0d614b2bd828ab0234 efd8ffd2ff0d2336ce342d888db9b81ffdeca4ca Jason E. Aten <j.e.aten@gmail.com> 1476606956 -0500	checkout: moving from master to tag_omitempty
+efd8ffd2ff0d2336ce342d888db9b81ffdeca4ca e45a84e18a50c854dbae5d0d614b2bd828ab0234 Jason E. Aten <j.e.aten@gmail.com> 1476607000 -0500	checkout: moving from tag_omitempty to master
+e45a84e18a50c854dbae5d0d614b2bd828ab0234 e45a84e18a50c854dbae5d0d614b2bd828ab0234 Jason E. Aten <j.e.aten@gmail.com> 1476607007 -0500	checkout: moving from master to tag_omitempty
+e45a84e18a50c854dbae5d0d614b2bd828ab0234 fc5241d825f5adf13b2b52735320a7bea2a778a0 Jason E. Aten <j.e.aten@gmail.com> 1476607178 -0500	commit (amend): omitempty tags implemented.
+fc5241d825f5adf13b2b52735320a7bea2a778a0 fc5241d825f5adf13b2b52735320a7bea2a778a0 Jason E. Aten <j.e.aten@gmail.com> 1476607347 -0500	checkout: moving from tag_omitempty to master
+fc5241d825f5adf13b2b52735320a7bea2a778a0 fc5241d825f5adf13b2b52735320a7bea2a778a0 Jason E. Aten <j.e.aten@gmail.com> 1476615199 -0500	checkout: moving from master to tag_omitempty
+fc5241d825f5adf13b2b52735320a7bea2a778a0 886f034cbad49657eba17f7b0d3c6ab37670df43 Jason E. Aten <j.e.aten@gmail.com> 1476615266 -0500	commit: zero targets before decoding/unmarshalling into them
+886f034cbad49657eba17f7b0d3c6ab37670df43 d8d0f822a4d6024b6652ce2908077bff919ac918 Jason E. Aten <j.e.aten@gmail.com> 1476616952 -0500	commit: flag to control zeroing of target structs before decode/unmarshal
+d8d0f822a4d6024b6652ce2908077bff919ac918 53891bff35ecee50c8abf71cd62cfdffedf5f632 Jason E. Aten <j.e.aten@gmail.com> 1476640318 -0500	commit: add msgp/nested_test.go
+53891bff35ecee50c8abf71cd62cfdffedf5f632 fa5312e204602f20a84d1edd0e8cb3661f126be7 Jason E. Aten <j.e.aten@gmail.com> 1476644523 -0500	commit: zero structs and preserve pointers prior to decode
+fa5312e204602f20a84d1edd0e8cb3661f126be7 fc5241d825f5adf13b2b52735320a7bea2a778a0 Jason E. Aten <j.e.aten@gmail.com> 1476644813 -0500	rebase -i (start): checkout ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20
+fc5241d825f5adf13b2b52735320a7bea2a778a0 444dd2ec371e8f61a20b31ed61317aeeda569ee9 Jason E. Aten <j.e.aten@gmail.com> 1476644814 -0500	rebase -i (squash): # This is a combination of 2 commits.
+444dd2ec371e8f61a20b31ed61317aeeda569ee9 dfbb7b31d41d03e3b530fb43353a3524a443f532 Jason E. Aten <j.e.aten@gmail.com> 1476644814 -0500	rebase -i (squash): # This is a combination of 3 commits.
+dfbb7b31d41d03e3b530fb43353a3524a443f532 74642da5eed69069f853a46d5e8af15baf840420 Jason E. Aten <j.e.aten@gmail.com> 1476644814 -0500	rebase -i (squash): # This is a combination of 4 commits.
+74642da5eed69069f853a46d5e8af15baf840420 ab01ea4e7f63d1d84888cb6b785098b71daa92e3 Jason E. Aten <j.e.aten@gmail.com> 1476644814 -0500	rebase -i (squash): omitempty tags implemented.
+ab01ea4e7f63d1d84888cb6b785098b71daa92e3 ab01ea4e7f63d1d84888cb6b785098b71daa92e3 Jason E. Aten <j.e.aten@gmail.com> 1476644969 -0500	rebase -i (finish): returning to refs/heads/tag_omitempty
+ab01ea4e7f63d1d84888cb6b785098b71daa92e3 e8cb5ccc67c48f22724cf955bbfc65fd909ddaf5 Jason E. Aten <j.e.aten@gmail.com> 1476655288 -0500	commit: wip
+e8cb5ccc67c48f22724cf955bbfc65fd909ddaf5 4ad0dfb001464a2a895e53b5b369926fd4481127 Jason E. Aten <j.e.aten@gmail.com> 1476686765 -0500	commit: atg. all passing
+4ad0dfb001464a2a895e53b5b369926fd4481127 8127b280ad93fa99c352b3f66dc8f5823901c0b5 Jason E. Aten <j.e.aten@gmail.com> 1476687443 -0500	commit: start to document and cleanup
+8127b280ad93fa99c352b3f66dc8f5823901c0b5 912a2bd70332c1f1c43d9f4df429079fdc0438a9 Jason E. Aten <j.e.aten@gmail.com> 1476687980 -0500	commit: atg. and quiet
+912a2bd70332c1f1c43d9f4df429079fdc0438a9 ab01ea4e7f63d1d84888cb6b785098b71daa92e3 Jason E. Aten <j.e.aten@gmail.com> 1476688066 -0500	rebase -i (start): checkout ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20
+ab01ea4e7f63d1d84888cb6b785098b71daa92e3 39ce2985d89596a38be30be89b40861f44c9cb1a Jason E. Aten <j.e.aten@gmail.com> 1476688066 -0500	rebase -i (squash): # This is a combination of 2 commits.
+39ce2985d89596a38be30be89b40861f44c9cb1a 8725a18be9573527371ec6277c4b3a90ee11dc76 Jason E. Aten <j.e.aten@gmail.com> 1476688066 -0500	rebase -i (squash): # This is a combination of 3 commits.
+8725a18be9573527371ec6277c4b3a90ee11dc76 c1c0a0faed2f7f1dd4c79f530b2d38e11bda955d Jason E. Aten <j.e.aten@gmail.com> 1476688066 -0500	rebase -i (squash): # This is a combination of 4 commits.
+c1c0a0faed2f7f1dd4c79f530b2d38e11bda955d c7d2da7b76beb61914c1495a3feedcd8abd932d4 Jason E. Aten <j.e.aten@gmail.com> 1476688066 -0500	rebase -i (squash): omitempty tags implemented.
+c7d2da7b76beb61914c1495a3feedcd8abd932d4 c7d2da7b76beb61914c1495a3feedcd8abd932d4 Jason E. Aten <j.e.aten@gmail.com> 1476688247 -0500	rebase -i (finish): returning to refs/heads/tag_omitempty
+c7d2da7b76beb61914c1495a3feedcd8abd932d4 b729e8766ccc4119574d030cf6c28bd8816bf1bd Jason E. Aten <j.e.aten@gmail.com> 1476688501 -0500	commit: further cleanup
+b729e8766ccc4119574d030cf6c28bd8816bf1bd c7d2da7b76beb61914c1495a3feedcd8abd932d4 Jason E. Aten <j.e.aten@gmail.com> 1476688528 -0500	rebase -i (start): checkout ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20
+c7d2da7b76beb61914c1495a3feedcd8abd932d4 daf4da5420112a9427a8c29bbd6aba3584c2ea36 Jason E. Aten <j.e.aten@gmail.com> 1476688528 -0500	rebase -i (squash): omitempty tags implemented.
+daf4da5420112a9427a8c29bbd6aba3584c2ea36 daf4da5420112a9427a8c29bbd6aba3584c2ea36 Jason E. Aten <j.e.aten@gmail.com> 1476688591 -0500	rebase -i (finish): returning to refs/heads/tag_omitempty
+daf4da5420112a9427a8c29bbd6aba3584c2ea36 037ed31e4be2faf246675e66973f8088a6cd5c89 Jason E. Aten <j.e.aten@gmail.com> 1476689774 -0500	commit: comments++
+037ed31e4be2faf246675e66973f8088a6cd5c89 037ed31e4be2faf246675e66973f8088a6cd5c89 Jason E. Aten <j.e.aten@gmail.com> 1476781536 -0500	checkout: moving from tag_omitempty to extra
+037ed31e4be2faf246675e66973f8088a6cd5c89 890750013a77c3f13344bf2ec4b2a1e43fcc3600 Jason E. Aten <j.e.aten@gmail.com> 1476782381 -0500	commit: extra
+890750013a77c3f13344bf2ec4b2a1e43fcc3600 f5a462a1716d41d3466d078fb5cb3c6644799900 Jason E. Aten <j.e.aten@gmail.com> 1476943092 -0500	commit: use a textual template with string substitution for clarity
+f5a462a1716d41d3466d078fb5cb3c6644799900 9c9b1435fd2b73df06fa80a4197c7a70981900bc Jason E. Aten <j.e.aten@gmail.com> 1476948549 -0500	commit: wip progress
+9c9b1435fd2b73df06fa80a4197c7a70981900bc b5f9896cbd4d68f265dfc5f8dbab9b66d1f75c92 Jason E. Aten <j.e.aten@gmail.com> 1476950246 -0500	commit: more progress
+b5f9896cbd4d68f265dfc5f8dbab9b66d1f75c92 6eedb2a1b8b95fcf341bad17b281039f076f0c66 Jason E. Aten <j.e.aten@gmail.com> 1476952027 -0500	commit: more progress
+6eedb2a1b8b95fcf341bad17b281039f076f0c66 d029028a4ca76fc3246b3c90efecbd2da7059772 Jason E. Aten <j.e.aten@gmail.com> 1476952724 -0500	commit: checkpoint
+d029028a4ca76fc3246b3c90efecbd2da7059772 3d9f7cd6d06913a9cc5937916a8ddc710f3164dd Jason E. Aten <j.e.aten@gmail.com> 1476953363 -0500	commit: atg. wip
+3d9f7cd6d06913a9cc5937916a8ddc710f3164dd ce04c930c2484c74831bd5a4ef2dee4e4fdb2320 Jason E. Aten <j.e.aten@gmail.com> 1476953695 -0500	commit: better name
+ce04c930c2484c74831bd5a4ef2dee4e4fdb2320 961c37564348c86f9b67bc685b1b469c635749c2 Jason E. Aten <j.e.aten@gmail.com> 1476956965 -0500	commit: atg. docs++
+961c37564348c86f9b67bc685b1b469c635749c2 037ed31e4be2faf246675e66973f8088a6cd5c89 Jason E. Aten <j.e.aten@gmail.com> 1476957003 -0500	checkout: moving from extra to tag_omitempty
+037ed31e4be2faf246675e66973f8088a6cd5c89 961c37564348c86f9b67bc685b1b469c635749c2 Jason E. Aten <j.e.aten@gmail.com> 1476957031 -0500	merge extra: Fast-forward
+961c37564348c86f9b67bc685b1b469c635749c2 daf4da5420112a9427a8c29bbd6aba3584c2ea36 Jason E. Aten <j.e.aten@gmail.com> 1476957075 -0500	rebase -i (start): checkout ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20
+daf4da5420112a9427a8c29bbd6aba3584c2ea36 5ca8593b6b849d1714bcf6af6f90948d3ca19c2f Jason E. Aten <j.e.aten@gmail.com> 1476957076 -0500	rebase -i (squash): # This is a combination of 2 commits.
+5ca8593b6b849d1714bcf6af6f90948d3ca19c2f 293d43757794827d41fccffa1b8a5b4b216479df Jason E. Aten <j.e.aten@gmail.com> 1476957076 -0500	rebase -i (squash): # This is a combination of 3 commits.
+293d43757794827d41fccffa1b8a5b4b216479df cb082dd37864420a610a81f589dbca35cf480755 Jason E. Aten <j.e.aten@gmail.com> 1476957076 -0500	rebase -i (squash): # This is a combination of 4 commits.
+cb082dd37864420a610a81f589dbca35cf480755 78bec9e995dc337a493c86f8f493e70a78470d05 Jason E. Aten <j.e.aten@gmail.com> 1476957076 -0500	rebase -i (squash): # This is a combination of 5 commits.
+78bec9e995dc337a493c86f8f493e70a78470d05 d850a884785eaf24d3037a74c6bb30df46da39a3 Jason E. Aten <j.e.aten@gmail.com> 1476957076 -0500	rebase -i (squash): # This is a combination of 6 commits.
+d850a884785eaf24d3037a74c6bb30df46da39a3 f948533e15a01685a1fb32dca99bc4382b0cb8a0 Jason E. Aten <j.e.aten@gmail.com> 1476957076 -0500	rebase -i (squash): # This is a combination of 7 commits.
+f948533e15a01685a1fb32dca99bc4382b0cb8a0 af74ec4a903359fc770b329f1afd9ddd688394f3 Jason E. Aten <j.e.aten@gmail.com> 1476957076 -0500	rebase -i (squash): # This is a combination of 8 commits.
+af74ec4a903359fc770b329f1afd9ddd688394f3 68218e7fcf0b0048a5bb2243e0366d17a2464b00 Jason E. Aten <j.e.aten@gmail.com> 1476957076 -0500	rebase -i (squash): # This is a combination of 9 commits.
+68218e7fcf0b0048a5bb2243e0366d17a2464b00 3be1f93cb047432942d826b036cab5857e816647 Jason E. Aten <j.e.aten@gmail.com> 1476957076 -0500	rebase -i (squash): # This is a combination of 10 commits.
+3be1f93cb047432942d826b036cab5857e816647 2ee78ce7e4d54809f0ad59364dacb36759d7b969 Jason E. Aten <j.e.aten@gmail.com> 1476957076 -0500	rebase -i (squash): omitempty tags implemented.
+2ee78ce7e4d54809f0ad59364dacb36759d7b969 2ee78ce7e4d54809f0ad59364dacb36759d7b969 Jason E. Aten <j.e.aten@gmail.com> 1476957122 -0500	rebase -i (finish): returning to refs/heads/tag_omitempty
+2ee78ce7e4d54809f0ad59364dacb36759d7b969 51dcc2c8f3a0df8ca40e42eb7e7abfe5ae7d1102 Jason E. Aten <j.e.aten@gmail.com> 1477101105 -0500	commit: optimize allocation, fields defined once outside of UnmarshalMsg and DecodeMsg
+51dcc2c8f3a0df8ca40e42eb7e7abfe5ae7d1102 94cb62cd58b689dd154d6b130d023dd4934a9da4 Jason E. Aten <j.e.aten@gmail.com> 1477101419 -0500	commit: cleanup
+94cb62cd58b689dd154d6b130d023dd4934a9da4 ff2dd66368e071ed52ada82e300e16512172aed9 Jason E. Aten <j.e.aten@gmail.com> 1477106031 -0500	commit: wip; tracking down missed field Bullwinkle
+ff2dd66368e071ed52ada82e300e16512172aed9 b574eafe389d1a46214ebb63229a3ed3830fa696 Jason E. Aten <j.e.aten@gmail.com> 1477106249 -0500	commit: wip; tracking down missed field Bullwinkle
+b574eafe389d1a46214ebb63229a3ed3830fa696 235240e7ac3cb538b3051f2fe09a0f8130c814a8 Jason E. Aten <j.e.aten@gmail.com> 1477107983 -0500	commit: ft. failing test for omitempty
+235240e7ac3cb538b3051f2fe09a0f8130c814a8 326f714132e785bf44ea089ac556b40c112433b9 Jason E. Aten <j.e.aten@gmail.com> 1477108053 -0500	commit: ft. failing test for omitempty
+326f714132e785bf44ea089ac556b40c112433b9 6da3a60832d0e42fde497ef348661e1434876372 Jason E. Aten <j.e.aten@gmail.com> 1477116602 -0500	commit: all tests green
+6da3a60832d0e42fde497ef348661e1434876372 a9f1ddbf01fb77a49b7316f87d7280cdf8aabb62 Jason E. Aten <j.e.aten@gmail.com> 1477117070 -0500	commit: atg. all test green. and quieted down.
+a9f1ddbf01fb77a49b7316f87d7280cdf8aabb62 a9f1ddbf01fb77a49b7316f87d7280cdf8aabb62 Jason E. Aten <j.e.aten@gmail.com> 1477117161 -0500	rebase: aborting
+a9f1ddbf01fb77a49b7316f87d7280cdf8aabb62 a9f1ddbf01fb77a49b7316f87d7280cdf8aabb62 Jason E. Aten <j.e.aten@gmail.com> 1477117170 -0500	rebase: aborting
+a9f1ddbf01fb77a49b7316f87d7280cdf8aabb62 2ee78ce7e4d54809f0ad59364dacb36759d7b969 Jason E. Aten <j.e.aten@gmail.com> 1477117204 -0500	rebase -i (start): checkout ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20
+2ee78ce7e4d54809f0ad59364dacb36759d7b969 02437893f516760f7630491f2bc9c5452214ac0f Jason E. Aten <j.e.aten@gmail.com> 1477117204 -0500	rebase -i (squash): # This is a combination of 2 commits.
+02437893f516760f7630491f2bc9c5452214ac0f d1368b454e362074aa193d81c8c17e796ce00406 Jason E. Aten <j.e.aten@gmail.com> 1477117204 -0500	rebase -i (squash): # This is a combination of 3 commits.
+d1368b454e362074aa193d81c8c17e796ce00406 8a00037ae048023011baf6455884b6a19e29f9ed Jason E. Aten <j.e.aten@gmail.com> 1477117204 -0500	rebase -i (squash): # This is a combination of 4 commits.
+8a00037ae048023011baf6455884b6a19e29f9ed 85d22c3378a8b41449b6be48ec340b0bb90a9917 Jason E. Aten <j.e.aten@gmail.com> 1477117204 -0500	rebase -i (squash): # This is a combination of 5 commits.
+85d22c3378a8b41449b6be48ec340b0bb90a9917 5e46a44bdf49c64dc8b449f6197e0e72424258ba Jason E. Aten <j.e.aten@gmail.com> 1477117204 -0500	rebase -i (squash): # This is a combination of 6 commits.
+5e46a44bdf49c64dc8b449f6197e0e72424258ba 8d079790fa35a5f5ac4bad2c74ba6c3dab8f21c9 Jason E. Aten <j.e.aten@gmail.com> 1477117204 -0500	rebase -i (squash): # This is a combination of 7 commits.
+8d079790fa35a5f5ac4bad2c74ba6c3dab8f21c9 c6d7e770e0771c8d08b6ba40b5ad4bca94ec47ed Jason E. Aten <j.e.aten@gmail.com> 1477117204 -0500	rebase -i (squash): # This is a combination of 8 commits.
+c6d7e770e0771c8d08b6ba40b5ad4bca94ec47ed 10765ff1bb91160e552b173da746237186287cb7 Jason E. Aten <j.e.aten@gmail.com> 1477117204 -0500	rebase -i (squash): omitempty tags implemented
+10765ff1bb91160e552b173da746237186287cb7 10765ff1bb91160e552b173da746237186287cb7 Jason E. Aten <j.e.aten@gmail.com> 1477117621 -0500	rebase -i (finish): returning to refs/heads/tag_omitempty
+10765ff1bb91160e552b173da746237186287cb7 dd084a5fbad58be3cac5d512577d4c71f6d8b376 Jason E. Aten <j.e.aten@gmail.com> 1477118048 -0500	commit: ft. failing test for DecodeMsg(TopNester)
+dd084a5fbad58be3cac5d512577d4c71f6d8b376 302ac72e746f0aca1f17c8e4c989ea1264bf46ee Jason E. Aten <j.e.aten@gmail.com> 1477120004 -0500	commit: ft. but progress
+302ac72e746f0aca1f17c8e4c989ea1264bf46ee c9697b6c7b6a3e9d41b28005a8c569d3272e5d35 Jason E. Aten <j.e.aten@gmail.com> 1477122501 -0500	commit: atg. all tests green
+c9697b6c7b6a3e9d41b28005a8c569d3272e5d35 311d5b2cd722631a53208a410eeaf0c80d8b16da Jason E. Aten <j.e.aten@gmail.com> 1477122907 -0500	commit: atg. and quiet
+311d5b2cd722631a53208a410eeaf0c80d8b16da 10765ff1bb91160e552b173da746237186287cb7 Jason E. Aten <j.e.aten@gmail.com> 1477122945 -0500	rebase -i (start): checkout ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20
+10765ff1bb91160e552b173da746237186287cb7 cbb2482937e999704290957114673cdac7a8027d Jason E. Aten <j.e.aten@gmail.com> 1477122945 -0500	rebase -i (squash): # This is a combination of 2 commits.
+cbb2482937e999704290957114673cdac7a8027d e25e55e117cae0b0b6d9004e5926469c25208e70 Jason E. Aten <j.e.aten@gmail.com> 1477122945 -0500	rebase -i (squash): # This is a combination of 3 commits.
+e25e55e117cae0b0b6d9004e5926469c25208e70 2ae27b44e4cc8b61f5c4d6cc5658861584202343 Jason E. Aten <j.e.aten@gmail.com> 1477122945 -0500	rebase -i (squash): # This is a combination of 4 commits.
+2ae27b44e4cc8b61f5c4d6cc5658861584202343 0017e71c60f41ca943eca4ecb4215aa296cece37 Jason E. Aten <j.e.aten@gmail.com> 1477122945 -0500	rebase -i (squash): omitempty tags implemented
+0017e71c60f41ca943eca4ecb4215aa296cece37 0017e71c60f41ca943eca4ecb4215aa296cece37 Jason E. Aten <j.e.aten@gmail.com> 1477122956 -0500	rebase -i (finish): returning to refs/heads/tag_omitempty
+0017e71c60f41ca943eca4ecb4215aa296cece37 67ab00154e3baed940fd71e1fc76bcf692188fc7 Jason E. Aten <j.e.aten@gmail.com> 1477129615 -0500	commit: atg. all tests green
+67ab00154e3baed940fd71e1fc76bcf692188fc7 a50ed98e6f501607f07fd7d8d7b0c1f9d13b6020 Jason E. Aten <j.e.aten@gmail.com> 1477130095 -0500	commit: atg. all tests green
+a50ed98e6f501607f07fd7d8d7b0c1f9d13b6020 4449b97fc913275dd2d7aa5c2b5be72e77d7fd24 Jason E. Aten <j.e.aten@gmail.com> 1477130134 -0500	commit (amend): atg. all tests green
+4449b97fc913275dd2d7aa5c2b5be72e77d7fd24 1717e879f9bc72f6f7e51a73fe6192bab51f1b70 Jason E. Aten <j.e.aten@gmail.com> 1477130292 -0500	commit: atg. all green and quiet
+1717e879f9bc72f6f7e51a73fe6192bab51f1b70 0017e71c60f41ca943eca4ecb4215aa296cece37 Jason E. Aten <j.e.aten@gmail.com> 1477130317 -0500	rebase -i (start): checkout ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20
+0017e71c60f41ca943eca4ecb4215aa296cece37 779dca62377b4f1d4e335a764a335d793e432eb9 Jason E. Aten <j.e.aten@gmail.com> 1477130317 -0500	rebase -i (squash): # This is a combination of 2 commits.
+779dca62377b4f1d4e335a764a335d793e432eb9 bb08b7b6c7995a3c7af967e1a4b892a65210c531 Jason E. Aten <j.e.aten@gmail.com> 1477130317 -0500	rebase -i (squash): # This is a combination of 3 commits.
+bb08b7b6c7995a3c7af967e1a4b892a65210c531 7e780bdc5816f1592f2570476349e1accf635ef6 Jason E. Aten <j.e.aten@gmail.com> 1477130317 -0500	rebase -i (squash): omitempty tags implemented
+7e780bdc5816f1592f2570476349e1accf635ef6 7e780bdc5816f1592f2570476349e1accf635ef6 Jason E. Aten <j.e.aten@gmail.com> 1477130327 -0500	rebase -i (finish): returning to refs/heads/tag_omitempty
+7e780bdc5816f1592f2570476349e1accf635ef6 40aa6fa3a44f0cb647c931c6c984565b95f95c39 Jason E. Aten <j.e.aten@gmail.com> 1477156517 -0500	commit: small improvement
+40aa6fa3a44f0cb647c931c6c984565b95f95c39 313b146448975bf80ff10af56097de3115c14368 Jason E. Aten <j.e.aten@gmail.com> 1477157531 -0500	commit: handle [const]arrays under nil
+313b146448975bf80ff10af56097de3115c14368 4cf1498485df1a61f5f56cfd827b861068dd7fca Jason E. Aten <j.e.aten@gmail.com> 1477158092 -0500	commit: ft. for decoding nils and static arrays
+4cf1498485df1a61f5f56cfd827b861068dd7fca 7673d232887af98435ea57fe0db16dee8b050c76 Jason E. Aten <j.e.aten@gmail.com> 1477158210 -0500	commit: ft. for decoding nils and static arrays 2
+7673d232887af98435ea57fe0db16dee8b050c76 974e148dd89edde00c79053a89b9d3f2c6a40c07 Jason E. Aten <j.e.aten@gmail.com> 1477158728 -0500	commit: ft. but progress
+974e148dd89edde00c79053a89b9d3f2c6a40c07 c12433b3bd70024879ed19b65ae2c2508ce4f969 Jason E. Aten <j.e.aten@gmail.com> 1477175416 -0500	commit: all read methods now on (nbs *NilBitsStack)
+c12433b3bd70024879ed19b65ae2c2508ce4f969 f30ba911751de29d7138a8f9310965d444b36ea6 Jason E. Aten <j.e.aten@gmail.com> 1477175677 -0500	commit: finish nbs *NilBitsStack migration, ft. on TestMissingNilledOutWhenUnmarshallingNilIntoNestedStructs
+f30ba911751de29d7138a8f9310965d444b36ea6 961c37564348c86f9b67bc685b1b469c635749c2 Jason E. Aten <j.e.aten@gmail.com> 1477175688 -0500	checkout: moving from tag_omitempty to extra
+961c37564348c86f9b67bc685b1b469c635749c2 f30ba911751de29d7138a8f9310965d444b36ea6 Jason E. Aten <j.e.aten@gmail.com> 1477175731 -0500	rebase: checkout tag_omitempty
+f30ba911751de29d7138a8f9310965d444b36ea6 961c37564348c86f9b67bc685b1b469c635749c2 Jason E. Aten <j.e.aten@gmail.com> 1477175738 -0500	rebase: aborting
+961c37564348c86f9b67bc685b1b469c635749c2 f30ba911751de29d7138a8f9310965d444b36ea6 Jason E. Aten <j.e.aten@gmail.com> 1477175756 -0500	checkout: moving from extra to tag_omitempty
+f30ba911751de29d7138a8f9310965d444b36ea6 f30ba911751de29d7138a8f9310965d444b36ea6 Jason E. Aten <j.e.aten@gmail.com> 1477175774 -0500	checkout: moving from tag_omitempty to refactor
+f30ba911751de29d7138a8f9310965d444b36ea6 72ad1a8311a32fc29458e0210925af134a754a1d Jason E. Aten <j.e.aten@gmail.com> 1477243207 -0500	commit: atg. all tests green
+72ad1a8311a32fc29458e0210925af134a754a1d b4e79def7167b40acd46b9aa9b7dea63823a7bc4 Jason E. Aten <j.e.aten@gmail.com> 1477243216 -0500	commit (amend): atg. all tests green, but loud
+b4e79def7167b40acd46b9aa9b7dea63823a7bc4 654b3a2f722335fbdcabd516e48d02d7b060aade Jason E. Aten <j.e.aten@gmail.com> 1477245002 -0500	commit: atg. all tests green and quiet
+654b3a2f722335fbdcabd516e48d02d7b060aade f30ba911751de29d7138a8f9310965d444b36ea6 Jason E. Aten <j.e.aten@gmail.com> 1477245193 -0500	checkout: moving from refactor to tag_omitempty
+f30ba911751de29d7138a8f9310965d444b36ea6 654b3a2f722335fbdcabd516e48d02d7b060aade Jason E. Aten <j.e.aten@gmail.com> 1477245212 -0500	merge refactor: Fast-forward
+654b3a2f722335fbdcabd516e48d02d7b060aade 7e780bdc5816f1592f2570476349e1accf635ef6 Jason E. Aten <j.e.aten@gmail.com> 1477245353 -0500	rebase -i (start): checkout ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20
+7e780bdc5816f1592f2570476349e1accf635ef6 309dcd0a76f5e334a5c1232a61d77697a971cd9f Jason E. Aten <j.e.aten@gmail.com> 1477245353 -0500	rebase -i (squash): # This is a combination of 2 commits.
+309dcd0a76f5e334a5c1232a61d77697a971cd9f 7e78a75ae3f6df5dddbc64ad24e147503644732a Jason E. Aten <j.e.aten@gmail.com> 1477245353 -0500	rebase -i (squash): # This is a combination of 3 commits.
+7e78a75ae3f6df5dddbc64ad24e147503644732a 8b23032c536aa06b6c174d819720d6a59d1ffa0c Jason E. Aten <j.e.aten@gmail.com> 1477245353 -0500	rebase -i (squash): # This is a combination of 4 commits.
+8b23032c536aa06b6c174d819720d6a59d1ffa0c 709fba2e1c3b949a5360493772c5b08477373f11 Jason E. Aten <j.e.aten@gmail.com> 1477245353 -0500	rebase -i (squash): # This is a combination of 5 commits.
+709fba2e1c3b949a5360493772c5b08477373f11 3dd2f04848c085be7dec6a495477eb2d4328eacd Jason E. Aten <j.e.aten@gmail.com> 1477245353 -0500	rebase -i (squash): # This is a combination of 6 commits.
+3dd2f04848c085be7dec6a495477eb2d4328eacd 5e6b5738f7948e6c19928476c211751f71d07c40 Jason E. Aten <j.e.aten@gmail.com> 1477245353 -0500	rebase -i (squash): # This is a combination of 7 commits.
+5e6b5738f7948e6c19928476c211751f71d07c40 325e7da227010df972ae9035658064138cff2b2b Jason E. Aten <j.e.aten@gmail.com> 1477245354 -0500	rebase -i (squash): # This is a combination of 8 commits.
+325e7da227010df972ae9035658064138cff2b2b bb740ea8f7ae458ab196917557ff90b8aa16150d Jason E. Aten <j.e.aten@gmail.com> 1477245354 -0500	rebase -i (squash): # This is a combination of 9 commits.
+bb740ea8f7ae458ab196917557ff90b8aa16150d 68f025a9f4f8d7a065283aeaa84c2d5ac3ab56a7 Jason E. Aten <j.e.aten@gmail.com> 1477245354 -0500	rebase -i (squash): omitempty tags implemented
+68f025a9f4f8d7a065283aeaa84c2d5ac3ab56a7 68f025a9f4f8d7a065283aeaa84c2d5ac3ab56a7 Jason E. Aten <j.e.aten@gmail.com> 1477245365 -0500	rebase -i (finish): returning to refs/heads/tag_omitempty
+68f025a9f4f8d7a065283aeaa84c2d5ac3ab56a7 68f025a9f4f8d7a065283aeaa84c2d5ac3ab56a7 Jason E. Aten <j.e.aten@gmail.com> 1477246212 -0500	checkout: moving from tag_omitempty to master
+68f025a9f4f8d7a065283aeaa84c2d5ac3ab56a7 16df849c3e62caae1c9b6707c262e590603cfb21 Jason E. Aten <j.e.aten@gmail.com> 1477247067 -0500	commit: vendor github.com/shurcooL/go-goon
+16df849c3e62caae1c9b6707c262e590603cfb21 738ed1c15861872092a1f23ce1f62e813beb2c9a Jason E. Aten <j.e.aten@gmail.com> 1477260800 -0500	commit: atg with PtrTime test disabled. refactor read_bytes to handle single nil fields too
+738ed1c15861872092a1f23ce1f62e813beb2c9a dc26eaf2a5e783d08bd95f1db23d21d1da3127c4 Jason E. Aten <j.e.aten@gmail.com> 1477267094 -0500	commit: atg. and loud
+dc26eaf2a5e783d08bd95f1db23d21d1da3127c4 3e335b19883f763bf076d60d268230429ae3ee41 Jason E. Aten <j.e.aten@gmail.com> 1477267388 -0500	commit: atg. and quiet
+3e335b19883f763bf076d60d268230429ae3ee41 06259a3cbae90e42a57a951c7766deac414ef9eb Jason E. Aten <j.e.aten@gmail.com> 1477267506 -0500	commit: atg. cleanup
+06259a3cbae90e42a57a951c7766deac414ef9eb 06259a3cbae90e42a57a951c7766deac414ef9eb Jason E. Aten <j.e.aten@gmail.com> 1477268646 -0500	checkout: moving from master to tag_omitempty
+06259a3cbae90e42a57a951c7766deac414ef9eb 06259a3cbae90e42a57a951c7766deac414ef9eb Jason E. Aten <j.e.aten@gmail.com> 1477268675 -0500	checkout: moving from tag_omitempty to master
+06259a3cbae90e42a57a951c7766deac414ef9eb 87665ddc6cc34f1f85d2d398a0efec0c5f3c77ec Jason E. Aten <j.e.aten@gmail.com> 1477268692 -0500	commit: atg. cleanup
+87665ddc6cc34f1f85d2d398a0efec0c5f3c77ec 87665ddc6cc34f1f85d2d398a0efec0c5f3c77ec Jason E. Aten <j.e.aten@gmail.com> 1477268768 -0500	checkout: moving from master to tag_omitempty
+87665ddc6cc34f1f85d2d398a0efec0c5f3c77ec b01be14889b71667dd7cf30af2fa1e596c6a55c5 Jason E. Aten <j.e.aten@gmail.com> 1477268857 -0500	commit: remove vendored go-goon
+b01be14889b71667dd7cf30af2fa1e596c6a55c5 68f025a9f4f8d7a065283aeaa84c2d5ac3ab56a7 Jason E. Aten <j.e.aten@gmail.com> 1477268911 -0500	rebase -i (start): checkout ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20
+68f025a9f4f8d7a065283aeaa84c2d5ac3ab56a7 fe95aa786368acc0d4c9782b72976dba2302da62 Jason E. Aten <j.e.aten@gmail.com> 1477268911 -0500	rebase -i (squash): # This is a combination of 2 commits.
+fe95aa786368acc0d4c9782b72976dba2302da62 3d3c1538930852fde7798d2ff48513d1db5d21b8 Jason E. Aten <j.e.aten@gmail.com> 1477268912 -0500	rebase -i (squash): # This is a combination of 3 commits.
+3d3c1538930852fde7798d2ff48513d1db5d21b8 7d55e9860004a42ab167d61b4a02b3c837ba5455 Jason E. Aten <j.e.aten@gmail.com> 1477268912 -0500	rebase -i (squash): # This is a combination of 4 commits.
+7d55e9860004a42ab167d61b4a02b3c837ba5455 7c51cc64513d0a84c11e4e0727bf1cc633fbe430 Jason E. Aten <j.e.aten@gmail.com> 1477268912 -0500	rebase -i (squash): # This is a combination of 5 commits.
+7c51cc64513d0a84c11e4e0727bf1cc633fbe430 1c7c9babedacb24c93a3a0ac50f6279604016fb1 Jason E. Aten <j.e.aten@gmail.com> 1477268912 -0500	rebase -i (squash): # This is a combination of 6 commits.
+1c7c9babedacb24c93a3a0ac50f6279604016fb1 cad36b1fd02563fded269b40916d880526b87887 Jason E. Aten <j.e.aten@gmail.com> 1477268912 -0500	rebase -i (squash): # This is a combination of 7 commits.
+cad36b1fd02563fded269b40916d880526b87887 8baf9c43c88315b2b11266e3d984d435d7efb662 Jason E. Aten <j.e.aten@gmail.com> 1477268912 -0500	rebase -i (squash): omitempty tags implemented
+8baf9c43c88315b2b11266e3d984d435d7efb662 8baf9c43c88315b2b11266e3d984d435d7efb662 Jason E. Aten <j.e.aten@gmail.com> 1477268921 -0500	rebase -i (finish): returning to refs/heads/tag_omitempty
+8baf9c43c88315b2b11266e3d984d435d7efb662 87665ddc6cc34f1f85d2d398a0efec0c5f3c77ec Jason E. Aten <j.e.aten@gmail.com> 1477270599 -0500	checkout: moving from tag_omitempty to master
+87665ddc6cc34f1f85d2d398a0efec0c5f3c77ec eb0a6af8d0c20cd1bdbdc0a96d6e400219a2f83a Jason E. Aten <j.e.aten@gmail.com> 1477273268 -0500	commit: update README to mention our fork
+eb0a6af8d0c20cd1bdbdc0a96d6e400219a2f83a ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20 Jason E. Aten <j.e.aten@gmail.com> 1477273274 -0500	checkout: moving from master to ad0ff2e
+ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20 eb0a6af8d0c20cd1bdbdc0a96d6e400219a2f83a Jason E. Aten <j.e.aten@gmail.com> 1477273657 -0500	checkout: moving from ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20 to master
+eb0a6af8d0c20cd1bdbdc0a96d6e400219a2f83a ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20 Jason E. Aten <j.e.aten@gmail.com> 1477273797 -0500	checkout: moving from master to ad0ff2e
+ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20 eb0a6af8d0c20cd1bdbdc0a96d6e400219a2f83a Jason E. Aten <j.e.aten@gmail.com> 1477274160 -0500	checkout: moving from ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20 to master
+eb0a6af8d0c20cd1bdbdc0a96d6e400219a2f83a ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20 Jason E. Aten <j.e.aten@gmail.com> 1477278561 -0500	checkout: moving from master to ad0ff2e
+ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20 eb0a6af8d0c20cd1bdbdc0a96d6e400219a2f83a Jason E. Aten <j.e.aten@gmail.com> 1477278744 -0500	checkout: moving from ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20 to master
+eb0a6af8d0c20cd1bdbdc0a96d6e400219a2f83a 33480c488cec2c8f81946640614a666895bac10f Jason E. Aten <j.e.aten@gmail.com> 1477283812 -0500	commit: atg. hardcode nested struct depth at 8 to avoid all memory allocation on the hotpath
+33480c488cec2c8f81946640614a666895bac10f 34ec8c0f341aadaf6bf347bdd3bdf92cca15fa27 Jason E. Aten <j.e.aten@gmail.com> 1477284130 -0500	commit (amend): atg. hardcode nested struct depth at 8 to avoid all memory allocation on the hotpath
+34ec8c0f341aadaf6bf347bdd3bdf92cca15fa27 88a54fad5d6d5b0065ee39254162a279f7fb1c9b Jason E. Aten <j.e.aten@gmail.com> 1477285593 -0500	commit: atg. zero memory allocation during decode
+88a54fad5d6d5b0065ee39254162a279f7fb1c9b 9d50c8c15d5e9adb5f68e18a1f0c755fc9e01b4f Jason E. Aten <j.e.aten@gmail.com> 1477285619 -0500	commit (amend): atg. zero memory allocation during unmarshal and we warn about exceeding max struct nesting
+9d50c8c15d5e9adb5f68e18a1f0c755fc9e01b4f 697825bf6a7d96fa8283652bc14208a97558afcb Jason E. Aten <j.e.aten@gmail.com> 1477288838 -0500	commit: atg. add UnsafeZeroCopy option to NilBitsStack
+697825bf6a7d96fa8283652bc14208a97558afcb 697825bf6a7d96fa8283652bc14208a97558afcb Jason E. Aten <j.e.aten@gmail.com> 1480933975 -0600	checkout: moving from master to master
+697825bf6a7d96fa8283652bc14208a97558afcb ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20 Jason E. Aten <j.e.aten@gmail.com> 1480934085 -0600	checkout: moving from master to origin/master
+ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20 697825bf6a7d96fa8283652bc14208a97558afcb Jason E. Aten <j.e.aten@gmail.com> 1482597334 -0600	checkout: moving from ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20 to master
+697825bf6a7d96fa8283652bc14208a97558afcb eb170a2b41ada652e5ae04804bd4112a0d4321ba Jason E. Aten <j.e.aten@gmail.com> 1482597395 -0600	checkout: moving from master to omitempty
+eb170a2b41ada652e5ae04804bd4112a0d4321ba 38a6f61a768dc24552dad94611923841b53acc4f Jason E. Aten <j.e.aten@gmail.com> 1482597403 -0600	checkout: moving from omitempty to master
+38a6f61a768dc24552dad94611923841b53acc4f 38a6f61a768dc24552dad94611923841b53acc4f Jason E. Aten <j.e.aten@gmail.com> 1483232777 -0500	checkout: moving from master to origin/master
+38a6f61a768dc24552dad94611923841b53acc4f 38a6f61a768dc24552dad94611923841b53acc4f Jason E. Aten <j.e.aten@gmail.com> 1483232971 -0500	checkout: moving from 38a6f61a768dc24552dad94611923841b53acc4f to master
+38a6f61a768dc24552dad94611923841b53acc4f 68f025a9f4f8d7a065283aeaa84c2d5ac3ab56a7 Jason E. Aten <j.e.aten@gmail.com> 1483233050 -0500	checkout: moving from master to glyc/master
+68f025a9f4f8d7a065283aeaa84c2d5ac3ab56a7 38a6f61a768dc24552dad94611923841b53acc4f Jason E. Aten <j.e.aten@gmail.com> 1483238265 -0500	checkout: moving from glyc/master to master
+38a6f61a768dc24552dad94611923841b53acc4f 38a6f61a768dc24552dad94611923841b53acc4f Jason E. Aten <j.e.aten@gmail.com> 1483238305 -0500	checkout: moving from master to origin/master
+38a6f61a768dc24552dad94611923841b53acc4f 38a6f61a768dc24552dad94611923841b53acc4f Jason E. Aten <j.e.aten@gmail.com> 1483238319 -0500	checkout: moving from 38a6f61a768dc24552dad94611923841b53acc4f to originmaster
+38a6f61a768dc24552dad94611923841b53acc4f 362bfb3384d53ae4d5dd745983a4d70b6d23628c Jason E. Aten <j.e.aten@gmail.com> 1483246697 -0500	checkout: moving from originmaster to master

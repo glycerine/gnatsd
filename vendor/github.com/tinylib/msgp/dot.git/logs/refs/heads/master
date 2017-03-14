@@ -1,0 +1,27 @@
+0000000000000000000000000000000000000000 30aae4326ec7d45a41eaee121947aafb9507c060 jaten <jaten@betable.com> 1451200991 -0800	clone: from https://github.com/tinylib/msgp
+30aae4326ec7d45a41eaee121947aafb9507c060 0d29f4bb1d9c5d1ad8ad54e0507ca54c0fa50482 jaten <jaten@betable.com> 1452714737 -0800	pull --ff-only: Fast-forward
+0d29f4bb1d9c5d1ad8ad54e0507ca54c0fa50482 ea499db36354e83c592bd685e0796a0a280ac405 jaten <jaten@betable.com> 1459060321 -0700	commit: support for aliased imports. Fixes #146.
+ea499db36354e83c592bd685e0796a0a280ac405 9ad421bffc9f1f09b149dfdd22e788c9de59bffe Jason E. Aten <j.e.aten@gmail.com> 1459060744 -0700	commit (amend): support for aliased imports. Fixes #146.
+9ad421bffc9f1f09b149dfdd22e788c9de59bffe 58d334d948735fbc930e06def9d6870de827e07d Jason E. Aten <j.e.aten@gmail.com> 1459133269 -0700	pull: Fast-forward
+58d334d948735fbc930e06def9d6870de827e07d cf4d6d402b01d9b359f52fc88be0f582402177c0 Jason E. Aten <j.e.aten@gmail.com> 1460956194 -0700	pull --ff-only: Fast-forward
+cf4d6d402b01d9b359f52fc88be0f582402177c0 ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20 Jason E. Aten <j.e.aten@gmail.com> 1476461441 -0500	pull: Fast-forward
+ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20 e7da56d7d759b85a082c9fbb02a50e46ebbf20d8 Jason E. Aten <j.e.aten@gmail.com> 1476598760 -0500	branch: Reset to glyc/tag_omitempty
+e7da56d7d759b85a082c9fbb02a50e46ebbf20d8 efd8ffd2ff0d2336ce342d888db9b81ffdeca4ca Jason E. Aten <j.e.aten@gmail.com> 1476606463 -0500	branch: Reset to glyc/tag_omitempty
+efd8ffd2ff0d2336ce342d888db9b81ffdeca4ca 83e37d6e5754a3c476c940c4d4c6c68cbf1a1192 Jason E. Aten <j.e.aten@gmail.com> 1476606829 -0500	commit: more readme
+83e37d6e5754a3c476c940c4d4c6c68cbf1a1192 e45a84e18a50c854dbae5d0d614b2bd828ab0234 Jason E. Aten <j.e.aten@gmail.com> 1476606847 -0500	rebase -i (finish): refs/heads/master onto efd8ffd2ff0d2336ce342d888db9b81ffdeca4ca
+e45a84e18a50c854dbae5d0d614b2bd828ab0234 fc5241d825f5adf13b2b52735320a7bea2a778a0 Jason E. Aten <j.e.aten@gmail.com> 1476607333 -0500	branch: Reset to tag_omitempty
+fc5241d825f5adf13b2b52735320a7bea2a778a0 68f025a9f4f8d7a065283aeaa84c2d5ac3ab56a7 Jason E. Aten <j.e.aten@gmail.com> 1477246200 -0500	branch: Reset to tag_omitempty
+68f025a9f4f8d7a065283aeaa84c2d5ac3ab56a7 16df849c3e62caae1c9b6707c262e590603cfb21 Jason E. Aten <j.e.aten@gmail.com> 1477247067 -0500	commit: vendor github.com/shurcooL/go-goon
+16df849c3e62caae1c9b6707c262e590603cfb21 738ed1c15861872092a1f23ce1f62e813beb2c9a Jason E. Aten <j.e.aten@gmail.com> 1477260800 -0500	commit: atg with PtrTime test disabled. refactor read_bytes to handle single nil fields too
+738ed1c15861872092a1f23ce1f62e813beb2c9a dc26eaf2a5e783d08bd95f1db23d21d1da3127c4 Jason E. Aten <j.e.aten@gmail.com> 1477267094 -0500	commit: atg. and loud
+dc26eaf2a5e783d08bd95f1db23d21d1da3127c4 3e335b19883f763bf076d60d268230429ae3ee41 Jason E. Aten <j.e.aten@gmail.com> 1477267388 -0500	commit: atg. and quiet
+3e335b19883f763bf076d60d268230429ae3ee41 06259a3cbae90e42a57a951c7766deac414ef9eb Jason E. Aten <j.e.aten@gmail.com> 1477267506 -0500	commit: atg. cleanup
+06259a3cbae90e42a57a951c7766deac414ef9eb 87665ddc6cc34f1f85d2d398a0efec0c5f3c77ec Jason E. Aten <j.e.aten@gmail.com> 1477268692 -0500	commit: atg. cleanup
+87665ddc6cc34f1f85d2d398a0efec0c5f3c77ec eb0a6af8d0c20cd1bdbdc0a96d6e400219a2f83a Jason E. Aten <j.e.aten@gmail.com> 1477273268 -0500	commit: update README to mention our fork
+eb0a6af8d0c20cd1bdbdc0a96d6e400219a2f83a 33480c488cec2c8f81946640614a666895bac10f Jason E. Aten <j.e.aten@gmail.com> 1477283812 -0500	commit: atg. hardcode nested struct depth at 8 to avoid all memory allocation on the hotpath
+33480c488cec2c8f81946640614a666895bac10f 34ec8c0f341aadaf6bf347bdd3bdf92cca15fa27 Jason E. Aten <j.e.aten@gmail.com> 1477284130 -0500	commit (amend): atg. hardcode nested struct depth at 8 to avoid all memory allocation on the hotpath
+34ec8c0f341aadaf6bf347bdd3bdf92cca15fa27 88a54fad5d6d5b0065ee39254162a279f7fb1c9b Jason E. Aten <j.e.aten@gmail.com> 1477285593 -0500	commit: atg. zero memory allocation during decode
+88a54fad5d6d5b0065ee39254162a279f7fb1c9b 9d50c8c15d5e9adb5f68e18a1f0c755fc9e01b4f Jason E. Aten <j.e.aten@gmail.com> 1477285619 -0500	commit (amend): atg. zero memory allocation during unmarshal and we warn about exceeding max struct nesting
+9d50c8c15d5e9adb5f68e18a1f0c755fc9e01b4f 697825bf6a7d96fa8283652bc14208a97558afcb Jason E. Aten <j.e.aten@gmail.com> 1477288838 -0500	commit: atg. add UnsafeZeroCopy option to NilBitsStack
+697825bf6a7d96fa8283652bc14208a97558afcb 38a6f61a768dc24552dad94611923841b53acc4f Jason E. Aten <j.e.aten@gmail.com> 1482597399 -0600	branch: Reset to v1.0
+38a6f61a768dc24552dad94611923841b53acc4f 362bfb3384d53ae4d5dd745983a4d70b6d23628c Jason E. Aten <j.e.aten@gmail.com> 1483246694 -0500	branch: Reset to origin/master

@@ -1,0 +1,1 @@
+0000000000000000000000000000000000000000 7d1396cb4cbb6ebd3ac2d972c9c87506402174a8 Jason E. Aten <j.e.aten@gmail.com> 1477284973 -0500	WIP on master: 34ec8c0 atg. hardcode nested struct depth at 8 to avoid all memory allocation on the hotpath

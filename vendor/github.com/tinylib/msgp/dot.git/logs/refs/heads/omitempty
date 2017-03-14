@@ -1,0 +1,4 @@
+0000000000000000000000000000000000000000 ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20 Jason E. Aten <j.e.aten@gmail.com> 1476594704 -0500	branch: Created from HEAD
+ad0ff2e232ad2e37faf67087fb24bf8d04a8ce20 1f4da8ee82d57edc671c296450f0cdfede70eef7 Jason E. Aten <j.e.aten@gmail.com> 1476596029 -0500	commit: omitempty tags implemented. Fixes #103
+1f4da8ee82d57edc671c296450f0cdfede70eef7 3af6e7b8388c6930fbc3675925d65c6d09bd8579 Jason E. Aten <j.e.aten@gmail.com> 1476596523 -0500	commit: working omitempty
+3af6e7b8388c6930fbc3675925d65c6d09bd8579 eb170a2b41ada652e5ae04804bd4112a0d4321ba Jason E. Aten <j.e.aten@gmail.com> 1476598211 -0500	commit: zebra starting point
