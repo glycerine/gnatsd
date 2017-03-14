@@ -1,7 +1,6 @@
 package swp
 
 import (
-	lsq "github.com/glycerine/zettalm"
 	"time"
 )
 
@@ -13,14 +12,14 @@ type RTT struct {
 	Est   float64
 	Alpha float64
 	N     int64
-	Sd    *lsq.SdTracker
+	Sd    SdTracker
 }
 
 // NewRTT makes a new RTT.
 func NewRTT() *RTT {
 	return &RTT{
 		Alpha: 0.1,
-		Sd:    lsq.NewSdTracker(1),
+		Sd:    *NewSdTracker(1),
 	}
 }
 
