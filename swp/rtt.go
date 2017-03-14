@@ -12,14 +12,14 @@ type RTT struct {
 	Est   float64
 	Alpha float64
 	N     int64
-	Sd    SdTracker
+	Sd    sdTracker
 }
 
 // NewRTT makes a new RTT.
 func NewRTT() *RTT {
 	return &RTT{
 		Alpha: 0.1,
-		Sd:    *NewSdTracker(1),
+		Sd:    *newSdTracker(1),
 	}
 }
 
@@ -37,7 +37,7 @@ func (r *RTT) GetSd() time.Duration {
 	case 1:
 		return time.Duration(int64(r.Est / 2))
 	}
-	return time.Duration(int64(r.Sd.Sd()[0]))
+	return time.Duration(int64(r.Sd.sd()[0]))
 
 }
 
@@ -45,7 +45,7 @@ func (r *RTT) GetSd() time.Duration {
 // estimate.
 func (r *RTT) AddSample(newSample time.Duration) {
 	r.N++
-	r.Sd.AddObs([]float64{float64(newSample)}, 1.0)
+	r.Sd.addObs([]float64{float64(newSample)}, 1.0)
 	cur := float64(newSample)
 	if r.N == 1 {
 		r.Est = cur

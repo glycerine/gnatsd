@@ -31,7 +31,7 @@ WVAR = Q/W
 WSD  = sqrt( WVAR * W/(W -1 ))
 */
 
-type SdTracker struct {
+type sdTracker struct {
 	// length of W, A, and Q
 	// don't reuse Ncol since we embed inside MillerLSQ
 	Nc int
@@ -46,13 +46,13 @@ type SdTracker struct {
 	Q []float64
 }
 
-func NewSdTracker(ncol int) *SdTracker {
-	s := &SdTracker{}
-	s.ZeroTracker(ncol)
+func newSdTracker(ncol int) *sdTracker {
+	s := &sdTracker{}
+	s.zeroTracker(ncol)
 	return s
 }
 
-func (s *SdTracker) ZeroTracker(ncol int) {
+func (s *sdTracker) zeroTracker(ncol int) {
 	s.Nc = ncol
 	s.W = make([]float64, ncol)
 	s.A = make([]float64, ncol)
@@ -62,12 +62,12 @@ func (s *SdTracker) ZeroTracker(ncol int) {
 // return the weighted mean vector for the rows to date.
 // returns by reference, use DeepCopy on it if you
 // want to preserve it
-func (s *SdTracker) Mean() []float64 {
+func (s *sdTracker) mean() []float64 {
 	return s.A
 }
 
 // return the weighted standard-deviation vector for rows to date.
-func (s *SdTracker) Sd() []float64 {
+func (s *sdTracker) sd() []float64 {
 	var wvar float64
 	WSD := make([]float64, s.Nc)
 	for i := range s.W {
@@ -77,7 +77,7 @@ func (s *SdTracker) Sd() []float64 {
 	return WSD
 }
 
-func (s *SdTracker) AddObs(x []float64, weight float64) {
+func (s *sdTracker) addObs(x []float64, weight float64) {
 
 	if len(x) != s.Nc {
 		panic(fmt.Sprintf("len(x) == %v but s.Nc == %v", len(x), s.Nc))
