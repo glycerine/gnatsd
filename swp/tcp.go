@@ -192,6 +192,8 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 		case EventApplicationClosed:
 			*s = LastAck
 			return SendFin
+		case EventFin:
+			// duplicate Fin, ignore
 		case EventReset:
 			*s = Closed
 		default:
