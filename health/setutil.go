@@ -60,5 +60,6 @@ func newMembers() *members {
 func (m *members) mustJSONBytes() []byte {
 	by, err := m.DedupTree.MarshalJSON()
 	panicOn(err)
-	return by
+	combo := fmt.Sprintf(`{"LeadID":"%s","Members":%s}`, m.LeadID, string(by))
+	return []byte(combo)
 }
