@@ -457,8 +457,14 @@ func (m *Membership) start() {
 
 						} else {
 							m.dlog("health-agent: "+
-								"I am not lead. lead is '%s', "+
-								"rank %v host %v port %v pid %v for %v",
+								"I (ID:'%s'; rank %v; host %v; port %v; pid %v) "+
+								"am not lead. lead is (ID:'%s'; "+
+								"rank %v; host %v; port %v; pid %v) for %v",
+								m.myLoc.ID,
+								m.myLoc.Rank,
+								m.myLoc.Host,
+								m.myLoc.Port,
+								m.myLoc.Pid,
 								curLead.ID,
 								curLead.Rank,
 								curLead.Host,
