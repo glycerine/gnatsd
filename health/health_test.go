@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/glycerine/go-nats"
+	"github.com/glycerine/nats"
 	cv "github.com/glycerine/goconvey/convey"
 	"github.com/glycerine/hnatsd/logger"
 	"github.com/glycerine/hnatsd/server"
@@ -444,11 +444,11 @@ func Test104ReceiveOwnSends(t *testing.T) {
 		loc.Rank = m.Cfg.MyRank
 		m.setLoc(loc)
 
-		m.subjAllCall = sysMemberPrefix + "allcall"
-		m.subjAllReply = sysMemberPrefix + "allreply"
-		m.subjMemberLost = sysMemberPrefix + "lost"
-		m.subjMemberAdded = sysMemberPrefix + "added"
-		m.subjMembership = sysMemberPrefix + "list"
+		m.subjAllCall = SysMemberPrefix + "allcall"
+		m.subjAllReply = SysMemberPrefix + "allreply"
+		m.subjMemberLost = SysMemberPrefix + "lost"
+		m.subjMemberAdded = SysMemberPrefix + "added"
+		m.subjMembership = SysMemberPrefix + "list"
 		m.nc = nc
 
 		gotAllCall := make(chan bool)

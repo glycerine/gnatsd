@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/glycerine/go-nats"
+	"github.com/glycerine/nats"
 )
 
 // AgentLoc conveys to interested parties
@@ -73,7 +73,8 @@ func slocEqualIgnoreLease(a, b *AgentLoc) bool {
 	return !aless && !bless
 }
 
-// the 2 types should be kept in sync.
+// The 2 types (nats.ServerLoc and AgentLoc)
+// should be kept in sync.
 // We return a brand new &AgentLoc{}
 // with contents filled from loc.
 func natsLocConvert(loc *nats.ServerLoc) *AgentLoc {

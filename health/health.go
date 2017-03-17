@@ -8,10 +8,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/glycerine/go-nats"
+	"github.com/glycerine/nats"
 )
 
-// sysMemberPrefix creates a namespace
+// SysMemberPrefix creates a namespace
 // for system cluster membership communication.
 // This prefix aims to avoid collisions
 // with user-level topics. Only system
@@ -23,7 +23,7 @@ import (
 // changed to be `_SYS` later once
 // we're sure everything is working.
 //
-const sysMemberPrefix = "_nats.cluster.members."
+const SysMemberPrefix = "_nats.cluster.members."
 
 // Membership tracks the nats server cluster
 // membership, issuing health checks and
@@ -119,9 +119,10 @@ func NewMembership(cfg *MembershipCfg) *Membership {
 	return m
 }
 
-// leadHolder holds who is the current leader,
-// and what their lease is. Used to synchronize
-// access between various goroutines.
+// leadHolder holds who is the current leader.
+// Used to synchronize access between various
+// goroutines.
+//
 type leadHolder struct {
 	mu   sync.Mutex
 	sloc AgentLoc
@@ -809,11 +810,11 @@ func (m *Membership) setupNatsClient() error {
 		m.myLoc.Port,
 		m.myLoc.Rank)
 
-	m.subjAllCall = sysMemberPrefix + "allcall"
-	m.subjAllReply = sysMemberPrefix + "allreply"
-	m.subjMemberLost = sysMemberPrefix + "lost"
-	m.subjMemberAdded = sysMemberPrefix + "added"
-	m.subjMembership = sysMemberPrefix + "list"
+	m.subjAllCall = SysMemberPrefix + "allcall"
+	m.subjAllReply = SysMemberPrefix + "allreply"
+	m.subjMemberLost = SysMemberPrefix + "lost"
+	m.subjMemberAdded = SysMemberPrefix + "added"
+	m.subjMembership = SysMemberPrefix + "list"
 
 	nc.Subscribe(m.subjAllReply, func(msg *nats.Msg) {
 		if m.deaf() {
