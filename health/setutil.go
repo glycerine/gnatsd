@@ -19,7 +19,8 @@ func panicOn(err error) {
 }
 
 type members struct {
-	DedupTree *ranktree `json:"Mem"`
+	DedupTree *ranktree `json:"Members"`
+	LeadID    string    `json:"LeadID"`
 }
 
 func (m *members) insert(s AgentLoc) {

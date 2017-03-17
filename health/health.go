@@ -522,6 +522,7 @@ func (m *Membership) start() {
 		}
 
 		if expired {
+			curMember.LeadID = curLead.ID
 			curBytes := curMember.mustJSONBytes()
 			if !m.deaf() {
 				nc.Publish(m.subjMembership, curBytes)
