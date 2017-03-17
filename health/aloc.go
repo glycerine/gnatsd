@@ -16,9 +16,6 @@ type AgentLoc struct {
 	Host string `json:"host"`
 	Port int    `json:"port"`
 
-	// Are we the leader?
-	IsLeader bool `json:"leader"`
-
 	// LeaseExpires is zero for any
 	// non-leader. For the leader,
 	// LeaseExpires tells you when
@@ -64,9 +61,7 @@ func slocEqualIgnoreLease(a, b *AgentLoc) bool {
 	a0 := *a
 	b0 := *b
 	a0.LeaseExpires = time.Time{}
-	a0.IsLeader = false
 	b0.LeaseExpires = time.Time{}
-	b0.IsLeader = false
 
 	aless := AgentLocLessThan(&a0, &b0)
 	bless := AgentLocLessThan(&b0, &a0)
@@ -82,7 +77,6 @@ func natsLocConvert(loc *nats.ServerLoc) *AgentLoc {
 		ID:           loc.ID,
 		Host:         loc.Host,
 		Port:         loc.Port,
-		IsLeader:     loc.IsLeader,
 		LeaseExpires: loc.LeaseExpires,
 		Rank:         loc.Rank,
 		Pid:          os.Getpid(),

@@ -38,8 +38,7 @@ type Membership struct {
 	// session.
 	pc *pongCollector
 
-	// actually elected leaders, should
-	// change only after a lease term.
+	// actually elected leader
 	elec  *leadHolder
 	nc    *nats.Conn
 	myLoc AgentLoc
@@ -74,7 +73,6 @@ func (m *Membership) getMyLocWithAnyLease() AgentLoc {
 	lead := m.elec.getLeader()
 	if slocEqualIgnoreLease(&lead, &myLoc) {
 		myLoc.LeaseExpires = lead.LeaseExpires
-		myLoc.IsLeader = true
 	}
 	return myLoc
 }
@@ -84,7 +82,6 @@ func (m *Membership) getMyLocWithZeroLease() AgentLoc {
 	myLoc := m.myLoc
 	m.mu.Unlock()
 	myLoc.LeaseExpires = time.Time{}
-	myLoc.IsLeader = false
 	return myLoc
 }
 
@@ -587,7 +584,6 @@ func (pc *pongCollector) insert(sloc AgentLoc) {
 	// keeping the lease time, the other not.
 	cp := sloc
 	cp.LeaseExpires = time.Time{}
-	cp.IsLeader = false
 	pc.fromNoTime.insert(cp)
 }
 
@@ -646,8 +642,7 @@ func (pc *pongCollector) getSetAndClear() (int, *members) {
 // and returns the leader or best candiate. Returns
 // expired == true if any prior leader lease has
 // lapsed. In this case we return the best new
-// leader with its IsLeader bit set and its
-// LeaseExpires set to now + lease.
+// leader with its LeaseExpires set to now + lease.
 //
 // If expired == false then the we return
 // the current leader in lead.
@@ -685,7 +680,6 @@ func (mems *members) leaderLeaseCheck(
 	// INVAR: any lease has expired.
 	expired = true
 	lead = mems.DedupTree.minrank()
-	lead.IsLeader = true
 	lead.LeaseExpires = now.Add(leaseLen).UTC()
 
 	return
