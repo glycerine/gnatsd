@@ -25,7 +25,9 @@ const (
 	LastAck   TcpState = 9
 )
 
-type TcpEvent int
+// moved to swp.go so that msgp serialization
+// would know the type of TcpEvent.
+//type TcpEvent int
 
 // TcpEvent
 

@@ -435,3 +435,111 @@ func mustNatsConn(serverHost string, serverPort int) *nats.Conn {
 	}
 	return nc
 }
+
+func Test043SendFileHeadersAheadOfCheckpoints(t *testing.T) {
+
+	cv.Convey("For each checkpoint (big file), send each peer the file header which tells it the length and checksum up front, so they know when to stop reading.", t, func() {
+
+		// ===============================
+		// begin generic nats setup
+		// ===============================
+
+		host := "127.0.0.1"
+		port := getAvailPort()
+		gnats := StartGnatsd(host, port)
+		defer func() {
+			p("calling gnats.Shutdown()")
+			gnats.Shutdown() // when done
+		}()
+
+		n := 1 << 25
+		writeme := SequentialPayload(int64(n))
+
+		p("writeme is")
+		showSeq(writeme, 100000)
+		//showSeq(writeme, 10)
+
+		recDone := make(chan bool)
+
+		ignoreSlowConsumerErrors := true
+		skipTLS := true
+		//nc *nats.Conn,
+		serverHost := host
+		serverNport := port
+		clientNameA := "A"
+		clientNameB := "B"
+		Asubj := "A"
+		Bsubj := "B"
+
+		ncA := mustNatsConn(serverHost, serverNport)
+		sessA, err := SetupSendStream(
+			ncA,
+			serverHost,
+			serverNport,
+			clientNameA,
+			Asubj,
+			Bsubj,
+			skipTLS,
+			nil,
+			ignoreSlowConsumerErrors)
+		panicOn(err)
+
+		ncB := mustNatsConn(serverHost, serverNport)
+		sessB, err := SetupRecvStream(
+			ncB,
+			serverHost,
+			serverNport,
+			clientNameB,
+			Bsubj,
+			Asubj,
+			skipTLS,
+			nil,
+			ignoreSlowConsumerErrors)
+		panicOn(err)
+
+		var by []byte
+		var sbf, rbf *BigFile
+		go func() {
+			time.Sleep(time.Second)
+			rbf, err = sessB.RecvFile()
+			panicOn(err)
+			by = rbf.Data
+			close(recDone)
+		}()
+
+		path := "filetransfer.test.file"
+		sbf, err = sessA.SendFile(path, writeme, time.Now())
+		<-recDone
+
+		//		p("bytes transfered %v", len(buf.Bytes()))
+		//		got := buf.Bytes()
+		got := by
+
+		// verify checksum
+		cksum := Blake2bOfBytes(rbf.Data)
+		p("compare checksums, observed:'%x', expected:'%x'", rbf.Blake2b, sbf.Blake2b)
+		cv.So(rbf.Blake2b, cv.ShouldResemble, cksum)
+		cv.So(sbf.Blake2b, cv.ShouldResemble, cksum)
+
+		p("got is")
+		showSeq(got, 100000)
+		//showSeq(got, 10)
+
+		cv.So(len(got), cv.ShouldResemble, len(writeme))
+		firstDiff := -1
+		for i := 0; i < len(got); i++ {
+			if got[i] != writeme[i] {
+				firstDiff = i
+				break
+			}
+		}
+		if firstDiff != -1 {
+			p("first Diff at %v, got %v, expected %v", firstDiff, got[firstDiff], writeme[firstDiff])
+			a, b, c := nearestOctet(firstDiff, got)
+			wa, wb, wc := nearestOctet(firstDiff, writeme)
+			p("first Diff at %v for got: [%v, %v, %v]; for writem: [%v, %v, %v]", firstDiff, a, b, c, wa, wb, wc)
+		}
+		cv.So(firstDiff, cv.ShouldResemble, -1)
+	})
+
+}

@@ -47,6 +47,7 @@ import (
 
 	"github.com/glycerine/bchan"
 	"github.com/glycerine/idem"
+	"github.com/tinylib/msgp/msgp"
 )
 
 // sliding window protocol
@@ -62,7 +63,10 @@ import (
 
 //go:generate msgp
 
-//msgp:ignore TxqSlot RxqSlot Semaphore SenderState RecvState SWP Session NatsNet SimNet Network Session SWP SessionConfig TermConfig
+//msgp:ignore TxqSlot RxqSlot Semaphore SenderState RecvState SWP Session NatsNet SimNet Network Session SWP SessionConfig TermConfig ReadRequest
+
+// here so that msgp can know what it is
+type TcpEvent int
 
 // Packet is what is transmitted between Sender A and
 // Receiver B, where A and B are the two endpoints in a
@@ -595,4 +599,35 @@ func (s *Session) GetErr() (err error) {
 	err = s.exitErr
 	s.mut.Unlock()
 	return
+}
+
+// BigFile represents the transmission of a file;
+// size is limited only by memory. Since the primary
+// use is to capture the state that is being held
+// in memory, this is a reasonable approach.
+type BigFile struct {
+	Filepath    string
+	SizeInBytes int64
+	Blake2b     []byte
+	SendTime    time.Time
+	Data        []byte
+}
+
+func (sess *Session) RecvFile() (*BigFile, error) {
+	bf := &BigFile{}
+	err := msgp.Decode(sess, bf)
+	return bf, err
+}
+
+func (sess *Session) SendFile(path string, writeme []byte, tm time.Time) (*BigFile, error) {
+	bf := &BigFile{
+		Filepath:    path,
+		SendTime:    tm,
+		SizeInBytes: int64(len(writeme)),
+		Data:        writeme,
+		Blake2b:     Blake2bOfBytes(writeme),
+	}
+
+	err := msgp.Encode(sess, bf)
+	return bf, err
 }

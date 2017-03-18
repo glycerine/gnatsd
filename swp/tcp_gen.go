@@ -56,60 +56,11 @@ func (z TcpAction) Msgsize() (s int) {
 }
 
 // DecodeMsg implements msgp.Decodable
-func (z *TcpEvent) DecodeMsg(dc *msgp.Reader) (err error) {
+func (z *TcpState) DecodeMsg(dc *msgp.Reader) (err error) {
 	{
 		var zbai int
 		zbai, err = dc.ReadInt()
-		(*z) = TcpEvent(zbai)
-	}
-	if err != nil {
-		return
-	}
-	return
-}
-
-// EncodeMsg implements msgp.Encodable
-func (z TcpEvent) EncodeMsg(en *msgp.Writer) (err error) {
-	err = en.WriteInt(int(z))
-	if err != nil {
-		return
-	}
-	return
-}
-
-// MarshalMsg implements msgp.Marshaler
-func (z TcpEvent) MarshalMsg(b []byte) (o []byte, err error) {
-	o = msgp.Require(b, z.Msgsize())
-	o = msgp.AppendInt(o, int(z))
-	return
-}
-
-// UnmarshalMsg implements msgp.Unmarshaler
-func (z *TcpEvent) UnmarshalMsg(bts []byte) (o []byte, err error) {
-	{
-		var zcmr int
-		zcmr, bts, err = msgp.ReadIntBytes(bts)
-		(*z) = TcpEvent(zcmr)
-	}
-	if err != nil {
-		return
-	}
-	o = bts
-	return
-}
-
-// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
-func (z TcpEvent) Msgsize() (s int) {
-	s = msgp.IntSize
-	return
-}
-
-// DecodeMsg implements msgp.Decodable
-func (z *TcpState) DecodeMsg(dc *msgp.Reader) (err error) {
-	{
-		var zajw int
-		zajw, err = dc.ReadInt()
-		(*z) = TcpState(zajw)
+		(*z) = TcpState(zbai)
 	}
 	if err != nil {
 		return
@@ -136,9 +87,9 @@ func (z TcpState) MarshalMsg(b []byte) (o []byte, err error) {
 // UnmarshalMsg implements msgp.Unmarshaler
 func (z *TcpState) UnmarshalMsg(bts []byte) (o []byte, err error) {
 	{
-		var zwht int
-		zwht, bts, err = msgp.ReadIntBytes(bts)
-		(*z) = TcpState(zwht)
+		var zcmr int
+		zcmr, bts, err = msgp.ReadIntBytes(bts)
+		(*z) = TcpState(zcmr)
 	}
 	if err != nil {
 		return
