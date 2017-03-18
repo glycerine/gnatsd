@@ -360,7 +360,7 @@ func (s *SenderState) Start(sess *Session) {
 				}
 				// INVAR: a.TcpEvent == EventDataAck
 
-				p("%s sender has EventDataAck(%v) or a.AckNum(%v) < 0 ...", s.Inbox, a.TcpEvent == EventDataAck, a.AckNum)
+				//p("%s sender has EventDataAck(%v) or a.AckNum(%v) < 0 ...", s.Inbox, a.TcpEvent == EventDataAck, a.AckNum)
 				if !InWindow(a.AckNum, s.LastAckRec+1, s.LastFrameSent) {
 					///p("%v a.AckNum = %v outside sender's window [%v, %v], dropping it.", s.Inbox, a.AckNum, s.LastAckRec+1, s.LastFrameSent)
 					s.DiscardCount++
@@ -401,7 +401,7 @@ func (s *SenderState) Stop() {
 func (s *SenderState) doOrigDataSend(pack *Packet) int64 {
 
 	s.LastFrameSent++
-	p("%v doOrigDataSend(): LastFrameSent is now %v", s.Inbox, s.LastFrameSent)
+	//p("%v doOrigDataSend(): LastFrameSent is now %v", s.Inbox, s.LastFrameSent)
 
 	s.TotalBytesSent += int64(len(pack.Data))
 	pack.CumulBytesTransmitted = s.TotalBytesSent

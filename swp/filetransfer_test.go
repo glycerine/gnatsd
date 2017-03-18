@@ -355,24 +355,23 @@ func Test042FileTransferWithReadAndWrite(t *testing.T) {
 			nil,
 			ignoreSlowConsumerErrors)
 		panicOn(err)
-		p("sessB = %p", sessB)
 
 		by := make([]byte, n)
 		totnr := 0
 		readAttempt := 0
 		go func() {
 			for totnr < n {
-				p("by=%p; len(by)=%v; totnr=%v", by, len(by), totnr)
-				p("by=%p; len(by)=%v; len(by[totnr:] is %v. totnr=%v", by, len(by), len(by[totnr:]), totnr)
+				//p("by=%p; len(by)=%v; totnr=%v", by, len(by), totnr)
+				//p("by=%p; len(by)=%v; len(by[totnr:] is %v. totnr=%v", by, len(by), len(by[totnr:]), totnr)
 				nr, err := sessB.Read(by[totnr:])
 				panicOn(err)
-				p("nr = %v, on readAttempt=%v", nr, readAttempt)
+				//p("nr = %v, on readAttempt=%v", nr, readAttempt)
 				totnr += nr
 				readAttempt++
 			}
 			close(recDone)
 		}()
-		nw, err := sessA.Write(writeme) // hung here
+		nw, err := sessA.Write(writeme)
 		panicOn(err)
 		p("nw = %v", nw)
 		<-recDone

@@ -192,10 +192,8 @@ func (r *RecvState) Start() error {
 				//p("recvloop: got <-r.RcvdButNotConsumed")
 
 			case rr := <-r.AcceptReadRequest:
-				p("recv: acceptReadRequest got rr =%p", rr)
 				if len(delivery.Seq) == 0 {
 					// nothing to deliver
-					p("recv: nothing to deliver")
 					close(rr.Done)
 					continue
 				}
@@ -230,7 +228,7 @@ func (r *RecvState) Start() error {
 				///p("recvloop: got <-r.snd.SenderShutdown. note that len(r.RcvdButNotConsumed)=%v", len(r.RcvdButNotConsumed))
 				return
 			case pack := <-r.MsgRecv:
-				p("%v recvloop sees packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.SeqNum, pack.TcpEvent, pack.AckNum)
+				//p("%v recvloop sees packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.SeqNum, pack.TcpEvent, pack.AckNum)
 				// test instrumentation, used e.g. in clock_test.go
 				if r.testing != nil && r.testing.incrementClockOnReceive {
 					r.Clk.(*SimClock).Advance(time.Second)
@@ -524,7 +522,7 @@ func (r *RecvState) doTcpAction(act TcpAction, pack *Packet) error {
 
 func (r *RecvState) fillAsMuchAsPossible(rr *ReadRequest) {
 	lenp := len(rr.P)
-	p("RecvState.fillAsMuchAsPossible() top. with len(rr.P)=%v", lenp)
+	//p("RecvState.fillAsMuchAsPossible() top. with len(rr.P)=%v", lenp)
 	if lenp == 0 {
 		return
 	}
@@ -532,21 +530,21 @@ func (r *RecvState) fillAsMuchAsPossible(rr *ReadRequest) {
 	// copy our slice to ready, so our changing r.ReadyForDelivery
 	// won't mess up the for range loop.
 	ready := r.ReadyForDelivery
-	p("RecvState.fillAsMuchAsPossible(): len(ready)=%v", len(ready))
+	//p("RecvState.fillAsMuchAsPossible(): len(ready)=%v", len(ready))
 
 	// lastPack is the last completely consumed packet.
 	var lastPack *Packet
 
-	for k, pk := range ready {
+	for _, pk := range ready {
 		lendata := len(pk.Data) - pk.DataOffset
-		p("fillAsMuch: next packet pk is of len %v", lendata)
+		//p("fillAsMuch: next packet pk is of len %v", lendata)
 		m := copy(rr.P[rr.N:], pk.Data[pk.DataOffset:])
 		rr.N += m
 		pk.DataOffset += m
 
 		// how far did we get?
 		if m == lendata {
-			p("consumed complete packet k=%v", k)
+			//p("consumed complete packet k=%v", k)
 			// consumed the complete pk Packet
 			r.ReadyForDelivery = r.ReadyForDelivery[1:]
 			delete(r.RcvdButNotConsumed, pk.SeqNum)
@@ -558,7 +556,7 @@ func (r *RecvState) fillAsMuchAsPossible(rr *ReadRequest) {
 			r.LastByteConsumed = pk.CumulBytesTransmitted
 		} else {
 			// partial packet consumed
-			p("partial packet consumed on k=%v", k)
+			//p("partial packet consumed on k=%v", k)
 			r.LastByteConsumed = pk.CumulBytesTransmitted - int64(lendata) + int64(m)
 		}
 		// is there space left in rr.P ?
