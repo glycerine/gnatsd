@@ -297,7 +297,7 @@ func Test041File(t *testing.T) {
 
 func Test042FileTransferWithReadAndWrite(t *testing.T) {
 
-	cv.Convey("Big file transfer should succeed, when using Read and Write after our SetupRecvStream() and SEtupSendStream() calls.", t, func() {
+	cv.Convey("Big file transfer should succeed, when using Read and Write after our SetupRecvStream() and SetupSendStream() calls.", t, func() {
 
 		// ===============================
 		// begin generic nats setup
