@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-type certConfig struct {
+type CertConfig struct {
 	initDone  bool
 	certPath  string
 	keyPath   string
@@ -20,7 +20,7 @@ type certConfig struct {
 	skipTLS   bool
 }
 
-func (cc *certConfig) init(tlsDir string) {
+func (cc *CertConfig) Init(tlsDir string) {
 	if tlsDir == "" {
 		tlsDir = "./testfiles/"
 	} else {
@@ -35,7 +35,7 @@ func (cc *certConfig) init(tlsDir string) {
 	cc.skipTLS = false
 }
 
-func (cc *certConfig) certLoad() error {
+func (cc *CertConfig) CertLoad() error {
 	if !fileExists(cc.certPath) {
 		return fmt.Errorf("certLoad: path '%s' does not exist", cc.certPath)
 	}

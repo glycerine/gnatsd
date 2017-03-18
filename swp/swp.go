@@ -158,6 +158,12 @@ type Packet struct {
 
 	Data []byte
 
+	// DataOffset tells us
+	// where to start reading from in Data. It
+	// allows us to have consumed only part of
+	// a packet on one Read().
+	DataOffset int
+
 	// checksum of Data
 	Blake2bChecksum []byte
 
@@ -207,8 +213,9 @@ type Session struct {
 	Destination string
 	MyInbox     string
 
-	Net            Network
-	ReadMessagesCh chan InOrderSeq
+	Net               Network
+	ReadMessagesCh    chan InOrderSeq
+	AcceptReadRequest chan *ReadRequest
 
 	// if terminated with error,
 	// that error will live here. Retreive
@@ -225,7 +232,8 @@ type Session struct {
 	packetsSent                      uint64
 	NumFailedKeepAlivesBeforeClosing int
 
-	mut sync.Mutex
+	mut                sync.Mutex
+	RemoteSenderClosed chan bool
 }
 
 // SessionConfig configures a Session.
@@ -326,10 +334,12 @@ func NewSession(cfg SessionConfig) (*Session, error) {
 		Net:         cfg.Net,
 		Halt:        idem.NewHalter(),
 		NumFailedKeepAlivesBeforeClosing: cfg.NumFailedKeepAlivesBeforeClosing,
+		RemoteSenderClosed:               make(chan bool),
 	}
 	sess.Swp.Sender.NumFailedKeepAlivesBeforeClosing = cfg.NumFailedKeepAlivesBeforeClosing
 	sess.Swp.Start(sess)
 	sess.ReadMessagesCh = sess.Swp.Recver.ReadMessagesCh
+	sess.AcceptReadRequest = sess.Swp.Recver.AcceptReadRequest
 
 	return sess, nil
 }
@@ -470,25 +480,37 @@ func (s *Session) setPacketRecvCallback(cb ackCallbackFunc) {
 	s.Swp.Recver.testing.ackCb = cb
 }
 
-/* not done
+type ReadRequest struct {
+	Done chan bool
+	N    int
+	Err  error
+	P    []byte
+}
+
+func NewReadRequest(p []byte) *ReadRequest {
+	return &ReadRequest{
+		Done: make(chan bool),
+		P:    p,
+	}
+}
+
 // Read implements io.Reader
 func (s *Session) Read(p []byte) (n int, err error) {
-	orig := p
-	_ = orig
+	rr := NewReadRequest(p)
 	select {
-	case seq := <-s.ReadMessagesCh:
-		for _, pk := range seq.Seq {
-			m := copy(p, pk.Data)
-			p = p[:m]
-			panicOn(err)
-			fmt.Printf("\n")
-			//fmt.Printf("\ndone with latest io.Copy, err was nil.\n")
-		}
+	case s.AcceptReadRequest <- rr:
+		// good, proceed to get reply
 	case <-s.Halt.Done.Chan:
+		return 0, ErrSessDone
 	}
-	return
+	// now get reply.
+	select {
+	case <-rr.Done:
+		return rr.N, rr.Err
+	case <-s.Halt.Done.Chan:
+		return 0, ErrSessDone
+	}
 }
-*/
 
 // ByteAccount should be accessed with
 // atomics to avoid data races.

@@ -29,13 +29,13 @@ func exampleSetup_test() {
 		gnats.Shutdown() // when done
 	}()
 
-	subC := NewNatsClientConfig(host, port, "B-subscriber", "toB", true, true)
+	subC := NewNatsClientConfig(host, port, "B-subscriber", "toB", true, true, nil)
 	sub := NewNatsClient(subC)
 	err := sub.Start()
 	panicOn(err)
 	defer sub.Close()
 
-	pubC := NewNatsClientConfig(host, port, "A-publisher", "toA", true, true)
+	pubC := NewNatsClientConfig(host, port, "A-publisher", "toA", true, true, nil)
 	pub := NewNatsClient(pubC)
 	err = pub.Start()
 	panicOn(err)
@@ -125,26 +125,32 @@ func portIsBound(addr string) bool {
 // and a message arrival channel into an easy to use
 // and easy to configure (even with TLS) structure.
 type NatsClient struct {
-	Nc           *nats.Conn
-	Scrip        *nats.Subscription
-	MsgArrivalCh chan *nats.Msg
-	Cfg          *NatsClientConfig
-	Subject      string
+	Nc      *nats.Conn
+	Scrip   *nats.Subscription
+	Cfg     *NatsClientConfig
+	Subject string
 }
 
 // NewNatsClient creates a new NatsClient.
 func NewNatsClient(cfg *NatsClientConfig) *NatsClient {
 	c := &NatsClient{
-		MsgArrivalCh: make(chan *nats.Msg),
-		Cfg:          cfg,
-		Subject:      cfg.Subject,
+		Cfg:     cfg,
+		Subject: cfg.Subject,
+	}
+	return c
+}
+
+func NewNatsClientAlreadyStarted(cfg *NatsClientConfig, nc *nats.Conn) *NatsClient {
+	c := &NatsClient{
+		Cfg:     cfg,
+		Subject: cfg.Subject,
+		Nc:      nc,
 	}
 	return c
 }
 
 // Start connects to the gnatsd server.
 func (s *NatsClient) Start() error {
-	//	s.Cfg.AsyncErrPanics = true
 	s.Cfg.Init()
 
 	nc, err := nats.Connect(s.Cfg.ServerList, s.Cfg.Opts...)
@@ -191,16 +197,20 @@ func NewNatsClientConfig(
 	myname string,
 	subject string,
 	skipTLS bool,
-	asyncErrCrash bool) *NatsClientConfig {
+	asyncErrCrash bool,
+	errorCallbackFunc func(c *nats.Conn, s *nats.Subscription, e error),
+
+) *NatsClientConfig {
 
 	cfg := &NatsClientConfig{
-		Host:           host,
-		Port:           port,
-		NatsNodeName:   myname,
-		Subject:        subject,
-		SkipTLS:        skipTLS,
-		AsyncErrPanics: asyncErrCrash,
-		ServerList:     fmt.Sprintf("nats://%v:%v", host, port),
+		Host:              host,
+		Port:              port,
+		NatsNodeName:      myname,
+		Subject:           subject,
+		SkipTLS:           skipTLS,
+		AsyncErrPanics:    asyncErrCrash,
+		ServerList:        fmt.Sprintf("nats://%v:%v", host, port),
+		ErrorCallbackFunc: errorCallbackFunc,
 	}
 	return cfg
 }
@@ -214,7 +224,7 @@ type NatsClientConfig struct {
 	Host string
 	Port int
 
-	NatsNodeName string
+	NatsNodeName string // client node name, for nats-top.
 	Subject      string
 
 	SkipTLS bool
@@ -223,6 +233,8 @@ type NatsClientConfig struct {
 	AsyncErrPanics bool
 
 	ErrorCallbackFunc func(c *nats.Conn, s *nats.Subscription, e error)
+
+	ReportSlowConsumerErrors bool
 
 	// ====================
 	// Init() fills in:
@@ -235,7 +247,7 @@ type NatsClientConfig struct {
 	NatsConnReconCh  chan *nats.Conn
 
 	Opts  []nats.Option
-	Certs certConfig
+	Certs CertConfig
 }
 
 // Init initializes the nats options and
@@ -243,7 +255,7 @@ type NatsClientConfig struct {
 func (cfg *NatsClientConfig) Init() {
 
 	if !cfg.SkipTLS && !cfg.Certs.skipTLS {
-		err := cfg.Certs.certLoad()
+		err := cfg.Certs.CertLoad()
 		if err != nil {
 			panic(err)
 		}
@@ -256,7 +268,9 @@ func (cfg *NatsClientConfig) Init() {
 
 	o = append(o, nats.ErrorHandler(func(c *nats.Conn, s *nats.Subscription, e error) {
 		if e.Error() == "nats: slow consumer, messages dropped" {
-			return
+			if !cfg.ReportSlowConsumerErrors {
+				return
+			}
 		}
 		if cfg.AsyncErrPanics || cfg.ErrorCallbackFunc == nil {
 			fmt.Printf("\n  got an async err '%v', here is the"+

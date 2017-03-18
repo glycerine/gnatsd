@@ -76,7 +76,7 @@ func testsender(host string, nport int, gnats *server.Server, writeme []byte) {
 
 	skipTLS := true
 	asyncErrCrash := false
-	pubC := NewNatsClientConfig(host, nport, "A", "A", skipTLS, asyncErrCrash)
+	pubC := NewNatsClientConfig(host, nport, "A", "A", skipTLS, asyncErrCrash, nil)
 	pub := NewNatsClient(pubC)
 	err := pub.Start()
 	panicOn(err)
@@ -139,7 +139,7 @@ func testrec(host string, nport int, gnats *server.Server, dest io.Writer, done 
 	// setup nats client for a subscriber
 	// ===============================
 
-	subC := NewNatsClientConfig(host, nport, "B", "B", true, false)
+	subC := NewNatsClientConfig(host, nport, "B", "B", true, false, nil)
 	sub := NewNatsClient(subC)
 	err := sub.Start()
 	panicOn(err)

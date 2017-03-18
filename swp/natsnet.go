@@ -42,7 +42,7 @@ func (n *NatsNet) Listen(inbox string) (chan *Packet, error) {
 		_, err := pack.UnmarshalMsg(msg.Data)
 		panicOn(err)
 		select {
-		case mr <- &pack: //hung here
+		case mr <- &pack:
 		case <-n.Halt.ReqStop.Chan:
 			//		case <-time.After(10 * time.Second):
 			//			p("NatsNet dropping pack.SeqNum=%v after 10 seconds of failing to deliver to receiver", pack.SeqNum)

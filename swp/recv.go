@@ -78,7 +78,8 @@ type RecvState struct {
 
 	TcpState TcpState
 
-	AppCloseCallback func()
+	AppCloseCallback  func()
+	AcceptReadRequest chan *ReadRequest
 }
 
 // InOrderSeq represents ordered (and gapless)
@@ -115,6 +116,7 @@ func NewRecvState(net Network, recvSz int64, recvSzBytes int64, timeout time.Dur
 		NumHeldMessages:     make(chan int64),
 		setAsapHelper:       make(chan *AsapHelper),
 		TcpState:            Established,
+		AcceptReadRequest:   make(chan *ReadRequest),
 	}
 
 	for i := range r.Rxq {
@@ -189,6 +191,17 @@ func (r *RecvState) Start() error {
 			case r.NumHeldMessages <- int64(len(r.RcvdButNotConsumed)):
 				//p("recvloop: got <-r.RcvdButNotConsumed")
 
+			case rr := <-r.AcceptReadRequest:
+				if len(delivery.Seq) == 0 {
+					// nothing to deliver
+					close(rr.Done)
+					continue
+				}
+				// something to deliver
+				r.fillAsMuchAsPossible(rr)
+				close(rr.Done)
+				continue
+
 			case deliverToConsumer <- delivery:
 				deliveryLen := len(delivery.Seq)
 				//p("%v made deliverToConsumer delivery of %v packets [%v, %v]", r.Inbox, deliveryLen, delivery.Seq[0].SeqNum, delivery.Seq[deliveryLen-1].SeqNum)
@@ -197,7 +210,11 @@ func (r *RecvState) Start() error {
 					delete(r.RcvdButNotConsumed, pack.SeqNum)
 					r.LastMsgConsumed = pack.SeqNum
 				}
-				r.LastByteConsumed = delivery.Seq[0].CumulBytesTransmitted - int64(len(delivery.Seq[0].Data))
+				// this seems wrong:
+				//r.LastByteConsumed = delivery.Seq[0].CumulBytesTransmitted - int64(len(delivery.Seq[0].Data))
+				// this seems right:
+				r.LastByteConsumed = delivery.Seq[deliveryLen-1].CumulBytesTransmitted
+
 				r.ReadyForDelivery = make([]*Packet, 0)
 				lastPack := delivery.Seq[deliveryLen-1]
 				r.LastFrameClientConsumed = lastPack.SeqNum
@@ -279,7 +296,7 @@ func (r *RecvState) Start() error {
 					act := r.TcpState.UpdateTcp(pack.TcpEvent)
 					err := r.doTcpAction(act, pack)
 					if err == nil {
-						continue recvloop // debug: instead of return, keep going a little longer.
+						continue recvloop
 					} else {
 						// err != nil is our indicator to exit
 						///p("doTcpAction returned err='%v', returning.", err)
@@ -501,4 +518,51 @@ func (r *RecvState) doTcpAction(act TcpAction, pack *Packet) error {
 		panic(fmt.Sprintf("unrecognized TcpAction act = %v", act))
 	}
 	return nil
+}
+
+func (r *RecvState) fillAsMuchAsPossible(rr *ReadRequest) {
+
+	lenp := len(rr.P)
+	if lenp == 0 {
+		return
+	}
+
+	// copy our slice to ready, so our changing r.ReadyForDelivery
+	// won't mess up the for range loop.
+	ready := r.ReadyForDelivery
+
+	// lastPack is the last completely consumed packet.
+	var lastPack *Packet
+
+	for _, pk := range ready {
+		lendata := len(pk.Data) - pk.DataOffset
+		m := copy(rr.P[rr.N:], pk.Data[pk.DataOffset:])
+		rr.N += m
+		pk.DataOffset += m
+
+		// how far did we get?
+		if m == lendata {
+			// consumed the complete pk Packet
+			r.ReadyForDelivery = r.ReadyForDelivery[1:]
+			delete(r.RcvdButNotConsumed, pk.SeqNum)
+			r.LastMsgConsumed = pk.SeqNum
+			r.LastFrameClientConsumed = pk.SeqNum
+			lastPack = pk
+
+			// not the same as <- delivery, so check this:
+			r.LastByteConsumed = pk.CumulBytesTransmitted
+		} else {
+			// partial packet consumed
+			r.LastByteConsumed = pk.CumulBytesTransmitted - int64(lendata) + int64(m)
+		}
+		// is there space left in rr.P ?
+		if rr.N >= lenp {
+			// nope
+			break
+		}
+		// yep, there is space in rr.P, continue
+	}
+	if lastPack != nil {
+		r.ack(r.LastFrameClientConsumed, lastPack, EventDataAck)
+	}
 }
