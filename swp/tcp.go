@@ -62,9 +62,6 @@ const (
 
 	// a keepalive
 	EventKeepAlive TcpEvent = 14
-
-	// FileHeader describing the file to follow
-	EventFileHeader TcpEvent = 15
 )
 
 type TcpAction int
