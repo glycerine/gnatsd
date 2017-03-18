@@ -52,13 +52,13 @@ func SetupRecvStream(
 	//rep := ReportOnSubscription(sub.Scrip)
 	//fmt.Printf("rep = %#v\n", rep)
 
-	//msgLimit := int64(1000)
-	//bytesLimit := int64(600000)
+	msgLimit := int64(1000)
+	bytesLimit := int64(600000)
 	sess.Swp.Sender.FlowCt = &FlowCtrl{Flow: Flow{
 		ReservedByteCap: 600000,
 		ReservedMsgCap:  1000,
 	}}
-	//SetSubscriptionLimits(sub.Scrip, msgLimit, bytesLimit)
+	SetSubscriptionLimits(cli.Scrip, msgLimit, bytesLimit)
 
 	sess.Swp.Recver.AppCloseCallback = func() {
 		//p("AppCloseCallback called. sess.Swp.Recver.LastFrameClientConsumed=%v", sess.Swp.Recver.LastFrameClientConsumed)
@@ -103,13 +103,13 @@ func SetupSendStream(
 	//rep := ReportOnSubscription(pub.Scrip)
 	//fmt.Printf("rep = %#v\n", rep)
 
-	//msgLimit := int64(1000)
-	//bytesLimit := int64(600000)
+	msgLimit := int64(1000)
+	bytesLimit := int64(600000)
 	sessA.Swp.Sender.FlowCt = &FlowCtrl{Flow: Flow{
 		ReservedByteCap: 600000,
 		ReservedMsgCap:  1000,
 	}}
-	//SetSubscriptionLimits(pub.Scrip, msgLimit, bytesLimit)
+	SetSubscriptionLimits(cli.Scrip, msgLimit, bytesLimit)
 
 	//n, err := sessA.Write(writeme)
 	//fmt.Fprintf(os.Stderr, "n = %v, err=%v after A.Write(writeme), where len(writeme)=%v\n", n, err, len(writeme))
