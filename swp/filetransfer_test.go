@@ -11,6 +11,7 @@ import (
 
 	cv "github.com/glycerine/goconvey/convey"
 	"github.com/glycerine/hnatsd/server"
+	"github.com/glycerine/nats"
 )
 
 func Test040FileTransfer(t *testing.T) {
@@ -29,8 +30,7 @@ func Test040FileTransfer(t *testing.T) {
 			gnats.Shutdown() // when done
 		}()
 
-		//n := 160 // 16MB file was causing fail.
-		n := 1 << 24 // 16MB file was causing fail.
+		n := 1 << 24 // test with 16MB file.
 		writeme := SequentialPayload(int64(n))
 
 		p("writeme is")
@@ -293,4 +293,146 @@ func Test041File(t *testing.T) {
 			showSeq(by, 1)
 		}
 	})
+}
+
+func Test042FileTransferWithReadAndWrite(t *testing.T) {
+
+	cv.Convey("Big file transfer should succeed, when using Read and Write after our SetupRecvStream() and SEtupSendStream() calls.", t, func() {
+
+		// ===============================
+		// begin generic nats setup
+		// ===============================
+
+		host := "127.0.0.1"
+		port := getAvailPort()
+		gnats := StartGnatsd(host, port)
+		defer func() {
+			p("calling gnats.Shutdown()")
+			gnats.Shutdown() // when done
+		}()
+
+		n := 1 << 24
+		writeme := SequentialPayload(int64(n))
+
+		p("writeme is")
+		showSeq(writeme, 100000)
+		//showSeq(writeme, 10)
+
+		recDone := make(chan bool)
+
+		ignoreSlowConsumerErrors := true
+		skipTLS := true
+		//nc *nats.Conn,
+		serverHost := host
+		serverNport := port
+		clientNameA := "A"
+		clientNameB := "B"
+		Asubj := "A"
+		Bsubj := "B"
+
+		ncA := mustNatsConn(serverHost, serverNport)
+		sessA, err := SetupSendStream(
+			ncA,
+			serverHost,
+			serverNport,
+			clientNameA,
+			Asubj,
+			Bsubj,
+			skipTLS,
+			nil,
+			ignoreSlowConsumerErrors)
+		panicOn(err)
+
+		ncB := mustNatsConn(serverHost, serverNport)
+		sessB, err := SetupRecvStream(
+			ncB,
+			serverHost,
+			serverNport,
+			clientNameB,
+			Bsubj,
+			Asubj,
+			skipTLS,
+			nil,
+			ignoreSlowConsumerErrors)
+		panicOn(err)
+		p("sessB = %p", sessB)
+
+		by := make([]byte, n)
+		totnr := 0
+		readAttempt := 0
+		go func() {
+			for totnr < n {
+				p("by=%p; len(by)=%v; totnr=%v", by, len(by), totnr)
+				p("by=%p; len(by)=%v; len(by[totnr:] is %v. totnr=%v", by, len(by), len(by[totnr:]), totnr)
+				nr, err := sessB.Read(by[totnr:])
+				panicOn(err)
+				p("nr = %v, on readAttempt=%v", nr, readAttempt)
+				totnr += nr
+				readAttempt++
+			}
+			close(recDone)
+		}()
+		nw, err := sessA.Write(writeme) // hung here
+		panicOn(err)
+		p("nw = %v", nw)
+		<-recDone
+
+		//		p("bytes transfered %v", len(buf.Bytes()))
+		//		got := buf.Bytes()
+		got := by
+
+		p("got is")
+		showSeq(got, 100000)
+		//showSeq(got, 10)
+
+		cv.So(len(got), cv.ShouldResemble, len(writeme))
+		firstDiff := -1
+		for i := 0; i < len(got); i++ {
+			if got[i] != writeme[i] {
+				firstDiff = i
+				break
+			}
+		}
+		if firstDiff != -1 {
+			p("first Diff at %v, got %v, expected %v", firstDiff, got[firstDiff], writeme[firstDiff])
+			a, b, c := nearestOctet(firstDiff, got)
+			wa, wb, wc := nearestOctet(firstDiff, writeme)
+			p("first Diff at %v for got: [%v, %v, %v]; for writem: [%v, %v, %v]", firstDiff, a, b, c, wa, wb, wc)
+		}
+		cv.So(firstDiff, cv.ShouldResemble, -1)
+	})
+
+}
+
+func mustNatsConn(serverHost string, serverPort int) *nats.Conn {
+
+	natsURL := fmt.Sprintf("nats://%v:%v", serverHost, serverPort)
+	recon := nats.MaxReconnects(-1) // retry forevever.
+	norand := nats.DontRandomize()
+
+	opts := []nats.Option{recon, norand}
+	var nc *nats.Conn
+	var err error
+	try := 0
+	tryLimit := 20
+
+	for {
+		nc, err = nats.Connect(natsURL, opts...)
+		if err == nil {
+			break
+		}
+		if try < tryLimit {
+			p("nats.Connect() failed at try %v, with err '%v'. trying again after 1 second.", try, err)
+			time.Sleep(time.Second)
+			continue
+		}
+		if err != nil {
+			msg := fmt.Errorf("Can't connect to "+
+				"nats on url '%s': %v",
+				natsURL,
+				err)
+			panic(msg)
+		}
+	}
+	return nc
 }

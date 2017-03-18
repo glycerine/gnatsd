@@ -495,10 +495,13 @@ func NewReadRequest(p []byte) *ReadRequest {
 }
 
 // Read implements io.Reader
-func (s *Session) Read(p []byte) (n int, err error) {
-	rr := NewReadRequest(p)
+func (s *Session) Read(fillme []byte) (n int, err error) {
+	rr := NewReadRequest(fillme)
+	p("Read gets fillme with len %v. len(rr.P)=%v", len(fillme), len(rr.P))
+	p("rr=%p, s=%p", rr, s)
 	select {
 	case s.AcceptReadRequest <- rr:
+		p("Read: rr request accepted")
 		// good, proceed to get reply
 	case <-s.Halt.Done.Chan:
 		return 0, ErrSessDone
@@ -506,6 +509,7 @@ func (s *Session) Read(p []byte) (n int, err error) {
 	// now get reply.
 	select {
 	case <-rr.Done:
+		p("Read: got rr.Done closed, rr.N=%v, rr.Err=%v", rr.N, rr.Err)
 		return rr.N, rr.Err
 	case <-s.Halt.Done.Chan:
 		return 0, ErrSessDone

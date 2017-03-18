@@ -11,7 +11,7 @@ import (
 var ErrSessDone = fmt.Errorf("got session Done")
 var ErrSenderClosed = fmt.Errorf("got senderClosed")
 
-// RecvStream receives a stream on bytes
+// SetupRecvStream sets up to receives a stream on bytes
 // over the existing nc, which should be a live
 // *nats.Conn that is already connected to a
 // server. We will the nc subscribe to listen on the
@@ -21,6 +21,12 @@ var ErrSenderClosed = fmt.Errorf("got senderClosed")
 // with one exception: we respect the ignoreSlowConsumerErrors flag.
 // So if ignoreSlowConsumerErrors we won't panic on a slow
 // consumer, even if errorCallbackFunc is nil.
+//
+// after SetupRecvStream(), just do
+//     n, err := sessB.Read(p)
+// with the sessB returned. This will
+// read from the session stream, into a p []byte.
+// This is the standard interface Reader and Read() method.
 //
 func SetupRecvStream(
 	nc *nats.Conn,
@@ -46,8 +52,9 @@ func SetupRecvStream(
 		WindowMsgCount: 1000, WindowByteSz: -1, Timeout: to, Clk: RealClk,
 		NumFailedKeepAlivesBeforeClosing: -1,
 	})
-	//panicOn(err)
-	return nil, err
+	if err != nil {
+		return nil, err
+	}
 
 	//rep := ReportOnSubscription(sub.Scrip)
 	//fmt.Printf("rep = %#v\n", rep)
@@ -97,8 +104,9 @@ func SetupSendStream(
 		WindowMsgCount: 1000, WindowByteSz: windowby, Timeout: to, Clk: RealClk,
 		NumFailedKeepAlivesBeforeClosing: -1,
 	})
-	//panicOn(err)
-	return nil, err
+	if err != nil {
+		return nil, err
+	}
 
 	//rep := ReportOnSubscription(pub.Scrip)
 	//fmt.Printf("rep = %#v\n", rep)
