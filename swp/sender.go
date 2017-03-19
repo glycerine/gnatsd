@@ -43,7 +43,6 @@ type SenderState struct {
 	SenderWindowSize int64
 	mut              sync.Mutex
 	Timeout          time.Duration
-	TcpState         TcpState
 
 	// the main goroutine safe way to request
 	// sending a packet:
@@ -55,6 +54,7 @@ type SenderState struct {
 	SendHistory  []*Packet
 	SendSz       int64
 	SendAck      chan *Packet
+	sendSynCh    chan *ConnectReq
 	DiscardCount int64
 
 	LastSendTime            time.Time
@@ -123,9 +123,9 @@ func NewSenderState(net Network, sendSz int64, timeout time.Duration,
 		SendSz:                    sendSz,
 		GotPack:                   make(chan *Packet),
 		SendAck:                   make(chan *Packet, 5), // buffered so we don't deadlock
+		sendSynCh:                 make(chan *ConnectReq),
 		SentButNotAckedByDeadline: newRetree(compareRetryDeadline),
 		SentButNotAckedBySeqNum:   newRetree(compareSeqNum),
-		TcpState:                  Closed,
 
 		SenderShutdown: make(chan bool),
 
@@ -372,7 +372,14 @@ func (s *SenderState) Start(sess *Session) {
 					s.DiscardCount++
 					continue sendloop
 				}
-				//p("%v packet.AckNum = %v inside sender's window, keeping it.", s.Inbox, a.AckNum)
+			//p("%v packet.AckNum = %v inside sender's window, keeping it.", s.Inbox, a.AckNum)
+
+			case cr := <-s.sendSynCh:
+				err := s.Net.Send(cr.synPack, "sendSyn")
+				if err != nil {
+					cr.Err = err
+					close(cr.Done)
+				}
 
 			case ackPack := <-s.SendAck:
 				// request to send an ack:

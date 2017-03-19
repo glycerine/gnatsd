@@ -542,6 +542,11 @@ type ByteAccount struct {
 // over the flow-controlled Session s.
 func (s *Session) Write(payload []byte) (n int, err error) {
 
+	err = s.ConnectIfNeeded(s.Destination)
+	if err != nil {
+		return 0, err
+	}
+
 	// use atomics to access the ByteAccount.
 	// We attach this to our packets so that
 	// we don't get any residual left over acks
@@ -675,4 +680,22 @@ type SynAckAck struct {
 
 func NewSessionNonce() string {
 	return cryrand.RandomStringWithUp(30)
+}
+
+// if not established, do the connect 3-way handshake
+// to exchange Session nonces.
+func (s *Session) ConnectIfNeeded(dest string) error {
+	if s.RemoteSessNonce == "" {
+		remoteNonce, err := s.Swp.Connect(dest)
+		if err != nil {
+			return err
+		}
+		s.RemoteSessNonce = remoteNonce
+		return nil
+	}
+	return nil
+}
+
+func (swp *SWP) Connect(dest string) (remoteNonce string, err error) {
+	return swp.Recver.Connect(dest)
 }

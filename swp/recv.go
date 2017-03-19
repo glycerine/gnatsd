@@ -10,6 +10,9 @@ import (
 	"github.com/glycerine/idem"
 )
 
+var ErrShutdown = fmt.Errorf("shutdown in progress")
+var ErrConnectWhenNotClosedNotListen = fmt.Errorf("connect request when receiver was not in Closed or Listen state")
+
 // RxqSlot is the receiver's sliding window element.
 type RxqSlot struct {
 	Received bool
@@ -80,6 +83,7 @@ type RecvState struct {
 
 	AppCloseCallback  func()
 	AcceptReadRequest chan *ReadRequest
+	ConnectCh         chan *ConnectReq
 
 	LocalSessNonce  string
 	RemoteSessNonce string
@@ -121,6 +125,7 @@ func NewRecvState(net Network, recvSz int64, recvSzBytes int64, timeout time.Dur
 		setAsapHelper:       make(chan *AsapHelper),
 		TcpState:            Listen,
 		AcceptReadRequest:   make(chan *ReadRequest),
+		ConnectCh:           make(chan *ConnectReq),
 	}
 
 	for i := range r.Rxq {
@@ -181,6 +186,38 @@ func (r *RecvState) Start() error {
 
 			//p("recvloop: about to select")
 			select {
+
+			case cr := <-r.ConnectCh:
+				//
+				// Connect. Do an active open. Send syn to remote and
+				// transition to SynSent state.
+				//
+				if r.TcpState != Closed && r.TcpState != Listen {
+					cr.Err = ErrConnectWhenNotClosedNotListen
+					close(cr.Done)
+					continue
+				}
+
+				// send syn
+				syn := &Packet{
+					From:          r.Inbox,
+					FromSessNonce: r.LocalSessNonce,
+					Dest:          cr.DestInbox,
+					SeqNum:        -98, // => syn flag
+					SeqRetry:      -98,
+					TcpEvent:      EventSyn,
+				}
+				cr.synPack = syn
+
+				select {
+				case r.snd.sendSynCh <- cr:
+				case <-r.Halt.ReqStop.Chan:
+					///p("%v recvloop sees ReqStop, shutting down.", r.Inbox)
+					return
+				}
+				// The key state change.
+				r.TcpState = SynSent
+
 			case helper := <-r.setAsapHelper:
 				//p("recvloop: got <-r.setAsapHelper")
 				// stop any old helper
@@ -233,12 +270,12 @@ func (r *RecvState) Start() error {
 				return
 			case pack := <-r.MsgRecv:
 				// drop non-session packets: they are for other sessions
-				if pack.DestSessNonce != r.LocalSessNonce {
-					p("%v pack.DestSessNonce('%s') != r.LocalSessNonce('%s'): recvloop dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.DestSessNonce, r.LocalSessNonce, pack.SeqNum, pack.TcpEvent, pack.AckNum)
+				if r.TcpState >= Established && pack.DestSessNonce != r.LocalSessNonce {
+					p("%v pack.DestSessNonce('%s') != r.LocalSessNonce('%s'): recvloop (in TcpState==%s) dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.DestSessNonce, r.LocalSessNonce, r.TcpState, pack.SeqNum, pack.TcpEvent, pack.AckNum)
 					continue
 				}
-				if pack.FromSessNonce != r.RemoteSessNonce {
-					p("%v pack.FromSessNonce('%s') != r.RemoteSessNonce('%s'): recvloop dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.FromSessNonce, r.RemoteSessNonce, pack.SeqNum, pack.TcpEvent, pack.AckNum)
+				if r.TcpState >= Established && pack.FromSessNonce != r.RemoteSessNonce {
+					p("%v pack.FromSessNonce('%s') != r.RemoteSessNonce('%s'): recvloop (in TcpState==%s) dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.FromSessNonce, r.RemoteSessNonce, pack.SeqNum, r.TcpState, pack.TcpEvent, pack.AckNum)
 					continue
 				}
 
@@ -444,10 +481,12 @@ func (r *RecvState) ack(seqno int64, pack *Packet, event TcpEvent) {
 	}
 	if len(r.snd.SendAck) == cap(r.snd.SendAck) {
 		p("warning: %s ack queue is at capacity, very bad!  dropping oldest ack packet so as to add this one AckNum:%v, with TcpEvent:%s.", r.Inbox, ack.AckNum, ack.TcpEvent)
+
+		// discard first to make room:
 		<-r.snd.SendAck
 	}
 	select {
-	case r.snd.SendAck <- ack: // hung here
+	case r.snd.SendAck <- ack:
 	case <-time.After(time.Second * 10):
 		panic(fmt.Sprintf("%s receiver could not inform sender of ack after 10 seconds, something is seriously wrong internally--deadlock most likely. dropping ack packet AckNum:%v, with TcpEvent:%s.", r.Inbox, ack.AckNum, ack.TcpEvent))
 	case <-r.Halt.ReqStop.Chan:
@@ -517,9 +556,18 @@ func (r *RecvState) doTcpAction(act TcpAction, pack *Packet) error {
 	case SendSyn:
 		r.ack(r.LastFrameClientConsumed, pack, EventSyn)
 	case SendSynAck:
+		// server learns of the remote session nonce
+		if r.RemoteSessNonce != "" {
+			panic(fmt.Sprintf("r.RemoteSessNonce is already set '%s'", r.RemoteSessNonce))
+		}
 		r.RemoteSessNonce = pack.FromSessNonce
 		r.ack(r.LastFrameClientConsumed, pack, EventSynAck)
 	case SendEstabAck:
+		// client learns of the remote session nonce
+		if r.RemoteSessNonce != "" {
+			panic(fmt.Sprintf("r.RemoteSessNonce is already set '%s'", r.RemoteSessNonce))
+		}
+		r.RemoteSessNonce = pack.FromSessNonce
 		r.ack(r.LastFrameClientConsumed, pack, EventEstabAck)
 	case SendFin:
 		r.ack(r.LastFrameClientConsumed, pack, EventFin)
@@ -586,4 +634,40 @@ func (r *RecvState) fillAsMuchAsPossible(rr *ReadRequest) {
 	if lastPack != nil {
 		r.ack(r.LastFrameClientConsumed, lastPack, EventDataAck)
 	}
+}
+
+type ConnectReq struct {
+	DestInbox   string
+	Err         error
+	RemoteNonce string
+	Done        chan bool
+
+	synPack *Packet
+}
+
+func NewConnectReq(dest string) *ConnectReq {
+	return &ConnectReq{
+		DestInbox: dest,
+		Done:      make(chan bool),
+	}
+}
+
+func (r *RecvState) Connect(dest string) (remoteNonce string, err error) {
+
+	cr := NewConnectReq(dest)
+
+	select {
+	case r.ConnectCh <- cr:
+	case <-time.After(time.Second * 10):
+		panic(fmt.Sprintf("%s recvstate could not SYN after 10 seconds, something is seriously wrong internally.", r.Inbox))
+	case <-r.Halt.ReqStop.Chan:
+	}
+
+	select {
+	case <-cr.Done:
+		return cr.RemoteNonce, cr.Err
+	case <-r.Halt.ReqStop.Chan:
+	}
+
+	return "", ErrShutdown
 }

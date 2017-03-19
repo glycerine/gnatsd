@@ -102,11 +102,15 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 			return SendSynAck
 		case EventReset:
 			*s = Closed
+		case EventKeepAlive:
+			// ignore
 		default:
 			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
 		}
 
 	case SynReceived:
+		// passive open, server side. SynReceived is the state after Listen.
+		// Also happens for simultaneous open.
 		switch e {
 		case EventEstabAck:
 			*s = Established
