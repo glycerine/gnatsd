@@ -85,10 +85,10 @@ type Packet struct {
 	From string
 	Dest string
 
-	// uniquely identify a file with a randomly
+	// uniquely identify a file/session with a randomly
 	// chosen then fixed nonce. See NewSessionNonce() to generate.
-	SendSessNonce string
-	RecvSessNonce string
+	FromSessNonce string
+	DestSessNonce string
 
 	// ArrivedAtDestTm is timestamped by
 	// the receiver immediately when the
@@ -245,7 +245,8 @@ type Session struct {
 	mut                sync.Mutex
 	RemoteSenderClosed chan bool
 
-	SessNonce string
+	LocalSessNonce  string
+	RemoteSessNonce string
 }
 
 // SessionConfig configures a Session.
@@ -348,7 +349,7 @@ func NewSession(cfg SessionConfig) (*Session, error) {
 		Halt:        idem.NewHalter(),
 		NumFailedKeepAlivesBeforeClosing: cfg.NumFailedKeepAlivesBeforeClosing,
 		RemoteSenderClosed:               make(chan bool),
-		SessNonce:                        nonce,
+		LocalSessNonce:                   nonce,
 	}
 	sess.Swp.Sender.NumFailedKeepAlivesBeforeClosing = cfg.NumFailedKeepAlivesBeforeClosing
 	sess.Swp.Start(sess)

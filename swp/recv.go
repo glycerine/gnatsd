@@ -81,8 +81,8 @@ type RecvState struct {
 	AppCloseCallback  func()
 	AcceptReadRequest chan *ReadRequest
 
-	RecvSessNonce       string
-	RemoteSendSessNonce string
+	LocalSessNonce  string
+	RemoteSessNonce string
 }
 
 // InOrderSeq represents ordered (and gapless)
@@ -98,7 +98,7 @@ func NewRecvState(net Network, recvSz int64, recvSzBytes int64, timeout time.Dur
 	inbox string, snd *SenderState, clk Clock, nonce string) *RecvState {
 
 	r := &RecvState{
-		RecvSessNonce:       nonce,
+		LocalSessNonce:      nonce,
 		Clk:                 clk,
 		Net:                 net,
 		Inbox:               inbox,
@@ -119,7 +119,7 @@ func NewRecvState(net Network, recvSz int64, recvSzBytes int64, timeout time.Dur
 		LastByteConsumed:    -1,
 		NumHeldMessages:     make(chan int64),
 		setAsapHelper:       make(chan *AsapHelper),
-		TcpState:            Established,
+		TcpState:            Listen,
 		AcceptReadRequest:   make(chan *ReadRequest),
 	}
 
@@ -233,9 +233,12 @@ func (r *RecvState) Start() error {
 				return
 			case pack := <-r.MsgRecv:
 				// drop non-session packets: they are for other sessions
-				if pack.RecvSessNonce != r.RecvSessNonce ||
-					pack.SendSessNonce != r.RemoteSendSessNonce {
-					p("%v pack.RecvSessNonce('%s') != r.RecvSessNonce('%s'): recvloop dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.RecvSessNonce, r.RecvSessNonce, pack.SeqNum, pack.TcpEvent, pack.AckNum)
+				if pack.DestSessNonce != r.LocalSessNonce {
+					p("%v pack.DestSessNonce('%s') != r.LocalSessNonce('%s'): recvloop dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.DestSessNonce, r.LocalSessNonce, pack.SeqNum, pack.TcpEvent, pack.AckNum)
+					continue
+				}
+				if pack.FromSessNonce != r.RemoteSessNonce {
+					p("%v pack.FromSessNonce('%s') != r.RemoteSessNonce('%s'): recvloop dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.FromSessNonce, r.RemoteSessNonce, pack.SeqNum, pack.TcpEvent, pack.AckNum)
 					continue
 				}
 
@@ -426,7 +429,9 @@ func (r *RecvState) ack(seqno int64, pack *Packet, event TcpEvent) {
 	now := r.Clk.Now()
 	ack := &Packet{
 		From:                r.Inbox,
+		FromSessNonce:       r.LocalSessNonce,
 		Dest:                pack.From,
+		DestSessNonce:       pack.FromSessNonce,
 		SeqNum:              -99, // => ack flag
 		SeqRetry:            -99,
 		AckNum:              seqno,
@@ -512,6 +517,7 @@ func (r *RecvState) doTcpAction(act TcpAction, pack *Packet) error {
 	case SendSyn:
 		r.ack(r.LastFrameClientConsumed, pack, EventSyn)
 	case SendSynAck:
+		r.RemoteSessNonce = pack.FromSessNonce
 		r.ack(r.LastFrameClientConsumed, pack, EventSynAck)
 	case SendEstabAck:
 		r.ack(r.LastFrameClientConsumed, pack, EventEstabAck)

@@ -43,6 +43,7 @@ type SenderState struct {
 	SenderWindowSize int64
 	mut              sync.Mutex
 	Timeout          time.Duration
+	TcpState         TcpState
 
 	// the main goroutine safe way to request
 	// sending a packet:
@@ -91,7 +92,7 @@ type SenderState struct {
 	SenderShutdown chan bool
 
 	recvLastFrameClientConsumed int64
-	SendSessNonce               string
+	LocalSessNonce              string
 }
 
 func (s *SenderState) GetRecvLastFrameClientConsumed() int64 {
@@ -106,7 +107,7 @@ func NewSenderState(net Network, sendSz int64, timeout time.Duration,
 	inbox string, destInbox string, clk Clock, keepAliveInterval time.Duration,
 	nonce string) *SenderState {
 	s := &SenderState{
-		SendSessNonce:             nonce,
+		LocalSessNonce:            nonce,
 		Clk:                       clk,
 		Net:                       net,
 		Inbox:                     inbox,
@@ -124,6 +125,7 @@ func NewSenderState(net Network, sendSz int64, timeout time.Duration,
 		SendAck:                   make(chan *Packet, 5), // buffered so we don't deadlock
 		SentButNotAckedByDeadline: newRetree(compareRetryDeadline),
 		SentButNotAckedBySeqNum:   newRetree(compareSeqNum),
+		TcpState:                  Closed,
 
 		SenderShutdown: make(chan bool),
 
@@ -294,7 +296,7 @@ func (s *SenderState) Start(sess *Session) {
 					s.SentButNotAckedBySeqNum.insert(slot)
 
 					///p("%v doing retry Net.Send() for pack.SeqNum = '%v' of paydirt len %v", s.Inbox, slot.Pack.SeqNum, len(slot.Pack.Data))
-					slot.Pack.SendSessNonce = s.SendSessNonce
+					slot.Pack.FromSessNonce = s.LocalSessNonce
 					err := s.Net.Send(slot.Pack, "retry")
 					panicOn(err)
 				}
@@ -380,7 +382,7 @@ func (s *SenderState) Start(sess *Session) {
 				ackPack.FromRttEstNsec = int64(s.rtt.GetEstimate())
 				ackPack.FromRttSdNsec = int64(s.rtt.GetSd())
 				ackPack.FromRttN = s.rtt.N
-				ackPack.SendSessNonce = s.SendSessNonce
+
 				err := s.Net.Send(ackPack, "SendAck/ackPack")
 				//panicOn(err) "nats: connection closed"
 				if err != nil {
@@ -460,7 +462,7 @@ func (s *SenderState) doOrigDataSend(pack *Packet) int64 {
 	pack.FromRttSdNsec = int64(s.rtt.GetSd())
 	pack.FromRttN = s.rtt.N
 
-	slot.Pack.SendSessNonce = s.SendSessNonce
+	slot.Pack.FromSessNonce = s.LocalSessNonce
 	err := s.Net.Send(slot.Pack, fmt.Sprintf("doOrigDataSend() for %v", s.Inbox))
 	panicOn(err)
 
@@ -498,7 +500,7 @@ func (s *SenderState) doKeepAlive() {
 		FromRttN:       s.rtt.N,
 	}
 	//p("%v doing keepalive Net.Send()", s.Inbox)
-	kap.SendSessNonce = s.SendSessNonce
+	kap.FromSessNonce = s.LocalSessNonce
 	err := s.Net.Send(kap, fmt.Sprintf("keepalive from %v", s.Inbox))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "on send Keepalive attempt, got err = '%v'\n", err)
@@ -543,7 +545,7 @@ func (s *SenderState) doSendClosing() {
 		FromRttN:       s.rtt.N,
 	}
 	//p("%v doing Closing Net.Send()", s.Inbox)
-	kap.SendSessNonce = s.SendSessNonce
+	kap.FromSessNonce = s.LocalSessNonce
 	err := s.Net.Send(kap, fmt.Sprintf("endpoint is closing, from %v", s.Inbox))
 	//panicOn(err)
 	if err != nil {
