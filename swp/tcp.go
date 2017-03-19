@@ -104,6 +104,10 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 			*s = Closed
 		case EventKeepAlive:
 			// ignore
+		case EventDataAck:
+			// ignore
+		case EventFin:
+			// ignore
 		default:
 			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
 		}

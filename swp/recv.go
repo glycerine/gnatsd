@@ -87,6 +87,8 @@ type RecvState struct {
 
 	LocalSessNonce  string
 	RemoteSessNonce string
+
+	connReqPending *ConnectReq
 }
 
 // InOrderSeq represents ordered (and gapless)
@@ -198,6 +200,11 @@ func (r *RecvState) Start() error {
 					continue
 				}
 
+				if r.connReqPending != nil {
+					panic("already have an r.ConnReq on file, should never have two")
+				}
+				r.connReqPending = cr
+
 				// send syn
 				syn := &Packet{
 					From:          r.Inbox,
@@ -217,6 +224,7 @@ func (r *RecvState) Start() error {
 				}
 				// The key state change.
 				r.TcpState = SynSent
+				p("recv is now in SynSent, after telling sender to send syn to cr.DestInbox='%s'", cr.DestInbox)
 
 			case helper := <-r.setAsapHelper:
 				//p("recvloop: got <-r.setAsapHelper")
@@ -269,15 +277,17 @@ func (r *RecvState) Start() error {
 				///p("recvloop: got <-r.snd.SenderShutdown. note that len(r.RcvdButNotConsumed)=%v", len(r.RcvdButNotConsumed))
 				return
 			case pack := <-r.MsgRecv:
-				// drop non-session packets: they are for other sessions
-				if r.TcpState >= Established && pack.DestSessNonce != r.LocalSessNonce {
-					p("%v pack.DestSessNonce('%s') != r.LocalSessNonce('%s'): recvloop (in TcpState==%s) dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.DestSessNonce, r.LocalSessNonce, r.TcpState, pack.SeqNum, pack.TcpEvent, pack.AckNum)
-					continue
-				}
-				if r.TcpState >= Established && pack.FromSessNonce != r.RemoteSessNonce {
-					p("%v pack.FromSessNonce('%s') != r.RemoteSessNonce('%s'): recvloop (in TcpState==%s) dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.FromSessNonce, r.RemoteSessNonce, pack.SeqNum, r.TcpState, pack.TcpEvent, pack.AckNum)
-					continue
-				}
+				/*
+					// drop non-session packets: they are for other sessions
+					if r.TcpState >= Established && pack.DestSessNonce != r.LocalSessNonce {
+						p("%v pack.DestSessNonce('%s') != r.LocalSessNonce('%s'): recvloop (in TcpState==%s) dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.DestSessNonce, r.LocalSessNonce, r.TcpState, pack.SeqNum, pack.TcpEvent, pack.AckNum)
+						continue
+					}
+					if r.TcpState >= Established && pack.FromSessNonce != r.RemoteSessNonce {
+						p("%v pack.FromSessNonce('%s') != r.RemoteSessNonce('%s'): recvloop (in TcpState==%s) dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.FromSessNonce, r.RemoteSessNonce, pack.SeqNum, r.TcpState, pack.TcpEvent, pack.AckNum)
+						continue
+					}
+				*/
 
 				//p("%v recvloop sees packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.SeqNum, pack.TcpEvent, pack.AckNum)
 				// test instrumentation, used e.g. in clock_test.go
@@ -568,6 +578,12 @@ func (r *RecvState) doTcpAction(act TcpAction, pack *Packet) error {
 			panic(fmt.Sprintf("r.RemoteSessNonce is already set '%s'", r.RemoteSessNonce))
 		}
 		r.RemoteSessNonce = pack.FromSessNonce
+		if r.connReqPending == nil {
+			panic("must have pending connReqPending when doing SendEstabAck, but did not.")
+		}
+		r.connReqPending.RemoteNonce = r.RemoteSessNonce
+		close(r.connReqPending.Done)
+		r.connReqPending = nil
 		r.ack(r.LastFrameClientConsumed, pack, EventEstabAck)
 	case SendFin:
 		r.ack(r.LastFrameClientConsumed, pack, EventFin)
