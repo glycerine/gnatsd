@@ -310,8 +310,13 @@ func (z *Packet) DecodeMsg(dc *msgp.Reader) (err error) {
 			if err != nil {
 				return
 			}
-		case "SessionNonce":
-			z.SessionNonce, err = dc.ReadString()
+		case "SendSessNonce":
+			z.SendSessNonce, err = dc.ReadString()
+			if err != nil {
+				return
+			}
+		case "RecvSessNonce":
+			z.RecvSessNonce, err = dc.ReadString()
 			if err != nil {
 				return
 			}
@@ -416,9 +421,9 @@ func (z *Packet) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *Packet) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 20
+	// map header, size 21
 	// write "From"
-	err = en.Append(0xde, 0x0, 0x14, 0xa4, 0x46, 0x72, 0x6f, 0x6d)
+	err = en.Append(0xde, 0x0, 0x15, 0xa4, 0x46, 0x72, 0x6f, 0x6d)
 	if err != nil {
 		return err
 	}
@@ -435,12 +440,21 @@ func (z *Packet) EncodeMsg(en *msgp.Writer) (err error) {
 	if err != nil {
 		return
 	}
-	// write "SessionNonce"
-	err = en.Append(0xac, 0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x4e, 0x6f, 0x6e, 0x63, 0x65)
+	// write "SendSessNonce"
+	err = en.Append(0xad, 0x53, 0x65, 0x6e, 0x64, 0x53, 0x65, 0x73, 0x73, 0x4e, 0x6f, 0x6e, 0x63, 0x65)
 	if err != nil {
 		return err
 	}
-	err = en.WriteString(z.SessionNonce)
+	err = en.WriteString(z.SendSessNonce)
+	if err != nil {
+		return
+	}
+	// write "RecvSessNonce"
+	err = en.Append(0xad, 0x52, 0x65, 0x63, 0x76, 0x53, 0x65, 0x73, 0x73, 0x4e, 0x6f, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return err
+	}
+	err = en.WriteString(z.RecvSessNonce)
 	if err != nil {
 		return
 	}
@@ -603,16 +617,19 @@ func (z *Packet) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z *Packet) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 20
+	// map header, size 21
 	// string "From"
-	o = append(o, 0xde, 0x0, 0x14, 0xa4, 0x46, 0x72, 0x6f, 0x6d)
+	o = append(o, 0xde, 0x0, 0x15, 0xa4, 0x46, 0x72, 0x6f, 0x6d)
 	o = msgp.AppendString(o, z.From)
 	// string "Dest"
 	o = append(o, 0xa4, 0x44, 0x65, 0x73, 0x74)
 	o = msgp.AppendString(o, z.Dest)
-	// string "SessionNonce"
-	o = append(o, 0xac, 0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x4e, 0x6f, 0x6e, 0x63, 0x65)
-	o = msgp.AppendString(o, z.SessionNonce)
+	// string "SendSessNonce"
+	o = append(o, 0xad, 0x53, 0x65, 0x6e, 0x64, 0x53, 0x65, 0x73, 0x73, 0x4e, 0x6f, 0x6e, 0x63, 0x65)
+	o = msgp.AppendString(o, z.SendSessNonce)
+	// string "RecvSessNonce"
+	o = append(o, 0xad, 0x52, 0x65, 0x63, 0x76, 0x53, 0x65, 0x73, 0x73, 0x4e, 0x6f, 0x6e, 0x63, 0x65)
+	o = msgp.AppendString(o, z.RecvSessNonce)
 	// string "ArrivedAtDestTm"
 	o = append(o, 0xaf, 0x41, 0x72, 0x72, 0x69, 0x76, 0x65, 0x64, 0x41, 0x74, 0x44, 0x65, 0x73, 0x74, 0x54, 0x6d)
 	o = msgp.AppendTime(o, z.ArrivedAtDestTm)
@@ -693,8 +710,13 @@ func (z *Packet) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			if err != nil {
 				return
 			}
-		case "SessionNonce":
-			z.SessionNonce, bts, err = msgp.ReadStringBytes(bts)
+		case "SendSessNonce":
+			z.SendSessNonce, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				return
+			}
+		case "RecvSessNonce":
+			z.RecvSessNonce, bts, err = msgp.ReadStringBytes(bts)
 			if err != nil {
 				return
 			}
@@ -800,7 +822,7 @@ func (z *Packet) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *Packet) Msgsize() (s int) {
-	s = 3 + 5 + msgp.StringPrefixSize + len(z.From) + 5 + msgp.StringPrefixSize + len(z.Dest) + 13 + msgp.StringPrefixSize + len(z.SessionNonce) + 16 + msgp.TimeSize + 11 + msgp.TimeSize + 7 + msgp.Int64Size + 9 + msgp.Int64Size + 7 + msgp.Int64Size + 9 + msgp.Int64Size + 11 + msgp.TimeSize + 9 + msgp.IntSize + 20 + msgp.Int64Size + 18 + msgp.Int64Size + 15 + msgp.Int64Size + 14 + msgp.Int64Size + 9 + msgp.Int64Size + 22 + msgp.Int64Size + 5 + msgp.BytesPrefixSize + len(z.Data) + 11 + msgp.IntSize + 16 + msgp.BytesPrefixSize + len(z.Blake2bChecksum)
+	s = 3 + 5 + msgp.StringPrefixSize + len(z.From) + 5 + msgp.StringPrefixSize + len(z.Dest) + 14 + msgp.StringPrefixSize + len(z.SendSessNonce) + 14 + msgp.StringPrefixSize + len(z.RecvSessNonce) + 16 + msgp.TimeSize + 11 + msgp.TimeSize + 7 + msgp.Int64Size + 9 + msgp.Int64Size + 7 + msgp.Int64Size + 9 + msgp.Int64Size + 11 + msgp.TimeSize + 9 + msgp.IntSize + 20 + msgp.Int64Size + 18 + msgp.Int64Size + 15 + msgp.Int64Size + 14 + msgp.Int64Size + 9 + msgp.Int64Size + 22 + msgp.Int64Size + 5 + msgp.BytesPrefixSize + len(z.Data) + 11 + msgp.IntSize + 16 + msgp.BytesPrefixSize + len(z.Blake2bChecksum)
 	return
 }
 

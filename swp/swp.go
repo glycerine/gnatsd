@@ -87,7 +87,8 @@ type Packet struct {
 
 	// uniquely identify a file with a randomly
 	// chosen then fixed nonce. See NewSessionNonce() to generate.
-	SessionNonce string
+	SendSessNonce string
+	RecvSessNonce string
 
 	// ArrivedAtDestTm is timestamped by
 	// the receiver immediately when the

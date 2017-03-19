@@ -80,7 +80,9 @@ type RecvState struct {
 
 	AppCloseCallback  func()
 	AcceptReadRequest chan *ReadRequest
-	SessNonce         string
+
+	RecvSessNonce       string
+	RemoteSendSessNonce string
 }
 
 // InOrderSeq represents ordered (and gapless)
@@ -96,7 +98,7 @@ func NewRecvState(net Network, recvSz int64, recvSzBytes int64, timeout time.Dur
 	inbox string, snd *SenderState, clk Clock, nonce string) *RecvState {
 
 	r := &RecvState{
-		SessNonce:           nonce,
+		RecvSessNonce:       nonce,
 		Clk:                 clk,
 		Net:                 net,
 		Inbox:               inbox,
@@ -230,6 +232,13 @@ func (r *RecvState) Start() error {
 				///p("recvloop: got <-r.snd.SenderShutdown. note that len(r.RcvdButNotConsumed)=%v", len(r.RcvdButNotConsumed))
 				return
 			case pack := <-r.MsgRecv:
+				// drop non-session packets: they are for other sessions
+				if pack.RecvSessNonce != r.RecvSessNonce ||
+					pack.SendSessNonce != r.RemoteSendSessNonce {
+					p("%v pack.RecvSessNonce('%s') != r.RecvSessNonce('%s'): recvloop dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.RecvSessNonce, r.RecvSessNonce, pack.SeqNum, pack.TcpEvent, pack.AckNum)
+					continue
+				}
+
 				//p("%v recvloop sees packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.SeqNum, pack.TcpEvent, pack.AckNum)
 				// test instrumentation, used e.g. in clock_test.go
 				if r.testing != nil && r.testing.incrementClockOnReceive {
