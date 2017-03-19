@@ -3,6 +3,7 @@ package swp
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -224,7 +225,7 @@ func (r *RecvState) Start() error {
 				}
 				// The key state change.
 				r.TcpState = SynSent
-				p("%s recv is now in SynSent, after telling sender to send syn to cr.DestInbox='%s'", r.Inbox, cr.DestInbox)
+				//p("%s recv is now in SynSent, after telling sender to send syn to cr.DestInbox='%s'", r.Inbox, cr.DestInbox)
 
 			case helper := <-r.setAsapHelper:
 				//p("recvloop: got <-r.setAsapHelper")
@@ -280,11 +281,11 @@ func (r *RecvState) Start() error {
 
 				// drop non-session packets: they are for other sessions
 				if r.TcpState >= Established && pack.DestSessNonce != r.LocalSessNonce {
-					p("%v pack.DestSessNonce('%s') != r.LocalSessNonce('%s'): recvloop (in TcpState==%s) dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.DestSessNonce, r.LocalSessNonce, r.TcpState, pack.SeqNum, pack.TcpEvent, pack.AckNum)
+					log.Printf("warning %v pack.DestSessNonce('%s') != r.LocalSessNonce('%s'): recvloop (in TcpState==%s) dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.DestSessNonce, r.LocalSessNonce, r.TcpState, pack.SeqNum, pack.TcpEvent, pack.AckNum)
 					continue
 				}
 				if r.TcpState >= Established && pack.FromSessNonce != r.RemoteSessNonce {
-					p("%v pack.FromSessNonce('%s') != r.RemoteSessNonce('%s'): recvloop (in TcpState==%s) dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.FromSessNonce, r.RemoteSessNonce, pack.SeqNum, r.TcpState, pack.TcpEvent, pack.AckNum)
+					log.Printf("warining %v pack.FromSessNonce('%s') != r.RemoteSessNonce('%s'): recvloop (in TcpState==%s) dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.FromSessNonce, r.RemoteSessNonce, pack.SeqNum, r.TcpState, pack.TcpEvent, pack.AckNum)
 					continue
 				}
 
@@ -353,9 +354,9 @@ func (r *RecvState) Start() error {
 				// data, or info?
 				if pack.TcpEvent != EventData {
 					// info:
-					p("%s recvp about to UpdateTcp, starting state=%s", r.Inbox, r.TcpState)
+					//p("%s recvp about to UpdateTcp, starting state=%s", r.Inbox, r.TcpState)
 					act := r.TcpState.UpdateTcp(pack.TcpEvent)
-					p("%s recvp done with UpdateTcp, state is now=%s", r.Inbox, r.TcpState)
+					//p("%s recvp done with UpdateTcp, state is now=%s", r.Inbox, r.TcpState)
 					err := r.doTcpAction(act, pack)
 					if err == nil {
 						continue recvloop
@@ -491,7 +492,7 @@ func (r *RecvState) ack(seqno int64, pack *Packet, event TcpEvent) {
 		DataSendTm:          pack.DataSendTm,
 	}
 	if len(r.snd.SendAck) == cap(r.snd.SendAck) {
-		p("warning: %s ack queue is at capacity, very bad!  dropping oldest ack packet so as to add this one AckNum:%v, with TcpEvent:%s.", r.Inbox, ack.AckNum, ack.TcpEvent)
+		log.Printf("warning: %s ack queue is at capacity, very bad!  dropping oldest ack packet so as to add this one AckNum:%v, with TcpEvent:%s.", r.Inbox, ack.AckNum, ack.TcpEvent)
 
 		// discard first to make room:
 		<-r.snd.SendAck

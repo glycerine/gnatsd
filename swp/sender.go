@@ -395,7 +395,7 @@ func (s *SenderState) Start(sess *Session) {
 
 				// learn the remote/dest sess nonce
 				if s.RemoteSessNonce == "" && ackPack.DestSessNonce != "" {
-					p("%s sender is setting s.RemoteSessNonce='%s'. my local sess is '%s'", s.Inbox, ackPack.DestSessNonce, s.LocalSessNonce)
+					//p("%s sender is setting s.RemoteSessNonce='%s'. my local sess is '%s'", s.Inbox, ackPack.DestSessNonce, s.LocalSessNonce)
 					s.RemoteSessNonce = ackPack.DestSessNonce
 				}
 
