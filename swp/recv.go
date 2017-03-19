@@ -80,6 +80,7 @@ type RecvState struct {
 
 	AppCloseCallback  func()
 	AcceptReadRequest chan *ReadRequest
+	SessNonce         string
 }
 
 // InOrderSeq represents ordered (and gapless)
@@ -92,9 +93,10 @@ type InOrderSeq struct {
 
 // NewRecvState makes a new RecvState manager.
 func NewRecvState(net Network, recvSz int64, recvSzBytes int64, timeout time.Duration,
-	inbox string, snd *SenderState, clk Clock) *RecvState {
+	inbox string, snd *SenderState, clk Clock, nonce string) *RecvState {
 
 	r := &RecvState{
+		SessNonce:           nonce,
 		Clk:                 clk,
 		Net:                 net,
 		Inbox:               inbox,

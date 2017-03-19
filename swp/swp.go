@@ -85,8 +85,8 @@ type Packet struct {
 	From string
 	Dest string
 
-	// uniquely identify this session with a randomly
-	// chosen nonce. See NewSessionNonce() to generate.
+	// uniquely identify a file with a randomly
+	// chosen then fixed nonce. See NewSessionNonce() to generate.
 	SessionNonce string
 
 	// ArrivedAtDestTm is timestamped by
@@ -194,10 +194,10 @@ type SWP struct {
 // NewSWP makes a new sliding window protocol manager, holding
 // both sender and receiver components.
 func NewSWP(net Network, windowMsgCount int64, windowByteCount int64,
-	timeout time.Duration, inbox string, destInbox string, clk Clock, keepAliveInterval time.Duration) *SWP {
+	timeout time.Duration, inbox string, destInbox string, clk Clock, keepAliveInterval time.Duration, nonce string) *SWP {
 
-	snd := NewSenderState(net, windowMsgCount, timeout, inbox, destInbox, clk, keepAliveInterval)
-	rcv := NewRecvState(net, windowMsgCount, windowByteCount, timeout, inbox, snd, clk)
+	snd := NewSenderState(net, windowMsgCount, timeout, inbox, destInbox, clk, keepAliveInterval, nonce)
+	rcv := NewRecvState(net, windowMsgCount, windowByteCount, timeout, inbox, snd, clk, nonce)
 	swp := &SWP{
 		Sender: snd,
 		Recver: rcv,
@@ -243,6 +243,8 @@ type Session struct {
 
 	mut                sync.Mutex
 	RemoteSenderClosed chan bool
+
+	SessNonce string
 }
 
 // SessionConfig configures a Session.
@@ -332,18 +334,20 @@ func NewSession(cfg SessionConfig) (*Session, error) {
 	if cfg.KeepAliveInterval == 0 {
 		cfg.KeepAliveInterval = time.Millisecond * 500
 	}
+	nonce := NewSessionNonce()
 
 	sess := &Session{
 		Cfg: &cfg,
 		Swp: NewSWP(cfg.Net, cfg.WindowMsgCount, cfg.WindowByteSz,
 			cfg.Timeout, cfg.LocalInbox, cfg.DestInbox, cfg.Clk,
-			cfg.KeepAliveInterval),
+			cfg.KeepAliveInterval, nonce),
 		MyInbox:     cfg.LocalInbox,
 		Destination: cfg.DestInbox,
 		Net:         cfg.Net,
 		Halt:        idem.NewHalter(),
 		NumFailedKeepAlivesBeforeClosing: cfg.NumFailedKeepAlivesBeforeClosing,
 		RemoteSenderClosed:               make(chan bool),
+		SessNonce:                        nonce,
 	}
 	sess.Swp.Sender.NumFailedKeepAlivesBeforeClosing = cfg.NumFailedKeepAlivesBeforeClosing
 	sess.Swp.Start(sess)
@@ -644,7 +648,7 @@ type SynAckAck struct {
 	// EventSyn => also conveys SessionNonce
 	TcpEvent TcpEvent
 
-	// SessionNonce identifies the session (replaces port numbers).
+	// SessionNonce identifies the file in this session (replaces port numbers).
 	// Should always be present.  See NewSessionNonce() to generate.
 	SessionNonce string
 
@@ -663,7 +667,7 @@ type SynAckAck struct {
 	// NackList can be an empty slice.
 	// Nacklist is a list of missing packets (on the receiver side) that we are aware of.
 	// (Nack=negative acknowledgement).
-	// Only presetn on TcpEvent == EventSynAck.
+	// Only present on TcpEvent == EventSynAck.
 	NackList []int64
 }
 

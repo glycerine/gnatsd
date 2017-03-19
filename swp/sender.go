@@ -91,6 +91,7 @@ type SenderState struct {
 	SenderShutdown chan bool
 
 	recvLastFrameClientConsumed int64
+	SessNonce                   string
 }
 
 func (s *SenderState) GetRecvLastFrameClientConsumed() int64 {
@@ -102,8 +103,10 @@ func (s *SenderState) SetRecvLastFrameClientConsumed(nfe int64) {
 
 // NewSenderState constructs a new SenderState struct.
 func NewSenderState(net Network, sendSz int64, timeout time.Duration,
-	inbox string, destInbox string, clk Clock, keepAliveInterval time.Duration) *SenderState {
+	inbox string, destInbox string, clk Clock, keepAliveInterval time.Duration,
+	nonce string) *SenderState {
 	s := &SenderState{
+		SessNonce:                 nonce,
 		Clk:                       clk,
 		Net:                       net,
 		Inbox:                     inbox,
@@ -399,7 +402,7 @@ func (s *SenderState) Stop() {
 // Return the packet's sequence number, from
 // the LastFrameSent counter.
 func (s *SenderState) doOrigDataSend(pack *Packet) int64 {
-
+	pack.SessionNonce = s.SessNonce
 	s.LastFrameSent++
 	//p("%v doOrigDataSend(): LastFrameSent is now %v", s.Inbox, s.LastFrameSent)
 
