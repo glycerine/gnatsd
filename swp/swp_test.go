@@ -278,3 +278,11 @@ func Test006AlgorithmWithstandsNoisyNetworks(t *testing.T) {
 		cv.So(HistoryEqual(A.Swp.Sender.SendHistory, B.Swp.Recver.RecvHistory), cv.ShouldBeTrue)
 	})
 }
+
+func Test060NewSessionNonce(t *testing.T) {
+	fmt.Printf("NewSessionNonce()= '%s'.\n", NewSessionNonce())
+	fmt.Printf("NewSessionNonce()= '%s'.\n", NewSessionNonce())
+	fmt.Printf("NewSessionNonce()= '%s'.\n", NewSessionNonce())
+	fmt.Printf("NewSessionNonce()= '%s'.\n", NewSessionNonce())
+	fmt.Printf("NewSessionNonce()= '%s'.\n", NewSessionNonce())
+}

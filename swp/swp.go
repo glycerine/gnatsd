@@ -46,6 +46,7 @@ import (
 	"time"
 
 	"github.com/glycerine/bchan"
+	"github.com/glycerine/cryrand"
 	"github.com/glycerine/idem"
 	"github.com/tinylib/msgp/msgp"
 )
@@ -85,7 +86,7 @@ type Packet struct {
 	Dest string
 
 	// uniquely identify this session with a randomly
-	// chosen nonce. e.g. a nuid.
+	// chosen nonce. See NewSessionNonce() to generate.
 	SessionNonce string
 
 	// ArrivedAtDestTm is timestamped by
@@ -644,7 +645,7 @@ type SynAckAck struct {
 	TcpEvent TcpEvent
 
 	// SessionNonce identifies the session (replaces port numbers).
-	// Should always be present.
+	// Should always be present.  See NewSessionNonce() to generate.
 	SessionNonce string
 
 	// NextExpected should be 0 if fresh start;
@@ -664,4 +665,8 @@ type SynAckAck struct {
 	// (Nack=negative acknowledgement).
 	// Only presetn on TcpEvent == EventSynAck.
 	NackList []int64
+}
+
+func NewSessionNonce() string {
+	return cryrand.RandomString(20)
 }
