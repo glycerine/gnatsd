@@ -224,7 +224,7 @@ func (r *RecvState) Start() error {
 				}
 				// The key state change.
 				r.TcpState = SynSent
-				p("recv is now in SynSent, after telling sender to send syn to cr.DestInbox='%s'", cr.DestInbox)
+				p("%s recv is now in SynSent, after telling sender to send syn to cr.DestInbox='%s'", r.Inbox, cr.DestInbox)
 
 			case helper := <-r.setAsapHelper:
 				//p("recvloop: got <-r.setAsapHelper")
@@ -277,17 +277,16 @@ func (r *RecvState) Start() error {
 				///p("recvloop: got <-r.snd.SenderShutdown. note that len(r.RcvdButNotConsumed)=%v", len(r.RcvdButNotConsumed))
 				return
 			case pack := <-r.MsgRecv:
-				/*
-					// drop non-session packets: they are for other sessions
-					if r.TcpState >= Established && pack.DestSessNonce != r.LocalSessNonce {
-						p("%v pack.DestSessNonce('%s') != r.LocalSessNonce('%s'): recvloop (in TcpState==%s) dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.DestSessNonce, r.LocalSessNonce, r.TcpState, pack.SeqNum, pack.TcpEvent, pack.AckNum)
-						continue
-					}
-					if r.TcpState >= Established && pack.FromSessNonce != r.RemoteSessNonce {
-						p("%v pack.FromSessNonce('%s') != r.RemoteSessNonce('%s'): recvloop (in TcpState==%s) dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.FromSessNonce, r.RemoteSessNonce, pack.SeqNum, r.TcpState, pack.TcpEvent, pack.AckNum)
-						continue
-					}
-				*/
+
+				// drop non-session packets: they are for other sessions
+				if r.TcpState >= Established && pack.DestSessNonce != r.LocalSessNonce {
+					p("%v pack.DestSessNonce('%s') != r.LocalSessNonce('%s'): recvloop (in TcpState==%s) dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.DestSessNonce, r.LocalSessNonce, r.TcpState, pack.SeqNum, pack.TcpEvent, pack.AckNum)
+					continue
+				}
+				if r.TcpState >= Established && pack.FromSessNonce != r.RemoteSessNonce {
+					p("%v pack.FromSessNonce('%s') != r.RemoteSessNonce('%s'): recvloop (in TcpState==%s) dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.FromSessNonce, r.RemoteSessNonce, pack.SeqNum, r.TcpState, pack.TcpEvent, pack.AckNum)
+					continue
+				}
 
 				//p("%v recvloop sees packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.SeqNum, pack.TcpEvent, pack.AckNum)
 				// test instrumentation, used e.g. in clock_test.go
@@ -354,7 +353,9 @@ func (r *RecvState) Start() error {
 				// data, or info?
 				if pack.TcpEvent != EventData {
 					// info:
+					p("%s recvp about to UpdateTcp, starting state=%s", r.Inbox, r.TcpState)
 					act := r.TcpState.UpdateTcp(pack.TcpEvent)
+					p("%s recvp done with UpdateTcp, state is now=%s", r.Inbox, r.TcpState)
 					err := r.doTcpAction(act, pack)
 					if err == nil {
 						continue recvloop
@@ -557,7 +558,7 @@ func Blake2bOfBytes(by []byte) []byte {
 }
 
 func (r *RecvState) doTcpAction(act TcpAction, pack *Packet) error {
-	///p("%s doTcpAction received action '%s' in state '%s', in response to event '%s'", r.Inbox, act, r.TcpState, pack.TcpEvent)
+	p("%s doTcpAction received action '%s' in state '%s', in response to event '%s'", r.Inbox, act, r.TcpState, pack.TcpEvent)
 	switch act {
 	case NoAction:
 		return nil

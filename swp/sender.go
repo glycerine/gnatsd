@@ -93,6 +93,7 @@ type SenderState struct {
 
 	recvLastFrameClientConsumed int64
 	LocalSessNonce              string
+	RemoteSessNonce             string
 }
 
 func (s *SenderState) GetRecvLastFrameClientConsumed() int64 {
@@ -297,6 +298,8 @@ func (s *SenderState) Start(sess *Session) {
 
 					///p("%v doing retry Net.Send() for pack.SeqNum = '%v' of paydirt len %v", s.Inbox, slot.Pack.SeqNum, len(slot.Pack.Data))
 					slot.Pack.FromSessNonce = s.LocalSessNonce
+					slot.Pack.DestSessNonce = s.RemoteSessNonce
+
 					err := s.Net.Send(slot.Pack, "retry")
 					panicOn(err)
 				}
@@ -390,6 +393,12 @@ func (s *SenderState) Start(sess *Session) {
 				ackPack.FromRttSdNsec = int64(s.rtt.GetSd())
 				ackPack.FromRttN = s.rtt.N
 
+				// learn the remote/dest sess nonce
+				if s.RemoteSessNonce == "" && ackPack.DestSessNonce != "" {
+					p("%s sender is setting s.RemoteSessNonce='%s'. my local sess is '%s'", s.Inbox, ackPack.DestSessNonce, s.LocalSessNonce)
+					s.RemoteSessNonce = ackPack.DestSessNonce
+				}
+
 				err := s.Net.Send(ackPack, "SendAck/ackPack")
 				//panicOn(err) "nats: connection closed"
 				if err != nil {
@@ -470,6 +479,7 @@ func (s *SenderState) doOrigDataSend(pack *Packet) int64 {
 	pack.FromRttN = s.rtt.N
 
 	slot.Pack.FromSessNonce = s.LocalSessNonce
+	slot.Pack.DestSessNonce = s.RemoteSessNonce
 	err := s.Net.Send(slot.Pack, fmt.Sprintf("doOrigDataSend() for %v", s.Inbox))
 	panicOn(err)
 
@@ -508,6 +518,8 @@ func (s *SenderState) doKeepAlive() {
 	}
 	//p("%v doing keepalive Net.Send()", s.Inbox)
 	kap.FromSessNonce = s.LocalSessNonce
+	kap.DestSessNonce = s.RemoteSessNonce
+
 	err := s.Net.Send(kap, fmt.Sprintf("keepalive from %v", s.Inbox))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "on send Keepalive attempt, got err = '%v'\n", err)
@@ -553,6 +565,8 @@ func (s *SenderState) doSendClosing() {
 	}
 	//p("%v doing Closing Net.Send()", s.Inbox)
 	kap.FromSessNonce = s.LocalSessNonce
+	kap.DestSessNonce = s.RemoteSessNonce
+
 	err := s.Net.Send(kap, fmt.Sprintf("endpoint is closing, from %v", s.Inbox))
 	//panicOn(err)
 	if err != nil {
