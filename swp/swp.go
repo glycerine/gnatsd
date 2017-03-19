@@ -668,5 +668,5 @@ type SynAckAck struct {
 }
 
 func NewSessionNonce() string {
-	return cryrand.RandomString(20)
+	return cryrand.RandomStringWithUp(30)
 }
