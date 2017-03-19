@@ -4,7 +4,9 @@ package swp
 // MSGP CODE GENERATION TOOL (github.com/tinylib/msgp)
 // DO NOT EDIT
 
-import "github.com/tinylib/msgp/msgp"
+import (
+	"github.com/tinylib/msgp/msgp"
+)
 
 // DecodeMsg implements msgp.Decodable
 func (z *BigFile) DecodeMsg(dc *msgp.Reader) (err error) {
@@ -308,6 +310,11 @@ func (z *Packet) DecodeMsg(dc *msgp.Reader) (err error) {
 			if err != nil {
 				return
 			}
+		case "SessionNonce":
+			z.SessionNonce, err = dc.ReadString()
+			if err != nil {
+				return
+			}
 		case "ArrivedAtDestTm":
 			z.ArrivedAtDestTm, err = dc.ReadTime()
 			if err != nil {
@@ -409,9 +416,9 @@ func (z *Packet) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *Packet) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 19
+	// map header, size 20
 	// write "From"
-	err = en.Append(0xde, 0x0, 0x13, 0xa4, 0x46, 0x72, 0x6f, 0x6d)
+	err = en.Append(0xde, 0x0, 0x14, 0xa4, 0x46, 0x72, 0x6f, 0x6d)
 	if err != nil {
 		return err
 	}
@@ -425,6 +432,15 @@ func (z *Packet) EncodeMsg(en *msgp.Writer) (err error) {
 		return err
 	}
 	err = en.WriteString(z.Dest)
+	if err != nil {
+		return
+	}
+	// write "SessionNonce"
+	err = en.Append(0xac, 0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x4e, 0x6f, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return err
+	}
+	err = en.WriteString(z.SessionNonce)
 	if err != nil {
 		return
 	}
@@ -587,13 +603,16 @@ func (z *Packet) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z *Packet) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 19
+	// map header, size 20
 	// string "From"
-	o = append(o, 0xde, 0x0, 0x13, 0xa4, 0x46, 0x72, 0x6f, 0x6d)
+	o = append(o, 0xde, 0x0, 0x14, 0xa4, 0x46, 0x72, 0x6f, 0x6d)
 	o = msgp.AppendString(o, z.From)
 	// string "Dest"
 	o = append(o, 0xa4, 0x44, 0x65, 0x73, 0x74)
 	o = msgp.AppendString(o, z.Dest)
+	// string "SessionNonce"
+	o = append(o, 0xac, 0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x4e, 0x6f, 0x6e, 0x63, 0x65)
+	o = msgp.AppendString(o, z.SessionNonce)
 	// string "ArrivedAtDestTm"
 	o = append(o, 0xaf, 0x41, 0x72, 0x72, 0x69, 0x76, 0x65, 0x64, 0x41, 0x74, 0x44, 0x65, 0x73, 0x74, 0x54, 0x6d)
 	o = msgp.AppendTime(o, z.ArrivedAtDestTm)
@@ -671,6 +690,11 @@ func (z *Packet) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			}
 		case "Dest":
 			z.Dest, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				return
+			}
+		case "SessionNonce":
+			z.SessionNonce, bts, err = msgp.ReadStringBytes(bts)
 			if err != nil {
 				return
 			}
@@ -776,16 +800,217 @@ func (z *Packet) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *Packet) Msgsize() (s int) {
-	s = 3 + 5 + msgp.StringPrefixSize + len(z.From) + 5 + msgp.StringPrefixSize + len(z.Dest) + 16 + msgp.TimeSize + 11 + msgp.TimeSize + 7 + msgp.Int64Size + 9 + msgp.Int64Size + 7 + msgp.Int64Size + 9 + msgp.Int64Size + 11 + msgp.TimeSize + 9 + msgp.IntSize + 20 + msgp.Int64Size + 18 + msgp.Int64Size + 15 + msgp.Int64Size + 14 + msgp.Int64Size + 9 + msgp.Int64Size + 22 + msgp.Int64Size + 5 + msgp.BytesPrefixSize + len(z.Data) + 11 + msgp.IntSize + 16 + msgp.BytesPrefixSize + len(z.Blake2bChecksum)
+	s = 3 + 5 + msgp.StringPrefixSize + len(z.From) + 5 + msgp.StringPrefixSize + len(z.Dest) + 13 + msgp.StringPrefixSize + len(z.SessionNonce) + 16 + msgp.TimeSize + 11 + msgp.TimeSize + 7 + msgp.Int64Size + 9 + msgp.Int64Size + 7 + msgp.Int64Size + 9 + msgp.Int64Size + 11 + msgp.TimeSize + 9 + msgp.IntSize + 20 + msgp.Int64Size + 18 + msgp.Int64Size + 15 + msgp.Int64Size + 14 + msgp.Int64Size + 9 + msgp.Int64Size + 22 + msgp.Int64Size + 5 + msgp.BytesPrefixSize + len(z.Data) + 11 + msgp.IntSize + 16 + msgp.BytesPrefixSize + len(z.Blake2bChecksum)
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *SynAckAck) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zlqf uint32
+	zlqf, err = dc.ReadMapHeader()
+	if err != nil {
+		return
+	}
+	for zlqf > 0 {
+		zlqf--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "TcpEvent":
+			{
+				var zdaf int
+				zdaf, err = dc.ReadInt()
+				z.TcpEvent = TcpEvent(zdaf)
+			}
+			if err != nil {
+				return
+			}
+		case "SessionNonce":
+			z.SessionNonce, err = dc.ReadString()
+			if err != nil {
+				return
+			}
+		case "NextExpected":
+			z.NextExpected, err = dc.ReadInt64()
+			if err != nil {
+				return
+			}
+		case "NackList":
+			var zpks uint32
+			zpks, err = dc.ReadArrayHeader()
+			if err != nil {
+				return
+			}
+			if cap(z.NackList) >= int(zpks) {
+				z.NackList = (z.NackList)[:zpks]
+			} else {
+				z.NackList = make([]int64, zpks)
+			}
+			for zxhx := range z.NackList {
+				z.NackList[zxhx], err = dc.ReadInt64()
+				if err != nil {
+					return
+				}
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *SynAckAck) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 4
+	// write "TcpEvent"
+	err = en.Append(0x84, 0xa8, 0x54, 0x63, 0x70, 0x45, 0x76, 0x65, 0x6e, 0x74)
+	if err != nil {
+		return err
+	}
+	err = en.WriteInt(int(z.TcpEvent))
+	if err != nil {
+		return
+	}
+	// write "SessionNonce"
+	err = en.Append(0xac, 0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x4e, 0x6f, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return err
+	}
+	err = en.WriteString(z.SessionNonce)
+	if err != nil {
+		return
+	}
+	// write "NextExpected"
+	err = en.Append(0xac, 0x4e, 0x65, 0x78, 0x74, 0x45, 0x78, 0x70, 0x65, 0x63, 0x74, 0x65, 0x64)
+	if err != nil {
+		return err
+	}
+	err = en.WriteInt64(z.NextExpected)
+	if err != nil {
+		return
+	}
+	// write "NackList"
+	err = en.Append(0xa8, 0x4e, 0x61, 0x63, 0x6b, 0x4c, 0x69, 0x73, 0x74)
+	if err != nil {
+		return err
+	}
+	err = en.WriteArrayHeader(uint32(len(z.NackList)))
+	if err != nil {
+		return
+	}
+	for zxhx := range z.NackList {
+		err = en.WriteInt64(z.NackList[zxhx])
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *SynAckAck) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 4
+	// string "TcpEvent"
+	o = append(o, 0x84, 0xa8, 0x54, 0x63, 0x70, 0x45, 0x76, 0x65, 0x6e, 0x74)
+	o = msgp.AppendInt(o, int(z.TcpEvent))
+	// string "SessionNonce"
+	o = append(o, 0xac, 0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x4e, 0x6f, 0x6e, 0x63, 0x65)
+	o = msgp.AppendString(o, z.SessionNonce)
+	// string "NextExpected"
+	o = append(o, 0xac, 0x4e, 0x65, 0x78, 0x74, 0x45, 0x78, 0x70, 0x65, 0x63, 0x74, 0x65, 0x64)
+	o = msgp.AppendInt64(o, z.NextExpected)
+	// string "NackList"
+	o = append(o, 0xa8, 0x4e, 0x61, 0x63, 0x6b, 0x4c, 0x69, 0x73, 0x74)
+	o = msgp.AppendArrayHeader(o, uint32(len(z.NackList)))
+	for zxhx := range z.NackList {
+		o = msgp.AppendInt64(o, z.NackList[zxhx])
+	}
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *SynAckAck) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zjfb uint32
+	zjfb, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		return
+	}
+	for zjfb > 0 {
+		zjfb--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "TcpEvent":
+			{
+				var zcxo int
+				zcxo, bts, err = msgp.ReadIntBytes(bts)
+				z.TcpEvent = TcpEvent(zcxo)
+			}
+			if err != nil {
+				return
+			}
+		case "SessionNonce":
+			z.SessionNonce, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				return
+			}
+		case "NextExpected":
+			z.NextExpected, bts, err = msgp.ReadInt64Bytes(bts)
+			if err != nil {
+				return
+			}
+		case "NackList":
+			var zeff uint32
+			zeff, bts, err = msgp.ReadArrayHeaderBytes(bts)
+			if err != nil {
+				return
+			}
+			if cap(z.NackList) >= int(zeff) {
+				z.NackList = (z.NackList)[:zeff]
+			} else {
+				z.NackList = make([]int64, zeff)
+			}
+			for zxhx := range z.NackList {
+				z.NackList[zxhx], bts, err = msgp.ReadInt64Bytes(bts)
+				if err != nil {
+					return
+				}
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *SynAckAck) Msgsize() (s int) {
+	s = 1 + 9 + msgp.IntSize + 13 + msgp.StringPrefixSize + len(z.SessionNonce) + 13 + msgp.Int64Size + 9 + msgp.ArrayHeaderSize + (len(z.NackList) * (msgp.Int64Size))
 	return
 }
 
 // DecodeMsg implements msgp.Decodable
 func (z *TcpEvent) DecodeMsg(dc *msgp.Reader) (err error) {
 	{
-		var zxhx int
-		zxhx, err = dc.ReadInt()
-		(*z) = TcpEvent(zxhx)
+		var zrsw int
+		zrsw, err = dc.ReadInt()
+		(*z) = TcpEvent(zrsw)
 	}
 	if err != nil {
 		return
@@ -812,9 +1037,9 @@ func (z TcpEvent) MarshalMsg(b []byte) (o []byte, err error) {
 // UnmarshalMsg implements msgp.Unmarshaler
 func (z *TcpEvent) UnmarshalMsg(bts []byte) (o []byte, err error) {
 	{
-		var zlqf int
-		zlqf, bts, err = msgp.ReadIntBytes(bts)
-		(*z) = TcpEvent(zlqf)
+		var zxpk int
+		zxpk, bts, err = msgp.ReadIntBytes(bts)
+		(*z) = TcpEvent(zxpk)
 	}
 	if err != nil {
 		return
@@ -833,13 +1058,13 @@ func (z TcpEvent) Msgsize() (s int) {
 func (z *TerminatedError) DecodeMsg(dc *msgp.Reader) (err error) {
 	var field []byte
 	_ = field
-	var zdaf uint32
-	zdaf, err = dc.ReadMapHeader()
+	var zdnj uint32
+	zdnj, err = dc.ReadMapHeader()
 	if err != nil {
 		return
 	}
-	for zdaf > 0 {
-		zdaf--
+	for zdnj > 0 {
+		zdnj--
 		field, err = dc.ReadMapKeyPtr()
 		if err != nil {
 			return
@@ -889,13 +1114,13 @@ func (z TerminatedError) MarshalMsg(b []byte) (o []byte, err error) {
 func (z *TerminatedError) UnmarshalMsg(bts []byte) (o []byte, err error) {
 	var field []byte
 	_ = field
-	var zpks uint32
-	zpks, bts, err = msgp.ReadMapHeaderBytes(bts)
+	var zobc uint32
+	zobc, bts, err = msgp.ReadMapHeaderBytes(bts)
 	if err != nil {
 		return
 	}
-	for zpks > 0 {
-		zpks--
+	for zobc > 0 {
+		zobc--
 		field, bts, err = msgp.ReadMapKeyZC(bts)
 		if err != nil {
 			return

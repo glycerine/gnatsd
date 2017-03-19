@@ -84,6 +84,10 @@ type Packet struct {
 	From string
 	Dest string
 
+	// uniquely identify this session with a randomly
+	// chosen nonce. e.g. a nuid.
+	SessionNonce string
+
 	// ArrivedAtDestTm is timestamped by
 	// the receiver immediately when the
 	// packet arrives at the Dest receiver.
@@ -630,4 +634,34 @@ func (sess *Session) SendFile(path string, writeme []byte, tm time.Time) (*BigFi
 
 	err := msgp.Encode(sess, bf)
 	return bf, err
+}
+
+// SynAckAck is used as the encoded Data
+// for EventSyn, EventSynAck, and EventEstabAck: connection setup.
+type SynAckAck struct {
+
+	// EventSyn => also conveys SessionNonce
+	TcpEvent TcpEvent
+
+	// SessionNonce identifies the session (replaces port numbers).
+	// Should always be present.
+	SessionNonce string
+
+	// NextExpected should be 0 if fresh start;
+	// i.e. we know nothing from prior evesdropping on
+	// any prior multicast of this SessionNonce. Otherwise,
+	// NextExpected and NackList convey knowledge of what we have
+	// and don't have to allow the sender to skip
+	// repeating the packets.
+	//
+	// This is the next serial number that the receiver has not received.
+	//
+	// Only present on TcpEvent == EventSynAck.
+	NextExpected int64
+
+	// NackList can be an empty slice.
+	// Nacklist is a list of missing packets (on the receiver side) that we are aware of.
+	// (Nack=negative acknowledgement).
+	// Only presetn on TcpEvent == EventSynAck.
+	NackList []int64
 }
