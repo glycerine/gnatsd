@@ -298,7 +298,7 @@ func (r *RecvState) Start() error {
 				if len(pack.Data) > 0 {
 					chk := Blake2bOfBytes(pack.Data)
 					if 0 != bytes.Compare(pack.Blake2bChecksum, chk) {
-						p("expected checksum to be '%x', but was '%x'. For pack.SeqNum %v",
+						log.Printf("expected checksum to be '%x', but was '%x'. For pack.SeqNum %v",
 							pack.Blake2bChecksum, chk, pack.SeqNum)
 						panic("data corruption detected by blake2b checksum")
 
@@ -559,7 +559,7 @@ func Blake2bOfBytes(by []byte) []byte {
 }
 
 func (r *RecvState) doTcpAction(act TcpAction, pack *Packet) error {
-	p("%s doTcpAction received action '%s' in state '%s', in response to event '%s'", r.Inbox, act, r.TcpState, pack.TcpEvent)
+	//p("%s doTcpAction received action '%s' in state '%s', in response to event '%s'", r.Inbox, act, r.TcpState, pack.TcpEvent)
 	switch act {
 	case NoAction:
 		return nil

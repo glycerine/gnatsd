@@ -561,8 +561,11 @@ func (s *Session) Write(payload []byte) (n int, err error) {
 
 	// At 1MB, gnatsd freaks. Keep it under 512KB.
 	// sz := int64Min(s.Cfg.WindowByteSz, 1<<19)
-	// or for easier debugging, an even 128K
-	sz := int64Min(s.Cfg.WindowByteSz, 131072)
+	const maxSz = 1 << 19
+	sz := int64Min(s.Cfg.WindowByteSz, maxSz)
+	if sz < 0 {
+		sz = maxSz
+	}
 
 	npack := lenp / sz
 	if lenp-npack*sz > 0 {
