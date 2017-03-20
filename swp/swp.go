@@ -40,6 +40,7 @@ API if so desired.
 package swp
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"sync"
@@ -639,9 +640,24 @@ type BigFile struct {
 	Data        []byte
 }
 
+// RecvFile will check for corruption and report it
+// in err. We may also return the corrupted
+// *BigFile structure for further examination.
 func (sess *Session) RecvFile() (*BigFile, error) {
 	bf := &BigFile{}
 	err := msgp.Decode(sess, bf)
+	// check the size and checksum
+	if bf.SizeInBytes != int64(len(bf.Data)) {
+		return bf, fmt.Errorf("RecvFile corruption detected: "+
+			"bf.Data was length %v, but expected %v bytes",
+			len(bf.Data), bf.SizeInBytes)
+	}
+	chksum := Blake2bOfBytes(bf.Data)
+	if 0 != bytes.Compare(bf.Blake2b, chksum) {
+		return bf, fmt.Errorf("RecvFile corruption detected: "+
+			"bf.Data had checksum '%x', but expected '%x'",
+			chksum, bf.Blake2b)
+	}
 	return bf, err
 }
 
