@@ -487,6 +487,11 @@ func (s *SenderState) doOrigDataSend(pack *Packet) int64 {
 }
 
 func (s *SenderState) doKeepAlive() {
+	if s.Dest == "" || s.RemoteSessNonce == "" {
+		// don't bother with keepalives when we
+		// don't have a destintion.
+		return
+	}
 	if time.Since(s.LastSendTime) < s.KeepAliveInterval {
 		return
 	}
