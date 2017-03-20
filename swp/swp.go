@@ -247,6 +247,9 @@ type Session struct {
 
 	LocalSessNonce  string
 	RemoteSessNonce string
+
+	// testing only
+	simulateLostSynCount int
 }
 
 // SessionConfig configures a Session.
@@ -540,9 +543,12 @@ type ByteAccount struct {
 // Write implements io.Writer, chopping p into packet
 // sized pieces if need be, and sending then in order
 // over the flow-controlled Session s.
+//
+// simulateLostSynCount should be 0 unless testing
+// for lost SYN.
 func (s *Session) Write(payload []byte) (n int, err error) {
 
-	err = s.ConnectIfNeeded(s.Destination)
+	err = s.ConnectIfNeeded(s.Destination, s.simulateLostSynCount)
 	if err != nil {
 		return 0, err
 	}
@@ -687,9 +693,9 @@ func NewSessionNonce() string {
 
 // if not established, do the connect 3-way handshake
 // to exchange Session nonces.
-func (s *Session) ConnectIfNeeded(dest string) error {
+func (s *Session) ConnectIfNeeded(dest string, simulateLostSynCount int) error {
 	if s.RemoteSessNonce == "" {
-		remoteNonce, err := s.Swp.Connect(dest)
+		remoteNonce, err := s.Swp.Connect(dest, simulateLostSynCount)
 		if err != nil {
 			return err
 		}
@@ -699,6 +705,6 @@ func (s *Session) ConnectIfNeeded(dest string) error {
 	return nil
 }
 
-func (swp *SWP) Connect(dest string) (remoteNonce string, err error) {
-	return swp.Recver.Connect(dest)
+func (swp *SWP) Connect(dest string, simulateLostSynCount int) (remoteNonce string, err error) {
+	return swp.Recver.Connect(dest, simulateLostSynCount)
 }

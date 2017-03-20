@@ -128,6 +128,7 @@ func testsender(host string, nport int, gnats *server.Server, writeme []byte) {
 	//	panicOn(err)
 	//	fmt.Fprintf(os.Stderr, "read %v bytes from stdin\n", len(by))
 
+	A.simulateLostSynCount = 4
 	n, err := A.Write(writeme)
 	fmt.Fprintf(os.Stderr, "n = %v, err=%v after A.Write(writeme), where len(writeme)=%v\n", n, err, len(writeme))
 	A.Stop()
@@ -179,7 +180,7 @@ func testrec(host string, nport int, gnats *server.Server, dest io.Writer, done 
 
 		senderClosed := make(chan bool)
 		B.Swp.Recver.AppCloseCallback = func() {
-			//p("AppCloseCallback called. B.Swp.Recver.LastFrameClientConsumed=%v", B.Swp.Recver.LastFrameClientConsumed)
+			p("AppCloseCallback called. B.Swp.Recver.LastFrameClientConsumed=%v", B.Swp.Recver.LastFrameClientConsumed)
 			close(senderClosed)
 		}
 

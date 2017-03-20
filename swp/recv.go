@@ -163,7 +163,7 @@ func (r *RecvState) Start() error {
 
 	go func() {
 		defer func() {
-			///p("%s RecvState defer/shutdown happening.", r.Inbox)
+			p("%s RecvState defer/shutdown happening.", r.Inbox)
 			// are we closing too fast?
 			r.Halt.RequestStop()
 			r.Halt.MarkDone()
@@ -195,15 +195,25 @@ func (r *RecvState) Start() error {
 				// Connect. Do an active open. Send syn to remote and
 				// transition to SynSent state.
 				//
-				if r.TcpState != Closed && r.TcpState != Listen {
-					cr.Err = ErrConnectWhenNotClosedNotListen
+				// Also here: if original SYN was lost, we'll end up
+				// here again trying to re-send SYN, so don't freak.
+				//
+				if r.TcpState != Closed &&
+					r.TcpState != Listen &&
+					r.TcpState != SynSent {
+
+					if r.TcpState == Established || r.TcpState == SynReceived {
+						// no error, we are fine; connection is already established.
+					} else {
+						cr.Err = ErrConnectWhenNotClosedNotListen
+					}
 					close(cr.Done)
+					// ignore
+					p("continuing after rejecting connect request b/c not in listen or closed or SynSent state=%s", r.TcpState)
 					continue
 				}
 
-				if r.connReqPending != nil {
-					panic("already have an r.ConnReq on file, should never have two")
-				}
+				p("we are setting r.connReqPending, and sending SYN.")
 				r.connReqPending = cr
 
 				// send syn
@@ -219,13 +229,14 @@ func (r *RecvState) Start() error {
 
 				select {
 				case r.snd.sendSynCh <- cr:
+					p("got connect request cr over the r.snd.sendSynCh")
 				case <-r.Halt.ReqStop.Chan:
-					///p("%v recvloop sees ReqStop, shutting down.", r.Inbox)
+					p("%v recvloop sees ReqStop waiting to sendSynCh, shutting down. [1]", r.Inbox)
 					return
 				}
 				// The key state change.
 				r.TcpState = SynSent
-				//p("%s recv is now in SynSent, after telling sender to send syn to cr.DestInbox='%s'", r.Inbox, cr.DestInbox)
+				p("%s recv is now in SynSent, after telling sender to send syn to cr.DestInbox='%s'", r.Inbox, cr.DestInbox)
 
 			case helper := <-r.setAsapHelper:
 				//p("recvloop: got <-r.setAsapHelper")
@@ -272,10 +283,10 @@ func (r *RecvState) Start() error {
 				delivery.Seq = nil
 
 			case <-r.Halt.ReqStop.Chan:
-				///p("%v recvloop sees ReqStop, shutting down.", r.Inbox)
+				p("%v recvloop sees ReqStop waiting on r.MsgRecv, shutting down. [2]", r.Inbox)
 				return
 			case <-r.snd.SenderShutdown:
-				///p("recvloop: got <-r.snd.SenderShutdown. note that len(r.RcvdButNotConsumed)=%v", len(r.RcvdButNotConsumed))
+				p("recvloop: got <-r.snd.SenderShutdown. note that len(r.RcvdButNotConsumed)=%v", len(r.RcvdButNotConsumed))
 				return
 			case pack := <-r.MsgRecv:
 
@@ -362,7 +373,7 @@ func (r *RecvState) Start() error {
 						continue recvloop
 					} else {
 						// err != nil is our indicator to exit
-						///p("doTcpAction returned err='%v', returning.", err)
+						p("doTcpAction returned err='%v', returning.", err)
 						return
 					}
 				}
@@ -670,22 +681,44 @@ func NewConnectReq(dest string) *ConnectReq {
 	}
 }
 
-func (r *RecvState) Connect(dest string) (remoteNonce string, err error) {
+var ErrConnectTimeout = fmt.Errorf("Connect() timeout waiting for SynAck")
 
-	cr := NewConnectReq(dest)
+func (r *RecvState) Connect(dest string, simulateUnderTestLostSynCount int) (remoteNonce string, err error) {
 
-	select {
-	case r.ConnectCh <- cr:
-	case <-time.After(time.Second * 10):
-		panic(fmt.Sprintf("%s recvstate could not SYN after 10 seconds, something is seriously wrong internally.", r.Inbox))
-	case <-r.Halt.ReqStop.Chan:
+	overallTooLong := time.After(time.Second * 20)
+	tries := 0
+	for {
+		tries++
+		cr := NewConnectReq(dest)
+
+		select {
+		case r.ConnectCh <- cr:
+		case <-time.After(time.Second * 10):
+			panic(fmt.Sprintf("%s recvstate could not SYN after 10 seconds, something is seriously wrong internally.", r.Inbox))
+		case <-r.Halt.ReqStop.Chan:
+			return "", ErrShutdown
+		}
+
+		// simulate lost SYN and have to retry:
+		if tries <= simulateUnderTestLostSynCount {
+			continue
+		}
+
+		select {
+		case <-time.After(time.Second):
+			panic("Debug")
+			p("connect request: no answer after 1000msec, trying again")
+			// try again
+			continue
+		case <-overallTooLong:
+			return "", ErrConnectTimeout
+		case <-cr.Done:
+			p("cr.Done was closed, with cr.Err='%s'", cr.Err)
+			return cr.RemoteNonce, cr.Err
+		case <-r.Halt.ReqStop.Chan:
+			return "", ErrShutdown
+		}
+
+		return "", ErrShutdown
 	}
-
-	select {
-	case <-cr.Done:
-		return cr.RemoteNonce, cr.Err
-	case <-r.Halt.ReqStop.Chan:
-	}
-
-	return "", ErrShutdown
 }

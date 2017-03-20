@@ -383,6 +383,7 @@ func (s *SenderState) Start(sess *Session) {
 					cr.Err = err
 					close(cr.Done)
 				}
+				p("%s sender sent SYN", s.Inbox)
 
 			case ackPack := <-s.SendAck:
 				// request to send an ack:
@@ -549,7 +550,7 @@ func (s *SenderState) doKeepAlive() {
 // correct?
 //
 func (s *SenderState) doSendClosing() {
-	//p("%s doSendClosing() running", s.Inbox)
+	p("%s doSendClosing() running, sending TcpEvent:EventFin", s.Inbox)
 	flow := s.FlowCt.UpdateFlow(s.Inbox+":sender", s.Net, -1, -1, nil)
 	now := s.Clk.Now()
 	s.LastSendTime = now
@@ -575,11 +576,12 @@ func (s *SenderState) doSendClosing() {
 	err := s.Net.Send(kap, fmt.Sprintf("endpoint is closing, from %v", s.Inbox))
 	//panicOn(err)
 	if err != nil {
+		// ignore, the other end is most like already down.
+		//
+		// sample:
 		// 'nats: invalid subject' for example.
-		fmt.Fprintf(os.Stderr, "doSendClosing() to '%s' attempt, got err = '%v'. kap.FromSessNonce='%s'. kap.DestSessNonce='%s'\n", kap.Dest, err, kap.FromSessNonce, kap.DestSessNonce)
+		// fmt.Fprintf(os.Stderr, "doSendClosing() to '%s' attempt, got err = '%v'. kap.FromSessNonce='%s'. kap.DestSessNonce='%s'\n", kap.Dest, err, kap.FromSessNonce, kap.DestSessNonce)
 	}
-
-	s.keepAlive = time.After(s.KeepAliveInterval)
 }
 
 func min(a, b int64) int64 {
