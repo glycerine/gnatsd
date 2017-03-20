@@ -41,6 +41,7 @@ package swp
 
 import (
 	"fmt"
+	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -597,7 +598,7 @@ func (s *Session) Write(payload []byte) (n int, err error) {
 		///p("we got end-to-end ack from receiver that all packets were delivered")
 		ca.BcastAck()
 	case <-time.After(10 * time.Second):
-		p("problem in %s Write: timeout after 10 seconds waiting", s.MyInbox)
+		log.Printf("problem in %s Write: timeout after 10 seconds waiting", s.MyInbox)
 	case <-s.Halt.Done.Chan:
 	}
 

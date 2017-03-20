@@ -163,7 +163,7 @@ func (r *RecvState) Start() error {
 
 	go func() {
 		defer func() {
-			p("%s RecvState defer/shutdown happening.", r.Inbox)
+			//p("%s RecvState defer/shutdown happening.", r.Inbox)
 			// are we closing too fast?
 			r.Halt.RequestStop()
 			r.Halt.MarkDone()
@@ -209,11 +209,11 @@ func (r *RecvState) Start() error {
 					}
 					close(cr.Done)
 					// ignore
-					p("continuing after rejecting connect request b/c not in listen or closed or SynSent state=%s", r.TcpState)
+					//p("continuing after rejecting connect request b/c not in listen or closed or SynSent state=%s", r.TcpState)
 					continue
 				}
 
-				p("we are setting r.connReqPending, and sending SYN.")
+				//p("we are setting r.connReqPending, and sending SYN.")
 				r.connReqPending = cr
 
 				// send syn
@@ -229,14 +229,14 @@ func (r *RecvState) Start() error {
 
 				select {
 				case r.snd.sendSynCh <- cr:
-					p("got connect request cr over the r.snd.sendSynCh")
+					//p("got connect request cr over the r.snd.sendSynCh")
 				case <-r.Halt.ReqStop.Chan:
-					p("%v recvloop sees ReqStop waiting to sendSynCh, shutting down. [1]", r.Inbox)
+					//p("%v recvloop sees ReqStop waiting to sendSynCh, shutting down. [1]", r.Inbox)
 					return
 				}
 				// The key state change.
 				r.TcpState = SynSent
-				p("%s recv is now in SynSent, after telling sender to send syn to cr.DestInbox='%s'", r.Inbox, cr.DestInbox)
+				//p("%s recv is now in SynSent, after telling sender to send syn to cr.DestInbox='%s'", r.Inbox, cr.DestInbox)
 
 			case helper := <-r.setAsapHelper:
 				//p("recvloop: got <-r.setAsapHelper")
@@ -283,10 +283,10 @@ func (r *RecvState) Start() error {
 				delivery.Seq = nil
 
 			case <-r.Halt.ReqStop.Chan:
-				p("%v recvloop sees ReqStop waiting on r.MsgRecv, shutting down. [2]", r.Inbox)
+				//p("%v recvloop sees ReqStop waiting on r.MsgRecv, shutting down. [2]", r.Inbox)
 				return
 			case <-r.snd.SenderShutdown:
-				p("recvloop: got <-r.snd.SenderShutdown. note that len(r.RcvdButNotConsumed)=%v", len(r.RcvdButNotConsumed))
+				//p("recvloop: got <-r.snd.SenderShutdown. note that len(r.RcvdButNotConsumed)=%v", len(r.RcvdButNotConsumed))
 				return
 			case pack := <-r.MsgRecv:
 
@@ -373,7 +373,7 @@ func (r *RecvState) Start() error {
 						continue recvloop
 					} else {
 						// err != nil is our indicator to exit
-						p("doTcpAction returned err='%v', returning.", err)
+						//p("doTcpAction returned err='%v', returning.", err)
 						return
 					}
 				}
@@ -706,14 +706,13 @@ func (r *RecvState) Connect(dest string, simulateUnderTestLostSynCount int) (rem
 
 		select {
 		case <-time.After(time.Second):
-			panic("Debug")
-			p("connect request: no answer after 1000msec, trying again")
+			///p("connect request: no answer after 1000msec, trying again")
 			// try again
 			continue
 		case <-overallTooLong:
 			return "", ErrConnectTimeout
 		case <-cr.Done:
-			p("cr.Done was closed, with cr.Err='%s'", cr.Err)
+			//p("cr.Done was closed, with cr.Err='%s'", cr.Err)
 			return cr.RemoteNonce, cr.Err
 		case <-r.Halt.ReqStop.Chan:
 			return "", ErrShutdown

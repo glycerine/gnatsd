@@ -383,7 +383,7 @@ func (s *SenderState) Start(sess *Session) {
 					cr.Err = err
 					close(cr.Done)
 				}
-				p("%s sender sent SYN", s.Inbox)
+				//p("%s sender sent SYN", s.Inbox)
 
 			case ackPack := <-s.SendAck:
 				// request to send an ack:
@@ -550,7 +550,7 @@ func (s *SenderState) doKeepAlive() {
 // correct?
 //
 func (s *SenderState) doSendClosing() {
-	p("%s doSendClosing() running, sending TcpEvent:EventFin", s.Inbox)
+	//p("%s doSendClosing() running, sending TcpEvent:EventFin", s.Inbox)
 	flow := s.FlowCt.UpdateFlow(s.Inbox+":sender", s.Net, -1, -1, nil)
 	now := s.Clk.Now()
 	s.LastSendTime = now
