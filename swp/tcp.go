@@ -15,6 +15,9 @@ const (
 	SynReceived TcpState = 2
 	SynSent     TcpState = 3 // client, active open.
 
+	// the numbering is significant, since we'll
+	// test that state is >= Established before
+	// enforcing SessNonce matching (in recv.go).
 	Established TcpState = 4
 
 	// close sequence
@@ -32,6 +35,7 @@ const (
 // TcpEvent
 
 const (
+	EventNil          TcpEvent = 0
 	EventStartListen  TcpEvent = 1 // server enters Listen state
 	EventStartConnect TcpEvent = 2
 
@@ -81,6 +85,7 @@ const (
 
 // e is the received event
 func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
+
 	switch *s {
 	// init sequence
 	case Closed:
@@ -92,6 +97,8 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 			return SendSyn
 		case EventReset:
 			// stay in closed
+		case EventFin:
+			// extra, np. stay in closed.
 		default:
 			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
 		}
@@ -110,7 +117,7 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 		case EventFin:
 			// shutdown before even got started.
 			*s = CloseWait
-			return DoAppClose // or not?
+			return SendFinAck
 		default:
 			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
 		}
@@ -128,7 +135,7 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 		case EventFin:
 			// early close, but no worries.
 			*s = CloseWait
-			return DoAppClose
+			return SendFinAck
 		default:
 			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
 		}
@@ -159,7 +166,7 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 			return SendFin
 		case EventFin:
 			*s = CloseWait
-			return DoAppClose
+			return SendFinAck
 
 		case EventReset:
 			*s = Closed
@@ -215,9 +222,9 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 			// duplicate Fin, ignore
 		case EventReset:
 			*s = Closed
-		default:
-			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
+			return NoAction
 		}
+		return DoAppClose
 	case LastAck:
 		switch e {
 		case EventFinAck:
