@@ -25,6 +25,7 @@ func Test040FileTransfer(t *testing.T) {
 		host := "127.0.0.1"
 		port := getAvailPort()
 		gnats := StartGnatsd(host, port)
+		p("started gnatsd on %v:%v", host, port)
 		defer func() {
 			p("calling gnats.Shutdown()")
 			gnats.Shutdown() // when done
@@ -80,7 +81,7 @@ func testsender(host string, nport int, gnats *server.Server, writeme []byte) {
 	pub := NewNatsClient(pubC)
 	err := pub.Start()
 	panicOn(err)
-	defer pub.Close()
+	defer pub.Close() // this will shut down nats client too quickly.
 
 	// ===============================
 	// make a session for each
@@ -131,7 +132,7 @@ func testsender(host string, nport int, gnats *server.Server, writeme []byte) {
 	A.simulateLostSynCount = 4
 	n, err := A.Write(writeme)
 	fmt.Fprintf(os.Stderr, "n = %v, err=%v after A.Write(writeme), where len(writeme)=%v\n", n, err, len(writeme))
-	A.Stop()
+	A.Close()
 }
 
 func testrec(host string, nport int, gnats *server.Server, dest io.Writer, done chan bool) {

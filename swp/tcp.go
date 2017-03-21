@@ -1,9 +1,5 @@
 package swp
 
-import (
-	"fmt"
-)
-
 //go:generate msgp
 
 type TcpState int
@@ -90,6 +86,11 @@ const (
 func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 
 	switch *s {
+	case Closed:
+		// Closed is permanent. We won't move out of it.
+		// Create a whole new swp session to start again.
+		return SendFinAck
+
 	// init sequence
 	case Fresh:
 		switch e {
@@ -98,28 +99,16 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 		case EventStartConnect:
 			*s = SynSent
 			return SendSyn
-		case EventFin:
-		case EventApplicationClosed:
-		case EventDataAck:
-		case EventData:
-		default:
-			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
 		}
 	case Listen:
 		switch e {
 		case EventSyn:
 			*s = SynReceived
 			return SendSynAck
-		case EventKeepAlive:
-			// ignore
-		case EventDataAck:
-			// ignore
 		case EventFin:
 			// shutdown before even got started.
 			*s = CloseResponderGotFin
 			return DoAppClose
-		default:
-			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
 		}
 
 	case SynReceived:
@@ -128,14 +117,10 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 		switch e {
 		case EventEstabAck:
 			*s = Established
-		case EventSyn:
-			// duplicate, ignore
 		case EventFin:
 			// early close, but no worries.
 			*s = CloseResponderGotFin
 			return DoAppClose
-		default:
-			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
 		}
 
 	case SynSent:
@@ -150,14 +135,10 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 		case EventFin:
 			*s = CloseResponderGotFin
 			return DoAppClose
-		default:
-			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
 		}
 
 	case Established:
 		switch e {
-		case EventData, EventDataAck:
-			// stay in Established
 		case EventKeepAlive:
 			return SendDataAck
 		case EventStartClose:
@@ -166,8 +147,6 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 		case EventFin:
 			*s = CloseResponderGotFin
 			return DoAppClose
-		default:
-			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
 		}
 
 	case CloseInitiatorHasSentFin:
@@ -178,23 +157,13 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 		case EventFin:
 			// simultaneous close
 			*s = Closed
-		default:
-			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
 		}
 
 	case CloseResponderGotFin:
 		// aka CloseWait
 		switch e {
-		case EventData:
-			// ignore
-		case EventDataAck:
-			// ignore
 		case EventApplicationClosed:
 			*s = Closed
-		case EventFin:
-			// duplicate Fin, ignore
-		default:
-			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
 		}
 	}
 	return NoAction

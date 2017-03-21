@@ -12,7 +12,7 @@ import (
 )
 
 var ErrShutdown = fmt.Errorf("shutdown in progress")
-var ErrConnectWhenNotClosedNotListen = fmt.Errorf("connect request when receiver was not in Closed or Listen state")
+var ErrConnectWhenNotListen = fmt.Errorf("connect request when receiver was not in Listen state")
 
 // RxqSlot is the receiver's sliding window element.
 type RxqSlot struct {
@@ -41,8 +41,9 @@ type RecvState struct {
 	//	ReqStop chan bool
 	//	Done    chan bool
 
-	RecvSz       int64
-	DiscardCount int64
+	DoSendClosingCh chan *closeReq
+	RecvSz          int64
+	DiscardCount    int64
 
 	snd *SenderState
 
@@ -123,6 +124,7 @@ func NewRecvState(net Network, recvSz int64, recvSzBytes int64, timeout time.Dur
 		RcvdButNotConsumed:  make(map[int64]*Packet),
 		ReadyForDelivery:    make([]*Packet, 0),
 		ReadMessagesCh:      make(chan InOrderSeq),
+		DoSendClosingCh:     make(chan *closeReq),
 		LastMsgConsumed:     -1,
 		LargestSeqnoRcvd:    -1,
 		MaxCumulBytesTrans:  0,
@@ -151,7 +153,7 @@ func (r *RecvState) Start() error {
 	switch nn := r.Net.(type) {
 	case *NatsNet:
 		//p("%v receiver setting nats subscription buffer limits", r.Inbox)
-		// NB: we have to allow somewhat *more* than than data
+		// NB: we have to reserve somewhat *more* than than data
 		// limits to allow nats to deliver control messages such
 		// as acks and keep-alives.
 		flow := r.snd.FlowCt.GetFlow()
@@ -167,8 +169,6 @@ func (r *RecvState) Start() error {
 	go func() {
 		defer func() {
 			//p("%s RecvState defer/shutdown happening.", r.Inbox)
-			// are we closing too fast?
-			r.ack(r.LastFrameClientConsumed, nil, EventFin)
 			r.Halt.RequestStop()
 			r.Halt.MarkDone()
 			r.cleanupOnExit()
@@ -191,9 +191,16 @@ func (r *RecvState) Start() error {
 				//p("%v recloop has len %v r.ReadyForDelivery, SeqNum from [%v, %v]", r.Inbox, len(r.ReadyForDelivery), delivery.Seq[0].SeqNum, delivery.Seq[deliveryLen-1].SeqNum)
 			}
 
-			//p("recvloop: about to select")
+			//p("%s recvloop: about to select", r.Inbox)
 			select {
-
+			case zr := <-r.DoSendClosingCh:
+				//p("%s 1st recv got r.DoSendClosingCh <- true", r.Inbox)
+				select {
+				case r.snd.DoSendClosingCh <- zr:
+					//p("%s 2nd recv sent to snd DoSendClosingCh <- true", r.Inbox)
+				case <-r.Halt.ReqStop.Chan:
+					return
+				}
 			case <-r.retryTimerCh:
 				r.retryCheck()
 
@@ -214,14 +221,13 @@ func (r *RecvState) Start() error {
 				}
 				r.RemoteInbox = cr.DestInbox
 
-				if r.TcpState != Closed &&
-					r.TcpState != Listen &&
+				if r.TcpState != Listen &&
 					r.TcpState != SynSent {
 
 					if r.TcpState == Established || r.TcpState == SynReceived {
 						// no error, we are fine; connection is already established.
 					} else {
-						cr.Err = ErrConnectWhenNotClosedNotListen
+						cr.Err = ErrConnectWhenNotListen
 					}
 					close(cr.Done)
 					// ignore
@@ -305,6 +311,7 @@ func (r *RecvState) Start() error {
 				//p("recvloop: got <-r.snd.SenderShutdown. note that len(r.RcvdButNotConsumed)=%v", len(r.RcvdButNotConsumed))
 				return
 			case pack := <-r.MsgRecv:
+				//p("%v recvloop sees packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.SeqNum, pack.TcpEvent, pack.AckNum)
 
 				// track the first remote and lock onto it.
 				if r.RemoteInbox == "" && pack.From != "" {
@@ -329,7 +336,6 @@ func (r *RecvState) Start() error {
 					continue // drop others
 				}
 
-				//p("%v recvloop sees packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.SeqNum, pack.TcpEvent, pack.AckNum)
 				// test instrumentation, used e.g. in clock_test.go
 				if r.testing != nil && r.testing.incrementClockOnReceive {
 					r.Clk.(*SimClock).Advance(time.Second)
@@ -405,6 +411,7 @@ func (r *RecvState) Start() error {
 					}
 
 					eventNext, err := r.doTcpAction(act, pack)
+					//p("%s recvp done with doTcpAction(act=%s), eventNext=%s. err=%v", r.Inbox, act, eventNext, err)
 
 					// eventNext is typically EventNil, except when
 					// we need to sendFin after application close and
@@ -414,13 +421,16 @@ func (r *RecvState) Start() error {
 						event = eventNext
 						goto doNextEvent
 					}
-					if err == nil {
-						continue recvloop
-					} else {
+					if err != nil {
 						// err != nil is our indicator to exit
 						//p("doTcpAction returned err='%v', returning.", err)
 						return
 					}
+					if r.TcpState == Closed {
+						//p("%s receiver recognized r.TcpState == Closed, shutting down", r.Inbox)
+						return
+					}
+					continue recvloop
 				}
 				// data: actual data received, receiver side stuff follows.
 
@@ -573,6 +583,7 @@ func (r *RecvState) ack(seqno int64, pack *Packet, event TcpEvent) {
 
 // Stop the RecvState componennt
 func (r *RecvState) Stop() {
+	//p("%v RecvState.Stop() called.", r.Inbox)
 	r.Halt.ReqStop.Close()
 	<-r.Halt.Done.Chan
 }
@@ -801,8 +812,28 @@ func (r *RecvState) Connect(dest string, simulateUnderTestLostSynCount int) (rem
 	}
 }
 
-// gentler than Stop(); tells the other side
-// to go through its full shutdown sequence.
-func (r *RecvState) Close() {
-	panic("TODO finish me out. not started yet.")
+var ErrTimeoutClose = fmt.Errorf("timed-out after 10 seconds waiting to get Close() message through.")
+
+// Close is gentler than Stop(). It politely notifies the remote side
+// to go through its full shutdown sequence. It will
+// return before that sequence is complete.
+func (r *RecvState) Close(zr *closeReq) error {
+	//p("%s RecvState.Close() running", r.Inbox)
+
+	select {
+	case r.DoSendClosingCh <- zr:
+		select {
+		case <-zr.done:
+			return nil
+		case <-r.Halt.ReqStop.Chan:
+			return nil
+		case <-time.After(10 * time.Second):
+			return ErrTimeoutClose
+		}
+	case <-r.Halt.ReqStop.Chan:
+		return nil
+	case <-time.After(10 * time.Second):
+		return ErrTimeoutClose
+	}
+	return nil
 }

@@ -173,6 +173,7 @@ func (s *NatsClient) MakeSub(subject string, hand nats.MsgHandler) error {
 // Close unsubscribes from the nats subscription and closes
 // the nats.Conn connection.
 func (s *NatsClient) Close() {
+	//p("%s NatsClient.Close() unsubscribe and close starting.", s.Subject)
 	if s.Scrip != nil {
 		err := s.Scrip.Unsubscribe()
 		panicOn(err)
@@ -180,7 +181,7 @@ func (s *NatsClient) Close() {
 	if s.Nc != nil {
 		s.Nc.Close()
 	}
-	//p("NatsClient unsubscribe and close done")
+	//p("%s NatsClient.Close() unsubscribe and close done", s.Subject)
 }
 
 type asyncErr struct {

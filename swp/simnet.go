@@ -73,7 +73,7 @@ func (sim *SimNet) Listen(inbox string) (chan *Packet, error) {
 // annoation is optional and allows the logs to illumate
 // the purpose of each send (ack, keepAlive, data, etc).
 func (sim *SimNet) Send(pack *Packet, why string) error {
-	p("in SimNet.Send(pack.SeqNum=%v) why:'%v'. from:'%s' dest:'%s'", pack.SeqNum, why, pack.From, pack.Dest)
+	//p("in SimNet.Send(pack.SeqNum=%v) why:'%v'. from:'%s' dest:'%s'", pack.SeqNum, why, pack.From, pack.Dest)
 
 	// try to avoid data races and race detector problems by
 	// copying the packet here

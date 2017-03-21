@@ -430,7 +430,7 @@ func InWindow(seqno, min, max int64) bool {
 
 // Stop shutsdown the session
 func (s *Session) Stop() {
-	///p("%v Session.Stop called.", s.MyInbox)
+	//p("%v Session.Stop called.", s.MyInbox)
 	s.Swp.Stop()
 	s.SetErr(s.Swp.Sender.GetErr())
 	s.Halt.RequestStop()
@@ -729,4 +729,18 @@ func (s *Session) ConnectIfNeeded(dest string, simulateLostSynCount int) error {
 
 func (swp *SWP) Connect(dest string, simulateLostSynCount int) (remoteNonce string, err error) {
 	return swp.Recver.Connect(dest, simulateLostSynCount)
+}
+
+type closeReq struct {
+	done chan bool
+}
+
+func newCloseReq() *closeReq {
+	return &closeReq{done: make(chan bool)}
+}
+
+func (sess *Session) Close() error {
+	//p("%s sess Close() running, recv.TcpState=%s", sess.MyInbox, sess.Swp.Recver.TcpState)
+	zr := newCloseReq()
+	return sess.Swp.Recver.Close(zr)
 }

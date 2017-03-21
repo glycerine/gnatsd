@@ -54,15 +54,18 @@ func (n *NatsNet) Listen(inbox string) (chan *Packet, error) {
 
 // Send blocks until Send has started (but not until acked).
 func (n *NatsNet) Send(pack *Packet, why string) error {
-	///p("%s in NatsNet.Send(pack.SeqNum=%v / .AckNum=%v) why: '%s'", pack.From, pack.SeqNum, pack.AckNum, why)
+	//p("%s in NatsNet.Send(pack.SeqNum=%v / .AckNum=%v) why: '%s'", pack.From, pack.SeqNum, pack.AckNum, why)
 	bts, err := pack.MarshalMsg(nil)
 	if err != nil {
 		return err
 	}
-	return n.Cli.Nc.Publish(pack.Dest, bts)
+	err = n.Cli.Nc.Publish(pack.Dest, bts)
+	//p("%s in NatsNet.Send() about to Nc.Publish... err='%v'", pack.From, err)
+	return err
 }
 
 func (n *NatsNet) Stop() {
+	//p("NatsNet.Stop called!")
 	n.Halt.RequestStop()
 	n.Halt.Done.Close()
 }
