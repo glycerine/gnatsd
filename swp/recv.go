@@ -179,8 +179,8 @@ func (r *RecvState) Start() error {
 
 	recvloop:
 		for {
-			//p("%v top of recvloop, receiver NFE: %v",
-			//	r.Inbox, r.NextFrameExpected)
+			//p("%v top of recvloop, receiver NFE: %v. TcpState=%s",
+			//	r.Inbox, r.NextFrameExpected, r.TcpState)
 
 			deliverToConsumer = nil
 			if len(r.ReadyForDelivery) > 0 {
@@ -308,14 +308,14 @@ func (r *RecvState) Start() error {
 
 				// track the first remote and lock onto it.
 				if r.RemoteInbox == "" && pack.From != "" {
-					p("%s locking onto remote %s", r.Inbox, pack.From)
+					//p("%s locking onto remote %s", r.Inbox, pack.From)
 					r.RemoteInbox = pack.From
 				}
 				if pack.From != r.RemoteInbox {
 					// drop other remotes,
 					// also enforcing that we see Syn 1st.
-					p("%s dropping pack that isn't from %s", r.Inbox,
-						r.RemoteInbox)
+					//p("%s dropping pack that isn't from %s", r.Inbox,
+					//	r.RemoteInbox)
 					continue
 				}
 

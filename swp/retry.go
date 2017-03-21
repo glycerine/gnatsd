@@ -26,7 +26,7 @@ func isRetryState(state TcpState) bool {
 		FinWait1,    // resend Fin
 		FinWait2,    // resend FinAck
 		Closing,     // resend FinAck
-		CloseWait,   // resend FinAck
+		//CloseWait,   // resend FinAck
 		LastAck:     // resend Fin
 		return true
 	}
@@ -51,8 +51,8 @@ func (r *RecvState) retryCheck() {
 	elap := now.Sub(r.retry.lastAttemptAt)
 	if elap > time.Second {
 		r.retry.attemptCount++
-		if r.retry.attemptCount > 6 {
-			log.Printf("%s with LocalSessNonce %s, warning: retryCheck is failing after 6 tries, in state %s, trying to do action %s. Closing up shop.", r.Inbox, r.LocalSessNonce, r.TcpState, r.retry.firstStateAction)
+		if r.retry.attemptCount > 4 {
+			log.Printf("%s with LocalSessNonce %s, warning: retryCheck is failing after 4 tries, in state %s, trying to do action %s. Closing up shop.", r.Inbox, r.LocalSessNonce, r.TcpState, r.retry.firstStateAction)
 			r.retryTimerCh = nil
 			r.retry.inUse = false
 			r.Halt.ReqStop.Close()

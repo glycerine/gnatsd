@@ -99,6 +99,8 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 			// stay in closed
 		case EventFin:
 			// extra, np. stay in closed.
+		case EventApplicationClosed:
+			// stay in closed
 		default:
 			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
 		}
@@ -109,6 +111,7 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 			return SendSynAck
 		case EventReset:
 			*s = Closed
+			return DoAppClose
 		case EventKeepAlive:
 			// ignore
 		case EventDataAck:
@@ -130,6 +133,7 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 			*s = Established
 		case EventReset:
 			*s = Closed
+			return DoAppClose
 		case EventSyn:
 			// duplicate, ignore
 		case EventFin:
@@ -151,6 +155,7 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 			return SendEstabAck
 		case EventReset:
 			*s = Closed
+			return DoAppClose
 		default:
 			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
 		}
@@ -166,10 +171,11 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 			return SendFin
 		case EventFin:
 			*s = CloseWait
-			return SendFinAck
+			return DoAppClose
 
 		case EventReset:
 			*s = Closed
+			return DoAppClose
 		default:
 			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
 		}
@@ -222,7 +228,6 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 			// duplicate Fin, ignore
 		case EventReset:
 			*s = Closed
-			return NoAction
 		}
 		return DoAppClose
 	case LastAck:
