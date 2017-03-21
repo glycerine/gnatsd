@@ -10,22 +10,23 @@ type TcpState int
 
 const (
 	// init sequence
-	Closed      TcpState = 0
-	Listen      TcpState = 1 // server, passive open.
-	SynReceived TcpState = 2
-	SynSent     TcpState = 3 // client, active open.
+	Fresh       TcpState = 0
+	Closed      TcpState = 1
+	Listen      TcpState = 2 // server, passive open.
+	SynReceived TcpState = 3
+	SynSent     TcpState = 4 // client, active open.
 
 	// the numbering is significant, since we'll
 	// test that state is >= Established before
 	// enforcing SessNonce matching (in recv.go).
-	Established TcpState = 4
+	Established TcpState = 5
 
 	// close sequence
-	FinWait1  TcpState = 5
-	FinWait2  TcpState = 6
-	Closing   TcpState = 7
-	CloseWait TcpState = 8
-	LastAck   TcpState = 9
+	// if we timeout in this state, we go to Closed.
+	CloseInitiatorHasSentFin TcpState = 6 // FinWait1
+
+	// if we timeout in this state, we go to Closed.
+	CloseResponderGotFin TcpState = 7 // CloseWait
 )
 
 // moved to swp.go so that msgp serialization
@@ -54,20 +55,22 @@ const (
 	EventStartClose        TcpEvent = 6
 	EventApplicationClosed TcpEvent = 7
 
-	// close initiator sends Fin, enters FinWait1
-	// responder or simultaneous close, enter CloseWait or Closing
+	// close initiator sends Fin, enters CloseInitiatorHasSentFin
+	// responder or simultaneous close, enter CloseResponderGotFin
+
+	// EventFin also serves as Reset, since our shutdown
+	// sequence is much simpler than actual TCP.
+
 	EventFin    TcpEvent = 8
 	EventFinAck TcpEvent = 9
 
-	EventReset TcpEvent = 10
-
 	// common acks of data during Established state
 	// aka AckOnly
-	EventDataAck TcpEvent = 11
-	EventData    TcpEvent = 12 // a data packet. Most common. state is Established.
+	EventDataAck TcpEvent = 10
+	EventData    TcpEvent = 11 // a data packet. Most common. state is Established.
 
 	// a keepalive
-	EventKeepAlive TcpEvent = 14
+	EventKeepAlive TcpEvent = 12
 )
 
 type TcpAction int
@@ -88,19 +91,17 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 
 	switch *s {
 	// init sequence
-	case Closed:
+	case Fresh:
 		switch e {
 		case EventStartListen:
 			*s = Listen
 		case EventStartConnect:
 			*s = SynSent
 			return SendSyn
-		case EventReset:
-			// stay in closed
 		case EventFin:
-			// extra, np. stay in closed.
 		case EventApplicationClosed:
-			// stay in closed
+		case EventDataAck:
+		case EventData:
 		default:
 			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
 		}
@@ -109,17 +110,13 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 		case EventSyn:
 			*s = SynReceived
 			return SendSynAck
-		case EventReset:
-			*s = Closed
-			return DoAppClose
 		case EventKeepAlive:
 			// ignore
 		case EventDataAck:
 			// ignore
-
 		case EventFin:
 			// shutdown before even got started.
-			*s = CloseWait
+			*s = CloseResponderGotFin
 			return DoAppClose
 		default:
 			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
@@ -131,14 +128,11 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 		switch e {
 		case EventEstabAck:
 			*s = Established
-		case EventReset:
-			*s = Closed
-			return DoAppClose
 		case EventSyn:
 			// duplicate, ignore
 		case EventFin:
 			// early close, but no worries.
-			*s = CloseWait
+			*s = CloseResponderGotFin
 			return DoAppClose
 		default:
 			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
@@ -153,11 +147,8 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 			// simultaneous open
 			*s = SynReceived
 			return SendEstabAck
-		case EventReset:
-			*s = Closed
-			return DoAppClose
 		case EventFin:
-			*s = CloseWait
+			*s = CloseResponderGotFin
 			return DoAppClose
 		default:
 			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
@@ -170,75 +161,38 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 		case EventKeepAlive:
 			return SendDataAck
 		case EventStartClose:
-			*s = FinWait1
+			*s = CloseInitiatorHasSentFin
 			return SendFin
 		case EventFin:
-			*s = CloseWait
-			return DoAppClose
-		case EventReset:
-			*s = Closed
+			*s = CloseResponderGotFin
 			return DoAppClose
 		default:
 			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
 		}
 
-	case FinWait1:
+	case CloseInitiatorHasSentFin:
+		// aka FinWait1
 		switch e {
 		case EventFinAck:
-			*s = FinWait2
+			*s = Closed
 		case EventFin:
 			// simultaneous close
-			*s = Closing
-			return DoAppClose			
-		case EventReset:
-			*s = Closed
-			return DoAppClose
-		default:
-			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
-		}
-
-	case FinWait2:
-		switch e {
-		case EventFin:
-			*s = Closed
-			return SendFinAck
-		case EventReset:
 			*s = Closed
 		default:
 			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
 		}
 
-	case Closing:
-		switch e {
-		case EventFinAck:
-			*s = Closed
-		case EventReset:
-			*s = Closed
-		default:
-			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
-		}
-
-	case CloseWait:
+	case CloseResponderGotFin:
+		// aka CloseWait
 		switch e {
 		case EventData:
 			// ignore
 		case EventDataAck:
 			// ignore
 		case EventApplicationClosed:
-			*s = LastAck
-			return SendFin
+			*s = Closed
 		case EventFin:
 			// duplicate Fin, ignore
-		case EventReset:
-			*s = Closed
-		}
-		return DoAppClose
-	case LastAck:
-		switch e {
-		case EventFinAck:
-			*s = Closed
-		case EventReset:
-			*s = Closed
 		default:
 			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
 		}

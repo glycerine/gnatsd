@@ -4,31 +4,20 @@ package swp
 
 import "fmt"
 
-const (
-	_TcpEvent_name_0 = "EventStartListenEventStartConnectEventSynEventSynAckEventEstabAckEventStartCloseEventApplicationClosedEventFinEventFinAckEventResetEventDataAckEventData"
-	_TcpEvent_name_1 = "EventKeepAlive"
-)
+const _TcpEvent_name = "EventNilEventStartListenEventStartConnectEventSynEventSynAckEventEstabAckEventStartCloseEventApplicationClosedEventFinEventFinAckEventDataAckEventDataEventKeepAlive"
 
-var (
-	_TcpEvent_index_0 = [...]uint8{0, 16, 33, 41, 52, 65, 80, 102, 110, 121, 131, 143, 152}
-	_TcpEvent_index_1 = [...]uint8{0, 14}
-)
+var _TcpEvent_index = [...]uint8{0, 8, 24, 41, 49, 60, 73, 88, 110, 118, 129, 141, 150, 164}
 
 func (i TcpEvent) String() string {
-	switch {
-	case 1 <= i && i <= 12:
-		i -= 1
-		return _TcpEvent_name_0[_TcpEvent_index_0[i]:_TcpEvent_index_0[i+1]]
-	case i == 14:
-		return _TcpEvent_name_1
-	default:
+	if i < 0 || i >= TcpEvent(len(_TcpEvent_index)-1) {
 		return fmt.Sprintf("TcpEvent(%d)", i)
 	}
+	return _TcpEvent_name[_TcpEvent_index[i]:_TcpEvent_index[i+1]]
 }
 
-const _TcpState_name = "ClosedListenSynReceivedSynSentEstablishedFinWait1FinWait2ClosingCloseWaitLastAck"
+const _TcpState_name = "FreshClosedListenSynReceivedSynSentEstablishedCloseInitiatorHasSentFinCloseResponderGotFin"
 
-var _TcpState_index = [...]uint8{0, 6, 12, 23, 30, 41, 49, 57, 64, 73, 80}
+var _TcpState_index = [...]uint8{0, 5, 11, 17, 28, 35, 46, 70, 90}
 
 func (i TcpState) String() string {
 	if i < 0 || i >= TcpState(len(_TcpState_index)-1) {

@@ -577,7 +577,7 @@ func (s *SenderState) doSendClosing() {
 	err := s.Net.Send(kap, fmt.Sprintf("endpoint is closing, from %v", s.Inbox))
 	//panicOn(err)
 	if err != nil {
-		// ignore, the other end is most like already down.
+		// ignore errors, the other end is most like already down.
 		//
 		// sample:
 		// 'nats: invalid subject' for example.

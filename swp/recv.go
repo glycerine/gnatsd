@@ -168,7 +168,7 @@ func (r *RecvState) Start() error {
 		defer func() {
 			//p("%s RecvState defer/shutdown happening.", r.Inbox)
 			// are we closing too fast?
-			r.ack(r.LastFrameClientConsumed, nil, EventReset)
+			r.ack(r.LastFrameClientConsumed, nil, EventFin)
 			r.Halt.RequestStop()
 			r.Halt.MarkDone()
 			r.cleanupOnExit()
@@ -674,8 +674,7 @@ func (r *RecvState) doTcpAction(act TcpAction, pack *Packet) (TcpEvent, error) {
 		r.ack(r.LastFrameClientConsumed, pack, EventFinAck)
 
 	case DoAppClose:
-		r.ack(r.LastFrameClientConsumed, pack, EventFinAck)
-
+		// don't ack until app is shutdown.
 		if r.AppCloseCallback != nil {
 			// Only do this once.
 			r.AppCloseCallback()
@@ -685,6 +684,7 @@ func (r *RecvState) doTcpAction(act TcpAction, pack *Packet) (TcpEvent, error) {
 			// So prevent a repeat callback.
 			r.AppCloseCallback = nil
 		}
+		r.ack(r.LastFrameClientConsumed, pack, EventFinAck)
 		return EventApplicationClosed, nil
 
 	default:
