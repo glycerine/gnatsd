@@ -501,6 +501,7 @@ func Test043SendFileHeadersAheadOfCheckpoints(t *testing.T) {
 		var by []byte
 		var sbf, rbf *BigFile
 		go func() {
+			var err error
 			time.Sleep(time.Second)
 			rbf, err = sessB.RecvFile()
 			panicOn(err)

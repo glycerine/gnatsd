@@ -166,7 +166,7 @@ func (r *RecvState) Start() error {
 
 	go func() {
 		defer func() {
-			p("%s RecvState defer/shutdown happening.", r.Inbox)
+			//p("%s RecvState defer/shutdown happening.", r.Inbox)
 			// are we closing too fast?
 			r.ack(r.LastFrameClientConsumed, nil, EventReset)
 			r.Halt.RequestStop()
@@ -625,7 +625,7 @@ func Blake2bOfBytes(by []byte) []byte {
 }
 
 func (r *RecvState) doTcpAction(act TcpAction, pack *Packet) (TcpEvent, error) {
-	p("%s doTcpAction received action '%s' in state '%s', in response to event '%s'", r.Inbox, act, r.TcpState, pack.TcpEvent)
+	//p("%s doTcpAction received action '%s' in state '%s', in response to event '%s'", r.Inbox, act, r.TcpState, pack.TcpEvent)
 
 	switch act {
 

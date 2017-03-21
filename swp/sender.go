@@ -389,7 +389,7 @@ func (s *SenderState) Start(sess *Session) {
 				// request to send an ack:
 				// don't go though the BlockingSend protocol; since
 				// could effectively livelock us.
-				p("%v doing ack Net.Send() where the ackPack has AckNum '%v'. TcpEvent=%s", s.Inbox, ackPack.AckNum, ackPack.TcpEvent)
+				//p("%v doing ack Net.Send() where the ackPack has AckNum '%v'. TcpEvent=%s", s.Inbox, ackPack.AckNum, ackPack.TcpEvent)
 				ackPack.FromRttEstNsec = int64(s.rtt.GetEstimate())
 				ackPack.FromRttSdNsec = int64(s.rtt.GetSd())
 				ackPack.FromRttN = s.rtt.N

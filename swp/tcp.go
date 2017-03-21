@@ -120,7 +120,7 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 		case EventFin:
 			// shutdown before even got started.
 			*s = CloseWait
-			return SendFinAck
+			return DoAppClose
 		default:
 			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
 		}
@@ -139,7 +139,7 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 		case EventFin:
 			// early close, but no worries.
 			*s = CloseWait
-			return SendFinAck
+			return DoAppClose
 		default:
 			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
 		}
@@ -155,6 +155,9 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 			return SendEstabAck
 		case EventReset:
 			*s = Closed
+			return DoAppClose
+		case EventFin:
+			*s = CloseWait
 			return DoAppClose
 		default:
 			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
@@ -172,7 +175,6 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 		case EventFin:
 			*s = CloseWait
 			return DoAppClose
-
 		case EventReset:
 			*s = Closed
 			return DoAppClose
@@ -187,9 +189,10 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 		case EventFin:
 			// simultaneous close
 			*s = Closing
-			return SendFinAck
+			return DoAppClose			
 		case EventReset:
 			*s = Closed
+			return DoAppClose
 		default:
 			panic(fmt.Sprintf("invalid event %s from state %s", e, *s))
 		}

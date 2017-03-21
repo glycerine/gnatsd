@@ -5,6 +5,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/glycerine/bchan"
 	cv "github.com/glycerine/goconvey/convey"
 	"testing"
 )
@@ -258,11 +259,21 @@ func Test006AlgorithmWithstandsNoisyNetworks(t *testing.T) {
 		seq[i] = pack
 	}
 
+	ca := bchan.New(1)
 	for i := range seq {
+		if i == n-1 {
+			seq[i].CliAcked = ca
+		}
 		A.Push(seq[i])
 	}
 
-	time.Sleep(1000 * time.Millisecond)
+	select {
+	case <-ca.Ch:
+		///p("we got end-to-end ack from receiver that all packets were delivered")
+		ca.BcastAck()
+	case <-time.After(10 * time.Second):
+		p("problem in swp_test 006: timeout after 10 seconds waiting")
+	}	
 
 	A.Stop()
 	B.Stop()
