@@ -3,7 +3,6 @@ package swp
 import (
 	"fmt"
 	"math"
-	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -528,8 +527,9 @@ func (s *SenderState) doKeepAlive() {
 
 	err := s.Net.Send(kap, fmt.Sprintf("keepalive from %v", s.Inbox))
 	if err != nil {
+		// very common, don't bother complaining:
 		// on send Keepalive attempt, got err = 'nats: connection closed'
-		fmt.Fprintf(os.Stderr, "on send Keepalive attempt, got err = '%v'\n", err)
+		// fmt.Fprintf(os.Stderr, "on send Keepalive attempt, got err = '%v'\n", err)
 	}
 
 	s.keepAlive = time.After(s.KeepAliveInterval)

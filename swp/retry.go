@@ -25,9 +25,9 @@ func isRetryState(state TcpState) bool {
 		SynReceived, // resend SynAck
 		FinWait1,    // resend Fin
 		FinWait2,    // resend FinAck
-		Closing,     // resend FinAck
+		Closing:     // resend FinAck
 		//CloseWait,   // resend FinAck
-		LastAck:     // resend Fin
+		//LastAck:     // resend Fin
 		return true
 	}
 }
