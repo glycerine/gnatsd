@@ -528,6 +528,7 @@ func (s *SenderState) doKeepAlive() {
 
 	err := s.Net.Send(kap, fmt.Sprintf("keepalive from %v", s.Inbox))
 	if err != nil {
+		// on send Keepalive attempt, got err = 'nats: connection closed'
 		fmt.Fprintf(os.Stderr, "on send Keepalive attempt, got err = '%v'\n", err)
 	}
 

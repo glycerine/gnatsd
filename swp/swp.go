@@ -652,11 +652,16 @@ func (sess *Session) RecvFile() (*BigFile, error) {
 			"bf.Data was length %v, but expected %v bytes",
 			len(bf.Data), bf.SizeInBytes)
 	}
-	chksum := Blake2bOfBytes(bf.Data)
-	if 0 != bytes.Compare(bf.Blake2b, chksum) {
-		return bf, fmt.Errorf("RecvFile corruption detected: "+
-			"bf.Data had checksum '%x', but expected '%x'",
-			chksum, bf.Blake2b)
+	if len(bf.Blake2b) == 0 {
+		return bf, fmt.Errorf("got BigFile without checksum?!?!: bf.FilePath='%s', SizeInBytes='%v', SentTime=%v, len(Data)=%v", bf.Filepath, bf.SizeInBytes, bf.SendTime, len(bf.Data))
+
+	} else {
+		chksum := Blake2bOfBytes(bf.Data)
+		if 0 != bytes.Compare(bf.Blake2b, chksum) {
+			return bf, fmt.Errorf("RecvFile corruption detected: "+
+				"bf.Data had checksum '%x', but expected '%x'",
+				chksum, bf.Blake2b)
+		}
 	}
 	return bf, err
 }

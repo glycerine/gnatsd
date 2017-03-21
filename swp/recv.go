@@ -801,7 +801,8 @@ func (r *RecvState) Connect(dest string, simulateUnderTestLostSynCount int) (rem
 	}
 }
 
-// gentler than Stop(); tells the other side.
+// gentler than Stop(); tells the other side
+// to go through its full shutdown sequence.
 func (r *RecvState) Close() {
-
+	panic("TODO finish me out. not started yet.")
 }

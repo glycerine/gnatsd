@@ -180,7 +180,7 @@ func testrec(host string, nport int, gnats *server.Server, dest io.Writer, done 
 
 		senderClosed := make(chan bool)
 		B.Swp.Recver.AppCloseCallback = func() {
-			p("AppCloseCallback called. B.Swp.Recver.LastFrameClientConsumed=%v", B.Swp.Recver.LastFrameClientConsumed)
+			//p("AppCloseCallback called. B.Swp.Recver.LastFrameClientConsumed=%v", B.Swp.Recver.LastFrameClientConsumed)
 			close(senderClosed)
 		}
 
