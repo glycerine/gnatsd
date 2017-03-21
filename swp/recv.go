@@ -346,8 +346,7 @@ func (r *RecvState) Start() error {
 					if 0 != bytes.Compare(pack.Blake2bChecksum, chk) {
 						log.Printf("expected checksum to be '%x', but was '%x'. For pack.SeqNum %v",
 							pack.Blake2bChecksum, chk, pack.SeqNum)
-						panic("data corruption detected by blake2b checksum")
-
+						//panic("data corruption detected by blake2b checksum")
 						// if we aren't going to panic, then at least drop the packet.
 						continue recvloop
 					} else {
@@ -576,7 +575,7 @@ func (r *RecvState) ack(seqno int64, pack *Packet, event TcpEvent) {
 	select {
 	case r.snd.SendAck <- ack:
 	case <-time.After(time.Second * 10):
-		panic(fmt.Sprintf("%s receiver could not inform sender of ack after 10 seconds, something is seriously wrong internally--deadlock most likely. dropping ack packet AckNum:%v, with TcpEvent:%s.", r.Inbox, ack.AckNum, ack.TcpEvent))
+		log.Printf("%s receiver could not inform sender of ack after 10 seconds, something is seriously wrong internally--deadlock most likely. dropping ack packet AckNum:%v, with TcpEvent:%s.", r.Inbox, ack.AckNum, ack.TcpEvent)
 	case <-r.Halt.ReqStop.Chan:
 	}
 }
@@ -771,11 +770,12 @@ func NewConnectReq(dest string) *ConnectReq {
 	}
 }
 
-var ErrConnectTimeout = fmt.Errorf("Connect() timeout waiting for SynAck")
+var ErrConnectTimeoutSyn = fmt.Errorf("Connect() timeout waiting to Syn, after 60 seconds")
+var ErrConnectTimeout = fmt.Errorf("Connect() timeout waiting for SynAck, after 60 seconds")
 
 func (r *RecvState) Connect(dest string, simulateUnderTestLostSynCount int) (remoteNonce string, err error) {
 
-	overallTooLong := time.After(time.Second * 20)
+	overallTooLong := time.After(time.Second * 60)
 	tries := 0
 	for {
 		tries++
@@ -783,8 +783,8 @@ func (r *RecvState) Connect(dest string, simulateUnderTestLostSynCount int) (rem
 
 		select {
 		case r.ConnectCh <- cr:
-		case <-time.After(time.Second * 10):
-			panic(fmt.Sprintf("%s recvstate could not SYN after 10 seconds, something is seriously wrong internally.", r.Inbox))
+		case <-time.After(time.Second * 60):
+			return "", ErrConnectTimeoutSyn
 		case <-r.Halt.ReqStop.Chan:
 			return "", ErrShutdown
 		}

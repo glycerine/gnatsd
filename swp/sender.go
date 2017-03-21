@@ -308,7 +308,9 @@ func (s *SenderState) Start(sess *Session) {
 					slot.Pack.DestSessNonce = s.RemoteSessNonce
 
 					err := s.Net.Send(slot.Pack, "retry")
-					panicOn(err)
+					if err != nil {
+						//ignore errors; nats net might be down.
+					}
 				}
 				regularIntervalWakeup = time.After(wakeFreq)
 
