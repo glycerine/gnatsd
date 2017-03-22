@@ -851,7 +851,7 @@ func (r *RecvState) Connect(dest string, simulateUnderTestLostSynCount int, time
 		case <-overallTooLong:
 			return "", fmt.Errorf("Connect() timeout waiting to SynAck, after %v", overallTooLong)
 		case <-cr.Done:
-			log.Printf("r.Connect(dest='%s') completed in %v. with cr.Err='%s' and cr.RemoteNonce='%s'", dest, time.Since(t0), cr.Err, cr.RemoteNonce)
+			log.Printf("r.Connect(dest='%s') completed in %v. with cr.Err='%v' and cr.RemoteNonce='%s'", dest, time.Since(t0), cr.Err, cr.RemoteNonce)
 
 			return cr.RemoteNonce, cr.Err
 		case <-r.Halt.ReqStop.Chan:
