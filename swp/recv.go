@@ -822,9 +822,6 @@ func NewConnectReq(dest string) *ConnectReq {
 	}
 }
 
-var ErrConnectTimeoutSyn = fmt.Errorf("Connect() timeout waiting to Syn, after 60 seconds")
-var ErrConnectTimeout = fmt.Errorf("Connect() timeout waiting for SynAck, after 60 seconds")
-
 func (r *RecvState) Connect(dest string, simulateUnderTestLostSynCount int, timeout time.Duration, numAttempts int) (remoteNonce string, err error) {
 
 	overallTooLong := time.After(timeout * time.Duration(numAttempts))
@@ -835,8 +832,8 @@ func (r *RecvState) Connect(dest string, simulateUnderTestLostSynCount int, time
 
 		select {
 		case r.ConnectCh <- cr:
-		case <-time.After(20 * time.Second):
-			return "", ErrConnectTimeoutSyn
+		case <-time.After(timeout):
+			return "", fmt.Errorf("Connect() timeout waiting for Syn, after %v", timeout)
 		case <-r.Halt.ReqStop.Chan:
 			return "", ErrShutdown
 		}
@@ -852,7 +849,7 @@ func (r *RecvState) Connect(dest string, simulateUnderTestLostSynCount int, time
 			// try again
 			continue
 		case <-overallTooLong:
-			return "", ErrConnectTimeout
+			return "", fmt.Errorf("Connect() timeout waiting to SynAck, after %v", overallTooLong)
 		case <-cr.Done:
 			log.Printf("r.Connect(dest='%s') completed in %v. with cr.Err='%s' and cr.RemoteNonce='%s'", dest, time.Since(t0), cr.Err, cr.RemoteNonce)
 
