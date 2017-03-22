@@ -327,6 +327,8 @@ func (s *SenderState) Start(sess *Session) {
 			case pack := <-acceptSend:
 				//p("%v got <-acceptSend pack: '%#v'", s.Inbox, pack)
 				s.doOrigDataSend(pack)
+				// ignore errors here as we have the global retry logic
+				// for data already in place.
 
 			case a := <-s.GotPack:
 				s.LastHeardFromDownstream = a.ArrivedAtDestTm
@@ -441,7 +443,7 @@ func (s *SenderState) Stop() {
 // server (or timeout after 60 seconds).
 // Return the packet's sequence number, from
 // the LastFrameSent counter.
-func (s *SenderState) doOrigDataSend(pack *Packet) int64 {
+func (s *SenderState) doOrigDataSend(pack *Packet) (int64, error) {
 
 	s.LastFrameSent++
 	//p("%v doOrigDataSend(): LastFrameSent is now %v", s.Inbox, s.LastFrameSent)
@@ -501,9 +503,12 @@ func (s *SenderState) doOrigDataSend(pack *Packet) int64 {
 	slot.Pack.FromSessNonce = s.LocalSessNonce
 	slot.Pack.DestSessNonce = s.RemoteSessNonce
 	err := s.Net.Send(slot.Pack, fmt.Sprintf("doOrigDataSend() for %v", s.Inbox))
-	panicOn(err)
+	if err != nil {
+		log.Printf("doOrigSend failed for lfs=%v, with err='%s'",lfs, err)
+		return -1, err
+	}
 
-	return lfs
+	return lfs, nil
 }
 
 func (s *SenderState) doKeepAlive(state TcpState) {
