@@ -29,7 +29,7 @@ func isRetryState(state TcpState) bool {
 }
 
 func (r *RecvState) retryCheck() {
-	p("%s top of retryCheck", r.Inbox)
+	//p("%s top of retryCheck", r.Inbox)
 
 	// retry our action?
 	if !r.retry.inUse {
@@ -82,7 +82,7 @@ func (r *RecvState) setupRetry(
 	pack *Packet,
 	act TcpAction,
 ) {
-	p("%s top of setupRetry, pre='%s', post='%s'. act='%s'", r.Inbox, pre, post, act)
+	//p("%s top of setupRetry, pre='%s', post='%s'. act='%s'", r.Inbox, pre, post, act)
 	if post == pre {
 		return
 	}
@@ -99,12 +99,11 @@ func (r *RecvState) setupRetry(
 		r.retry.causalPacket = pack
 		r.retry.timeout = time.Second
 		r.retryTimerCh = time.After(r.retry.timeout)
-		p("%s retry established for state '%s', action '%s', at %v",
-			r.Inbox, post, act, now)
+		//p("%s retry established for state '%s', action '%s', at %v", r.Inbox, post, act, now)
 	} else {
 		r.retryTimerCh = nil
 		r.retry.inUse = false
 		r.retry.causalPacket = nil
-		p("%s retry cancelled b/c TcpState=%s.", r.Inbox, r.TcpState)
+		//p("%s retry cancelled b/c TcpState=%s.", r.Inbox, r.TcpState)
 	}
 }

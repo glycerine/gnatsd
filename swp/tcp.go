@@ -119,7 +119,7 @@ func (s *TcpState) UpdateTcp(e TcpEvent, fromState TcpState) TcpAction {
 			*s = Established
 		case EventKeepAlive:
 			if fromState == Established {
-				p("moving from SynReceived to Established based on a keep alive reporting the remote side is in Established; so we probably lost/dropped an EventEstabAck")
+				//p("moving from SynReceived to Established based on a keep alive reporting the remote side is in Established; so we probably lost/dropped an EventEstabAck")
 				*s = Established
 			}
 		case EventFin:

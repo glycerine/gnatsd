@@ -256,7 +256,7 @@ func (s *SenderState) Start(sess *Session) {
 			case st := <-s.keepAliveWithState:
 				// receiver keeps the timer going, because
 				// receiver needs to send us the TcpState.
-				p("%v keepAlive at %v, in state %s", s.Inbox, s.Clk.Now(), st)
+				//p("%v keepAlive at %v, in state %s", s.Inbox, s.Clk.Now(), st)
 				s.doKeepAlive(st)
 
 			case <-regularIntervalWakeup:
@@ -543,7 +543,7 @@ func (s *SenderState) doKeepAlive(state TcpState) {
 		FromRttSdNsec:  int64(s.rtt.GetSd()),
 		FromRttN:       s.rtt.N,
 	}
-	p("%v doing keepalive Net.Send()", s.Inbox)
+	//p("%v doing keepalive Net.Send()", s.Inbox)
 	kap.FromSessNonce = s.LocalSessNonce
 	kap.DestSessNonce = s.RemoteSessNonce
 

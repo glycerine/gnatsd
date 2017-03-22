@@ -280,7 +280,7 @@ func (r *RecvState) Start() error {
 					continue
 				}
 
-				p("%s we are setting r.connReqPending, and sending SYN.", r.Inbox)
+				//p("%s we are setting r.connReqPending, and sending SYN.", r.Inbox)
 				r.connReqPending = cr
 
 				// send syn
@@ -356,7 +356,7 @@ func (r *RecvState) Start() error {
 				//p("recvloop: got <-r.snd.SenderShutdown. note that len(r.RcvdButNotConsumed)=%v", len(r.RcvdButNotConsumed))
 				return
 			case pack := <-r.MsgRecv:
-				p("%v recvloop (in state '%s') sees packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, r.TcpState, pack.SeqNum, pack.TcpEvent, pack.AckNum)
+				//p("%v recvloop (in state '%s') sees packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, r.TcpState, pack.SeqNum, pack.TcpEvent, pack.AckNum)
 
 				if pack.TcpEvent == EventSyn &&
 					(r.TcpState == Fresh ||
@@ -454,9 +454,9 @@ func (r *RecvState) Start() error {
 					fromState := pack.FromTcpState
 				doNextEvent:
 					preUpdate := r.TcpState
-					p("%s recvp about to UpdateTcp, starting state=%s", r.Inbox, r.TcpState)
+					//p("%s recvp about to UpdateTcp, starting state=%s", r.Inbox, r.TcpState)
 					act := r.TcpState.UpdateTcp(event, fromState)
-					p("%s recvp done with UpdateTcp, state is now=%s", r.Inbox, r.TcpState)
+					//p("%s recvp done with UpdateTcp, state is now=%s", r.Inbox, r.TcpState)
 					if preUpdate != r.TcpState {
 						r.setupRetry(preUpdate, r.TcpState, pack, act)
 					}
