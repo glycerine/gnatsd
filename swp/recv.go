@@ -105,14 +105,25 @@ type InOrderSeq struct {
 }
 
 // NewRecvState makes a new RecvState manager.
-func NewRecvState(net Network, recvSz int64, recvSzBytes int64, timeout time.Duration,
-	inbox string, snd *SenderState, clk Clock, nonce string) *RecvState {
+func NewRecvState(
+	net Network,
+	recvSz int64,
+	recvSzBytes int64,
+	timeout time.Duration,
+	inbox string,
+	snd *SenderState,
+	clk Clock,
+	nonce string,
+	destInbox string,
+
+) *RecvState {
 
 	r := &RecvState{
 		LocalSessNonce:      nonce,
 		Clk:                 clk,
 		Net:                 net,
 		Inbox:               inbox,
+		RemoteInbox:         destInbox,
 		RecvWindowSize:      recvSz,
 		RecvWindowSizeBytes: recvSzBytes,
 		Rxq:                 make([]*RxqSlot, recvSz),
@@ -212,14 +223,20 @@ func (r *RecvState) Start() error {
 				// Also here: if original SYN was lost, we'll end up
 				// here again trying to re-send SYN, so don't freak.
 				//
-				if r.RemoteInbox != "" {
+				if r.RemoteInbox == "" {
+
+					log.Printf("recv.go: first time lock. setting r.RemoteInbox from connectReq.DestInbox = '%s'", cr.DestInbox)
+
+					r.RemoteInbox = cr.DestInbox
+
+				} else {
+
 					if r.RemoteInbox != cr.DestInbox {
 						cr.Err = fmt.Errorf("error: receiver already locked onto remote '%s', says receiver '%s', can't do '%s' from ConnectCh request.", r.RemoteInbox, r.Inbox, cr.DestInbox)
 						close(cr.Done)
 						continue
 					}
 				}
-				r.RemoteInbox = cr.DestInbox
 
 				if r.TcpState != Listen &&
 					r.TcpState != SynSent {
@@ -311,18 +328,24 @@ func (r *RecvState) Start() error {
 				//p("recvloop: got <-r.snd.SenderShutdown. note that len(r.RcvdButNotConsumed)=%v", len(r.RcvdButNotConsumed))
 				return
 			case pack := <-r.MsgRecv:
-				//p("%v recvloop sees packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.SeqNum, pack.TcpEvent, pack.AckNum)
+				//p("%v recvloop (in state '%s') sees packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, r.TcpState, pack.SeqNum, pack.TcpEvent, pack.AckNum)
 
-				// track the first remote and lock onto it.
-				if r.RemoteInbox == "" && pack.From != "" {
-					//p("%s locking onto remote %s", r.Inbox, pack.From)
-					r.RemoteInbox = pack.From
+				if pack.TcpEvent == EventSyn &&
+					(r.TcpState == Fresh ||
+						r.TcpState == Listen) {
+					// track the first remote to
+					// send us SYN and and lock onto it.
+					if r.RemoteInbox == "" && pack.From != "" {
+						log.Printf("%s recv.go locking onto remote %s. we are in state '%s'", r.Inbox, pack.From, r.TcpState)
+
+						r.RemoteInbox = pack.From
+						r.RemoteSessNonce = pack.FromSessNonce
+					}
 				}
 				if pack.From != r.RemoteInbox {
 					// drop other remotes,
 					// also enforcing that we see Syn 1st.
-					//p("%s dropping pack that isn't from %s", r.Inbox,
-					//	r.RemoteInbox)
+					log.Printf("%s dropping pack that isn't from '%s'", r.Inbox, r.RemoteInbox)
 					continue
 				}
 

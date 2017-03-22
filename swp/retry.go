@@ -29,6 +29,7 @@ func isRetryState(state TcpState) bool {
 }
 
 func (r *RecvState) retryCheck() {
+	p("%s top of retryCheck", r.Inbox)
 
 	// retry our action?
 	if !r.retry.inUse {

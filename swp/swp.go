@@ -200,7 +200,7 @@ func NewSWP(net Network, windowMsgCount int64, windowByteCount int64,
 	timeout time.Duration, inbox string, destInbox string, clk Clock, keepAliveInterval time.Duration, nonce string) *SWP {
 
 	snd := NewSenderState(net, windowMsgCount, timeout, inbox, destInbox, clk, keepAliveInterval, nonce)
-	rcv := NewRecvState(net, windowMsgCount, windowByteCount, timeout, inbox, snd, clk, nonce)
+	rcv := NewRecvState(net, windowMsgCount, windowByteCount, timeout, inbox, snd, clk, nonce, destInbox)
 	swp := &SWP{
 		Sender: snd,
 		Recver: rcv,
