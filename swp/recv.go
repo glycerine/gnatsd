@@ -825,9 +825,9 @@ func NewConnectReq(dest string) *ConnectReq {
 var ErrConnectTimeoutSyn = fmt.Errorf("Connect() timeout waiting to Syn, after 60 seconds")
 var ErrConnectTimeout = fmt.Errorf("Connect() timeout waiting for SynAck, after 60 seconds")
 
-func (r *RecvState) Connect(dest string, simulateUnderTestLostSynCount int) (remoteNonce string, err error) {
+func (r *RecvState) Connect(dest string, simulateUnderTestLostSynCount int, timeout time.Duration, numAttempts int) (remoteNonce string, err error) {
 
-	overallTooLong := time.After(time.Minute * 5)
+	overallTooLong := time.After(timeout * time.Duration(numAttempts))
 	tries := 0
 	for {
 		tries++
@@ -835,7 +835,7 @@ func (r *RecvState) Connect(dest string, simulateUnderTestLostSynCount int) (rem
 
 		select {
 		case r.ConnectCh <- cr:
-		case <-time.After(time.Second * 60):
+		case <-time.After(20 * time.Second):
 			return "", ErrConnectTimeoutSyn
 		case <-r.Halt.ReqStop.Chan:
 			return "", ErrShutdown
@@ -845,16 +845,17 @@ func (r *RecvState) Connect(dest string, simulateUnderTestLostSynCount int) (rem
 		if tries <= simulateUnderTestLostSynCount {
 			continue
 		}
-
+		t0 := time.Now()
 		select {
-		case <-time.After(60 * time.Second):
-			log.Printf("connect request: no answer after 60 sec, trying again to connect to dest '%s'", dest)
+		case <-time.After(timeout):
+			log.Printf("connect request: no answer after %v, trying again to connect to dest '%s'", timeout, dest)
 			// try again
 			continue
 		case <-overallTooLong:
 			return "", ErrConnectTimeout
 		case <-cr.Done:
-			log.Printf("r.Connect(dest='%s') completed. with cr.Err='%s' and cr.RemoteNonce='%s'", cr.Err, cr.RemoteNonce)
+			log.Printf("r.Connect(dest='%s') completed in %v. with cr.Err='%s' and cr.RemoteNonce='%s'", dest, time.Since(t0), cr.Err, cr.RemoteNonce)
+
 			return cr.RemoteNonce, cr.Err
 		case <-r.Halt.ReqStop.Chan:
 			return "", ErrShutdown

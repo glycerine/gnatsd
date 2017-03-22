@@ -249,6 +249,8 @@ type Session struct {
 	packetsConsumed                  uint64
 	packetsSent                      uint64
 	NumFailedKeepAlivesBeforeClosing int
+	ConnectTimeout                   time.Duration
+	ConnectAttempts                  int
 
 	mut                sync.Mutex
 	RemoteSenderClosed chan bool
@@ -548,6 +550,15 @@ type ByteAccount struct {
 	NumBytesAcked int64
 }
 
+func (s *Session) SetConnectDefaults() {
+	if s.ConnectTimeout == 0 {
+		s.ConnectTimeout = time.Minute
+	}
+	if s.ConnectAttempts == 0 {
+		s.ConnectAttempts = 5
+	}
+}
+
 // Write implements io.Writer, chopping p into packet
 // sized pieces if need be, and sending then in order
 // over the flow-controlled Session s.
@@ -722,8 +733,19 @@ func NewSessionNonce() string {
 // if not established, do the connect 3-way handshake
 // to exchange Session nonces.
 func (s *Session) ConnectIfNeeded(dest string, simulateLostSynCount int) error {
+
+	s.SetConnectDefaults()
+	to := s.ConnectTimeout
+	if to == 0 {
+		to = time.Minute
+	}
+	attempts := s.ConnectAttempts
+	if attempts == 0 {
+		attempts = 5
+	}
+
 	if s.RemoteSessNonce == "" {
-		remoteNonce, err := s.Swp.Connect(dest, simulateLostSynCount)
+		remoteNonce, err := s.Swp.Connect(dest, simulateLostSynCount, to, attempts)
 		if err != nil {
 			return err
 		}
@@ -738,8 +760,8 @@ func (s *Session) Connect(dest string) error {
 	return s.ConnectIfNeeded(dest, 0)
 }
 
-func (swp *SWP) Connect(dest string, simulateLostSynCount int) (remoteNonce string, err error) {
-	return swp.Recver.Connect(dest, simulateLostSynCount)
+func (swp *SWP) Connect(dest string, simulateLostSynCount int, timeout time.Duration, attempts int) (remoteNonce string, err error) {
+	return swp.Recver.Connect(dest, simulateLostSynCount, timeout, attempts)
 }
 
 type closeReq struct {

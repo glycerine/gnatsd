@@ -130,6 +130,8 @@ func testsender(host string, nport int, gnats *server.Server, writeme []byte) {
 	//	fmt.Fprintf(os.Stderr, "read %v bytes from stdin\n", len(by))
 
 	A.simulateLostSynCount = 4
+	A.ConnectTimeout = time.Second
+	A.ConnectAttempts = 10
 	n, err := A.Write(writeme)
 	fmt.Fprintf(os.Stderr, "n = %v, err=%v after A.Write(writeme), where len(writeme)=%v\n", n, err, len(writeme))
 	A.Close()

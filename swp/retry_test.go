@@ -46,6 +46,11 @@ func Test015RetryOfSynSynAckAndFin(t *testing.T) {
 		_ = B
 		panicOn(err)
 
+		B.ConnectTimeout = time.Second
+		B.ConnectAttempts = 10
+
+		A.ConnectTimeout = time.Second
+		A.ConnectAttempts = 10
 		err = A.Connect("B")
 		panicOn(err)
 
