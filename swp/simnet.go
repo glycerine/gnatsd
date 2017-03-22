@@ -16,6 +16,10 @@ type SimNet struct {
 	LossProb float64
 	Latency  time.Duration
 
+	FilterThisEvent map[TcpEvent]*int
+	FilterCount     int // only filter this many, if > 0
+	filtersaw       int
+
 	TotalSent map[string]int64
 	TotalRcvd map[string]int64
 	mapMut    sync.Mutex
@@ -47,16 +51,17 @@ type SimNet struct {
 // the packet getting lost on the network.
 func NewSimNet(lossProb float64, latency time.Duration) *SimNet {
 	s := &SimNet{
-		Net:         make(map[string]chan *Packet),
-		LossProb:    lossProb,
-		Latency:     latency,
-		DiscardOnce: -1,
-		TotalSent:   make(map[string]int64),
-		TotalRcvd:   make(map[string]int64),
-		Advertised:  make(map[string]int64),
-		Inflight:    make(map[string]int64),
-		ReqStop:     make(chan bool),
-		Done:        make(chan bool),
+		Net:             make(map[string]chan *Packet),
+		LossProb:        lossProb,
+		Latency:         latency,
+		DiscardOnce:     -1,
+		TotalSent:       make(map[string]int64),
+		TotalRcvd:       make(map[string]int64),
+		Advertised:      make(map[string]int64),
+		Inflight:        make(map[string]int64),
+		ReqStop:         make(chan bool),
+		Done:            make(chan bool),
+		FilterThisEvent: make(map[TcpEvent]*int),
 	}
 	return s
 }
@@ -73,7 +78,7 @@ func (sim *SimNet) Listen(inbox string) (chan *Packet, error) {
 // annoation is optional and allows the logs to illumate
 // the purpose of each send (ack, keepAlive, data, etc).
 func (sim *SimNet) Send(pack *Packet, why string) error {
-	//p("in SimNet.Send(pack.SeqNum=%v) why:'%v'. from:'%s' dest:'%s'", pack.SeqNum, why, pack.From, pack.Dest)
+	p("in SimNet.Send(pack.SeqNum=%v) why:'%v'. from:'%s' dest:'%s'", pack.SeqNum, why, pack.From, pack.Dest)
 
 	// try to avoid data races and race detector problems by
 	// copying the packet here
@@ -109,6 +114,16 @@ func (sim *SimNet) Send(pack *Packet, why string) error {
 		p("sim: packet lost/dropped because %v SeqNum <= DiscardOnce (%v)", pack2.SeqNum, sim.DiscardOnce)
 		sim.DiscardOnce = -1
 		return nil
+	}
+
+	if len(sim.FilterThisEvent) > 0 {
+		if pCount := sim.FilterThisEvent[pack2.TcpEvent]; pCount != nil && *pCount > 0 {
+			if *pCount > 0 {
+				p("sim: packet lost/dropped because FilterThisEvent == '%s' has count remaining %v", pack2.TcpEvent, *pCount)
+				(*pCount)--
+				return nil
+			}
+		}
 	}
 
 	pr := cryptoProb()

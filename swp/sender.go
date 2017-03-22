@@ -60,7 +60,6 @@ type SenderState struct {
 	LastSendTime            time.Time
 	LastHeardFromDownstream time.Time
 	KeepAliveInterval       time.Duration
-	keepAlive               <-chan time.Time
 
 	// after this many failed keepalives, we
 	// close down the session. Set to less than 1
@@ -96,6 +95,8 @@ type SenderState struct {
 	recvLastFrameClientConsumed int64
 	LocalSessNonce              string
 	RemoteSessNonce             string
+
+	keepAliveWithState chan TcpState
 }
 
 func (s *SenderState) GetRecvLastFrameClientConsumed() int64 {
@@ -106,9 +107,17 @@ func (s *SenderState) SetRecvLastFrameClientConsumed(nfe int64) {
 }
 
 // NewSenderState constructs a new SenderState struct.
-func NewSenderState(net Network, sendSz int64, timeout time.Duration,
-	inbox string, destInbox string, clk Clock, keepAliveInterval time.Duration,
-	nonce string) *SenderState {
+func NewSenderState(
+	net Network,
+	sendSz int64,
+	timeout time.Duration,
+	inbox string,
+	destInbox string,
+	clk Clock,
+	keepAliveInterval time.Duration,
+	nonce string,
+
+) *SenderState {
 	s := &SenderState{
 		LocalSessNonce:            nonce,
 		Clk:                       clk,
@@ -130,12 +139,12 @@ func NewSenderState(net Network, sendSz int64, timeout time.Duration,
 		SentButNotAckedByDeadline: newRetree(compareRetryDeadline),
 		SentButNotAckedBySeqNum:   newRetree(compareSeqNum),
 
-		SenderShutdown:  make(chan bool),
-		DoSendClosingCh: make(chan *closeReq),
+		keepAliveWithState: make(chan TcpState),
 
-		// send keepalives (important especially for resuming flow from a
-		// stopped state) at least this often:
+		SenderShutdown:    make(chan bool),
+		DoSendClosingCh:   make(chan *closeReq),
 		KeepAliveInterval: keepAliveInterval,
+
 		FlowCt: &FlowCtrl{Flow: Flow{
 			// Control messages such as acks and keepalives
 			// should not be blocked by flow-control (for
@@ -195,10 +204,6 @@ func (s *SenderState) Start(sess *Session) {
 		// check for expired timers at wakeFreq
 		wakeFreq := s.Timeout / 2
 
-		// send keepalives (for resuming flow from a
-		// stopped state) at least this often:
-		s.keepAlive = time.After(s.KeepAliveInterval)
-
 		regularIntervalWakeup := time.After(wakeFreq)
 
 		// shutdown stuff, all in one place for consistency
@@ -248,9 +253,11 @@ func (s *SenderState) Start(sess *Session) {
 				s.doSendClosing()
 				close(zr.done)
 
-			case <-s.keepAlive:
-				//p("%v keepAlive at %v", s.Inbox, s.Clk.Now())
-				s.doKeepAlive()
+			case st := <-s.keepAliveWithState:
+				// receiver keeps the timer going, because
+				// receiver needs to send us the TcpState.
+				p("%v keepAlive at %v, in state %s", s.Inbox, s.Clk.Now(), st)
+				s.doKeepAlive(st)
 
 			case <-regularIntervalWakeup:
 				now := s.Clk.Now()
@@ -499,7 +506,8 @@ func (s *SenderState) doOrigDataSend(pack *Packet) int64 {
 	return lfs
 }
 
-func (s *SenderState) doKeepAlive() {
+func (s *SenderState) doKeepAlive(state TcpState) {
+
 	if s.Dest == "" || s.RemoteSessNonce == "" {
 		// don't bother with keepalives when we
 		// don't have a destintion.
@@ -527,6 +535,7 @@ func (s *SenderState) doKeepAlive() {
 		AckNum:              s.GetRecvLastFrameClientConsumed(),
 		AckRetry:            -777,
 		TcpEvent:            EventKeepAlive,
+		FromTcpState:        state,
 		AvailReaderBytesCap: flow.AvailReaderBytesCap,
 		AvailReaderMsgCap:   flow.AvailReaderMsgCap,
 
@@ -534,7 +543,7 @@ func (s *SenderState) doKeepAlive() {
 		FromRttSdNsec:  int64(s.rtt.GetSd()),
 		FromRttN:       s.rtt.N,
 	}
-	//p("%v doing keepalive Net.Send()", s.Inbox)
+	p("%v doing keepalive Net.Send()", s.Inbox)
 	kap.FromSessNonce = s.LocalSessNonce
 	kap.DestSessNonce = s.RemoteSessNonce
 
@@ -544,8 +553,6 @@ func (s *SenderState) doKeepAlive() {
 		// on send Keepalive attempt, got err = 'nats: connection closed'
 		// fmt.Fprintf(os.Stderr, "on send Keepalive attempt, got err = '%v'\n", err)
 	}
-
-	s.keepAlive = time.After(s.KeepAliveInterval)
 }
 
 func (s *SenderState) doSendClosing() {

@@ -136,6 +136,12 @@ type Packet struct {
 	// all TcpEvents.
 	TcpEvent TcpEvent
 
+	// Convey the state in keepalives in place of
+	// retry for the estabAck. Otherwise if estabAck
+	// is lost, the client doing Connect() can get stuck
+	// in SynSent.
+	FromTcpState TcpState
+
 	// like the byte count AdvertisedWindow in TCP, but
 	// since nats has both byte and message count
 	// limits, we want convey these instead.
@@ -200,7 +206,7 @@ func NewSWP(net Network, windowMsgCount int64, windowByteCount int64,
 	timeout time.Duration, inbox string, destInbox string, clk Clock, keepAliveInterval time.Duration, nonce string) *SWP {
 
 	snd := NewSenderState(net, windowMsgCount, timeout, inbox, destInbox, clk, keepAliveInterval, nonce)
-	rcv := NewRecvState(net, windowMsgCount, windowByteCount, timeout, inbox, snd, clk, nonce, destInbox)
+	rcv := NewRecvState(net, windowMsgCount, windowByteCount, timeout, inbox, snd, clk, nonce, destInbox, keepAliveInterval)
 	swp := &SWP{
 		Sender: snd,
 		Recver: rcv,
@@ -725,6 +731,11 @@ func (s *Session) ConnectIfNeeded(dest string, simulateLostSynCount int) error {
 		return nil
 	}
 	return nil
+}
+
+// Connect takes an inbox (subject) as dest.
+func (s *Session) Connect(dest string) error {
+	return s.ConnectIfNeeded(dest, 0)
 }
 
 func (swp *SWP) Connect(dest string, simulateLostSynCount int) (remoteNonce string, err error) {

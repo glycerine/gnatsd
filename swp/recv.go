@@ -92,8 +92,12 @@ type RecvState struct {
 	LocalSessNonce  string
 	RemoteSessNonce string
 
-	connReqPending *ConnectReq
-	retryTimerCh   <-chan time.Time
+	connReqPending  *ConnectReq
+	retryTimerCh    <-chan time.Time
+	tcpStateQueryCh chan TcpState
+
+	KeepAliveInterval time.Duration
+	keepAlive         <-chan time.Time
 }
 
 // InOrderSeq represents ordered (and gapless)
@@ -115,6 +119,7 @@ func NewRecvState(
 	clk Clock,
 	nonce string,
 	destInbox string,
+	keepAliveInterval time.Duration,
 
 ) *RecvState {
 
@@ -145,6 +150,11 @@ func NewRecvState(
 		TcpState:            Listen,
 		AcceptReadRequest:   make(chan *ReadRequest),
 		ConnectCh:           make(chan *ConnectReq),
+		tcpStateQueryCh:     make(chan TcpState),
+
+		// send keepalives (important especially for resuming flow from a
+		// stopped state) at least this often:
+		KeepAliveInterval: keepAliveInterval,
 	}
 
 	for i := range r.Rxq {
@@ -161,6 +171,7 @@ func (r *RecvState) Start() error {
 	if err != nil {
 		return err
 	}
+
 	switch nn := r.Net.(type) {
 	case *NatsNet:
 		//p("%v receiver setting nats subscription buffer limits", r.Inbox)
@@ -188,6 +199,10 @@ func (r *RecvState) Start() error {
 			}
 		}()
 
+		// send keepalives (for resuming flow from a
+		// stopped state) at least this often:
+		r.keepAlive = time.After(r.KeepAliveInterval)
+
 	recvloop:
 		for {
 			//p("%v top of recvloop, receiver NFE: %v. TcpState=%s",
@@ -204,6 +219,19 @@ func (r *RecvState) Start() error {
 
 			//p("%s recvloop: about to select", r.Inbox)
 			select {
+			case r.tcpStateQueryCh <- r.TcpState:
+				// nothing more
+
+			case <-r.keepAlive:
+				select {
+				case r.snd.keepAliveWithState <- r.TcpState:
+					// sender now has r.TcpState, and will
+					// communicate it in the keepalive packet.
+				case <-r.Halt.ReqStop.Chan:
+					return
+				}
+				r.keepAlive = time.After(r.KeepAliveInterval)
+
 			case zr := <-r.DoSendClosingCh:
 				//p("%s 1st recv got r.DoSendClosingCh <- true", r.Inbox)
 				select {
@@ -252,7 +280,7 @@ func (r *RecvState) Start() error {
 					continue
 				}
 
-				//p("we are setting r.connReqPending, and sending SYN.")
+				p("%s we are setting r.connReqPending, and sending SYN.", r.Inbox)
 				r.connReqPending = cr
 
 				// send syn
@@ -328,7 +356,7 @@ func (r *RecvState) Start() error {
 				//p("recvloop: got <-r.snd.SenderShutdown. note that len(r.RcvdButNotConsumed)=%v", len(r.RcvdButNotConsumed))
 				return
 			case pack := <-r.MsgRecv:
-				//p("%v recvloop (in state '%s') sees packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, r.TcpState, pack.SeqNum, pack.TcpEvent, pack.AckNum)
+				p("%v recvloop (in state '%s') sees packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, r.TcpState, pack.SeqNum, pack.TcpEvent, pack.AckNum)
 
 				if pack.TcpEvent == EventSyn &&
 					(r.TcpState == Fresh ||
@@ -423,11 +451,12 @@ func (r *RecvState) Start() error {
 				if pack.TcpEvent != EventData {
 					// info:
 					event := pack.TcpEvent
+					fromState := pack.FromTcpState
 				doNextEvent:
 					preUpdate := r.TcpState
-					//p("%s recvp about to UpdateTcp, starting state=%s", r.Inbox, r.TcpState)
-					act := r.TcpState.UpdateTcp(event)
-					//p("%s recvp done with UpdateTcp, state is now=%s", r.Inbox, r.TcpState)
+					p("%s recvp about to UpdateTcp, starting state=%s", r.Inbox, r.TcpState)
+					act := r.TcpState.UpdateTcp(event, fromState)
+					p("%s recvp done with UpdateTcp, state is now=%s", r.Inbox, r.TcpState)
 					if preUpdate != r.TcpState {
 						r.setupRetry(preUpdate, r.TcpState, pack, act)
 					}
@@ -819,7 +848,7 @@ func (r *RecvState) Connect(dest string, simulateUnderTestLostSynCount int) (rem
 
 		select {
 		case <-time.After(time.Second):
-			///p("connect request: no answer after 1000msec, trying again")
+			log.Printf("connect request: no answer after 1000msec, trying again")
 			// try again
 			continue
 		case <-overallTooLong:

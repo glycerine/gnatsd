@@ -48,8 +48,9 @@ func (r *RecvState) retryCheck() {
 	elap := now.Sub(r.retry.lastAttemptAt)
 	if elap > time.Second {
 		r.retry.attemptCount++
-		if r.retry.attemptCount > 4 {
-			log.Printf("%s with LocalSessNonce %s, warning: retryCheck is failing after 4 tries, in state %s, trying to do action %s. Closing up shop.", r.Inbox, r.LocalSessNonce, r.TcpState, r.retry.firstStateAction)
+		th := 10
+		if r.retry.attemptCount > th {
+			log.Printf("%s with LocalSessNonce %s, warning: retryCheck is failing after %v tries, in state %s, trying to do action %s. Closing up shop.", r.Inbox, r.LocalSessNonce, th, r.TcpState, r.retry.firstStateAction)
 			r.retryTimerCh = nil
 			r.retry.inUse = false
 			r.Halt.ReqStop.Close()
@@ -70,7 +71,7 @@ func (r *RecvState) retryCheck() {
 			r.retry.causalPacket)
 
 		r.retry.lastAttemptAt = now
-		r.retry.timeout = r.retry.timeout * 2 // exponential backoff
+		r.retry.timeout = r.retry.timeout // * 2 // skip exponential backoff
 		r.retryTimerCh = time.After(r.retry.timeout)
 	}
 }
@@ -81,6 +82,7 @@ func (r *RecvState) setupRetry(
 	pack *Packet,
 	act TcpAction,
 ) {
+	p("%s top of setupRetry, pre='%s', post='%s'. act='%s'", r.Inbox, pre, post, act)
 	if post == pre {
 		return
 	}
@@ -97,9 +99,12 @@ func (r *RecvState) setupRetry(
 		r.retry.causalPacket = pack
 		r.retry.timeout = time.Second
 		r.retryTimerCh = time.After(r.retry.timeout)
+		p("%s retry established for state '%s', action '%s', at %v",
+			r.Inbox, post, act, now)
 	} else {
 		r.retryTimerCh = nil
 		r.retry.inUse = false
 		r.retry.causalPacket = nil
+		p("%s retry cancelled b/c TcpState=%s.", r.Inbox, r.TcpState)
 	}
 }

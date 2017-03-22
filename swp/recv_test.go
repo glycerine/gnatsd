@@ -81,7 +81,7 @@ func Test010ConsumerSideFlowControl(t *testing.T) {
 
 func Test020DetectOtherEndShutdown(t *testing.T) {
 
-	cv.Convey("When the other end of our session disappears, we should detect this and close up the session. We can't continue the session if the sequence numbers aren't aligned, so there's no point in waiting around once the other endpoint stops. e.g. For example any new session that starts sending with a sequence of 0 will just have its packet dropped if the receiver has already received a packet 0 in that session.", t, func() {
+	cv.Convey("When the other end of our session disappears, we should detect this and close up the session.", t, func() {
 
 		lossProb := float64(0)
 		lat := time.Millisecond

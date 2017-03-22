@@ -83,7 +83,7 @@ const (
 )
 
 // e is the received event
-func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
+func (s *TcpState) UpdateTcp(e TcpEvent, fromState TcpState) TcpAction {
 
 	switch *s {
 	case Closed:
@@ -117,6 +117,11 @@ func (s *TcpState) UpdateTcp(e TcpEvent) TcpAction {
 		switch e {
 		case EventEstabAck:
 			*s = Established
+		case EventKeepAlive:
+			if fromState == Established {
+				p("moving from SynReceived to Established based on a keep alive reporting the remote side is in Established; so we probably lost/dropped an EventEstabAck")
+				*s = Established
+			}
 		case EventFin:
 			// early close, but no worries.
 			*s = CloseResponderGotFin
