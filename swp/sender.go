@@ -2,7 +2,6 @@ package swp
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"sync"
 	"sync/atomic"
@@ -271,7 +270,7 @@ func (s *SenderState) Start(sess *Session) {
 					if elap > thresh {
 
 						// time to shutdown
-						log.Printf("%s too long (%v) since we've heard from the other end, declaring session dead and closing it.", s.Inbox, thresh)
+						mylog.Printf("%s too long (%v) since we've heard from the other end, declaring session dead and closing it.", s.Inbox, thresh)
 						return
 					}
 				}
@@ -422,7 +421,7 @@ func (s *SenderState) Start(sess *Session) {
 				err := s.Net.Send(ackPack, "SendAck/ackPack")
 				if err != nil {
 					// "nats: connection closed"
-					log.Printf("%s s.Net.Send(ackPack) got err='%v', returning", s.Inbox, err)
+					mylog.Printf("%s s.Net.Send(ackPack) got err='%v', returning", s.Inbox, err)
 					return
 				}
 			}
@@ -504,7 +503,7 @@ func (s *SenderState) doOrigDataSend(pack *Packet) (int64, error) {
 	slot.Pack.DestSessNonce = s.RemoteSessNonce
 	err := s.Net.Send(slot.Pack, fmt.Sprintf("doOrigDataSend() for %v", s.Inbox))
 	if err != nil {
-		log.Printf("doOrigSend failed for lfs=%v, with err='%s'",lfs, err)
+		mylog.Printf("doOrigSend failed for lfs=%v, with err='%s'", lfs, err)
 		return -1, err
 	}
 

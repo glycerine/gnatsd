@@ -1,7 +1,6 @@
 package swp
 
 import (
-	"log"
 	"time"
 )
 
@@ -50,14 +49,14 @@ func (r *RecvState) retryCheck() {
 		r.retry.attemptCount++
 		th := 10
 		if r.retry.attemptCount > th {
-			log.Printf("%s with LocalSessNonce %s, warning: retryCheck is failing after %v tries, in state %s, trying to do action %s. Closing up shop.", r.Inbox, r.LocalSessNonce, th, r.TcpState, r.retry.firstStateAction)
+			mylog.Printf("%s with LocalSessNonce %s, warning: retryCheck is failing after %v tries, in state %s, trying to do action %s. Closing up shop.", r.Inbox, r.LocalSessNonce, th, r.TcpState, r.retry.firstStateAction)
 			r.retryTimerCh = nil
 			r.retry.inUse = false
 			r.Halt.ReqStop.Close()
 			return
 		}
 
-		log.Printf("%s retrying attempt %v, from "+
+		mylog.Printf("%s retrying attempt %v, from "+
 			"state %s, doing action %s. Elap since orig attempt %v",
 			r.Inbox,
 			r.retry.attemptCount,

@@ -2,7 +2,6 @@ package swp
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"runtime/pprof"
 	"time"
@@ -15,7 +14,7 @@ func Test008ProvidesFlowControlToThrottleOverSending(t *testing.T) {
 
 	f, err := os.Create("cpuprofile")
 	if err != nil {
-		log.Fatal(err)
+		mylog.Fatal(err)
 	}
 	pprof.StartCPUProfile(f)
 	defer pprof.StopCPUProfile()

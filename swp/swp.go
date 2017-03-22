@@ -43,6 +43,7 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -67,6 +68,12 @@ import (
 //go:generate msgp
 
 //msgp:ignore TxqSlot RxqSlot Semaphore SenderState RecvState SWP Session NatsNet SimNet Network Session SWP SessionConfig TermConfig ReadRequest
+
+var mylog *log.Logger
+
+func init() {
+	mylog = log.New(os.Stderr, "", log.LUTC|log.LstdFlags|log.Lmicroseconds)
+}
 
 // here so that msgp can know what it is
 type TcpEvent int
@@ -616,7 +623,7 @@ func (s *Session) Write(payload []byte) (n int, err error) {
 		///p("we got end-to-end ack from receiver that all packets were delivered")
 		ca.BcastAck()
 	case <-time.After(10 * time.Second):
-		log.Printf("problem in %s Write: timeout after 10 seconds waiting", s.MyInbox)
+		mylog.Printf("problem in %s Write: timeout after 10 seconds waiting", s.MyInbox)
 	case <-s.Halt.Done.Chan:
 	}
 

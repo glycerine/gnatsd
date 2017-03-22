@@ -3,7 +3,6 @@ package swp
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
@@ -253,7 +252,7 @@ func (r *RecvState) Start() error {
 				//
 				if r.RemoteInbox == "" {
 
-					log.Printf("recv.go: first time lock. setting r.RemoteInbox from connectReq.DestInbox = '%s'", cr.DestInbox)
+					mylog.Printf("recv.go: first time lock. setting r.RemoteInbox from connectReq.DestInbox = '%s'", cr.DestInbox)
 
 					r.RemoteInbox = cr.DestInbox
 
@@ -364,7 +363,7 @@ func (r *RecvState) Start() error {
 					// track the first remote to
 					// send us SYN and and lock onto it.
 					if r.RemoteInbox == "" && pack.From != "" {
-						log.Printf("%s recv.go locking onto remote %s. we are in state '%s'", r.Inbox, pack.From, r.TcpState)
+						mylog.Printf("%s recv.go locking onto remote %s. we are in state '%s'", r.Inbox, pack.From, r.TcpState)
 
 						r.RemoteInbox = pack.From
 						r.RemoteSessNonce = pack.FromSessNonce
@@ -373,19 +372,19 @@ func (r *RecvState) Start() error {
 				if pack.From != r.RemoteInbox {
 					// drop other remotes,
 					// also enforcing that we see Syn 1st.
-					log.Printf("%s dropping pack that isn't from '%s'", r.Inbox, r.RemoteInbox)
+					mylog.Printf("%s dropping pack that isn't from '%s'", r.Inbox, r.RemoteInbox)
 					continue
 				}
 
 				// drop non-session packets: they are for other sessions
 				if (pack.DestSessNonce != "" || r.TcpState >= Established) &&
 					pack.DestSessNonce != r.LocalSessNonce {
-					//log.Printf("warning %v pack.DestSessNonce('%s') != r.LocalSessNonce('%s'): recvloop (in TcpState==%s) dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.DestSessNonce, r.LocalSessNonce, r.TcpState, pack.SeqNum, pack.TcpEvent, pack.AckNum)
+					//mylog.Printf("warning %v pack.DestSessNonce('%s') != r.LocalSessNonce('%s'): recvloop (in TcpState==%s) dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.DestSessNonce, r.LocalSessNonce, r.TcpState, pack.SeqNum, pack.TcpEvent, pack.AckNum)
 					continue // drop others
 				}
 				if r.RemoteSessNonce != "" &&
 					pack.FromSessNonce != r.RemoteSessNonce {
-					//log.Printf("warining %v pack.FromSessNonce('%s') != r.RemoteSessNonce('%s'): recvloop (in TcpState==%s) dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.FromSessNonce, r.RemoteSessNonce, pack.SeqNum, r.TcpState, pack.TcpEvent, pack.AckNum)
+					//mylog.Printf("warining %v pack.FromSessNonce('%s') != r.RemoteSessNonce('%s'): recvloop (in TcpState==%s) dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.FromSessNonce, r.RemoteSessNonce, pack.SeqNum, r.TcpState, pack.TcpEvent, pack.AckNum)
 					continue // drop others
 				}
 
@@ -397,7 +396,7 @@ func (r *RecvState) Start() error {
 				if len(pack.Data) > 0 {
 					chk := Blake2bOfBytes(pack.Data)
 					if 0 != bytes.Compare(pack.Blake2bChecksum, chk) {
-						log.Printf("expected checksum to be '%x', but was '%x'. For pack.SeqNum %v",
+						mylog.Printf("expected checksum to be '%x', but was '%x'. For pack.SeqNum %v",
 							pack.Blake2bChecksum, chk, pack.SeqNum)
 						//panic("data corruption detected by blake2b checksum")
 						// if we aren't going to panic, then at least drop the packet.
@@ -621,7 +620,7 @@ func (r *RecvState) ack(seqno int64, pack *Packet, event TcpEvent) {
 		DataSendTm:          dataSendTm,
 	}
 	if len(r.snd.SendAck) == cap(r.snd.SendAck) {
-		log.Printf("warning: %s ack queue is at capacity, very bad!  dropping oldest ack packet so as to add this one AckNum:%v, with TcpEvent:%s.", r.Inbox, ack.AckNum, ack.TcpEvent)
+		mylog.Printf("warning: %s ack queue is at capacity, very bad!  dropping oldest ack packet so as to add this one AckNum:%v, with TcpEvent:%s.", r.Inbox, ack.AckNum, ack.TcpEvent)
 
 		// discard first to make room:
 		<-r.snd.SendAck
@@ -629,7 +628,7 @@ func (r *RecvState) ack(seqno int64, pack *Packet, event TcpEvent) {
 	select {
 	case r.snd.SendAck <- ack:
 	case <-time.After(time.Second * 10):
-		log.Printf("%s receiver could not inform sender of ack after 10 seconds, something is seriously wrong internally--deadlock most likely. dropping ack packet AckNum:%v, with TcpEvent:%s.", r.Inbox, ack.AckNum, ack.TcpEvent)
+		mylog.Printf("%s receiver could not inform sender of ack after 10 seconds, something is seriously wrong internally--deadlock most likely. dropping ack packet AckNum:%v, with TcpEvent:%s.", r.Inbox, ack.AckNum, ack.TcpEvent)
 	case <-r.Halt.ReqStop.Chan:
 	}
 }
@@ -848,13 +847,13 @@ func (r *RecvState) Connect(dest string, simulateUnderTestLostSynCount int, time
 		t0 := time.Now()
 		select {
 		case <-time.After(timeout):
-			log.Printf("connect request: no answer after %v, trying again to connect to dest '%s'", timeout, dest)
+			mylog.Printf("connect request: no answer after %v, trying again to connect to dest '%s'", timeout, dest)
 			// try again
 			continue
 		case <-overallTooLong:
 			return "", fmt.Errorf("r.Connect() timeout waiting to SynAck, after over=%v wait.", over)
 		case <-cr.Done:
-			log.Printf("r.Connect(dest='%s') completed in %v. with cr.Err='%v' and cr.RemoteNonce='%s'", dest, time.Since(t0), cr.Err, cr.RemoteNonce)
+			mylog.Printf("r.Connect(dest='%s') completed in %v. with cr.Err='%v' and cr.RemoteNonce='%s'", dest, time.Since(t0), cr.Err, cr.RemoteNonce)
 
 			return cr.RemoteNonce, cr.Err
 		case <-r.Halt.ReqStop.Chan:
