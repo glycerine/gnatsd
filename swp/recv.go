@@ -378,11 +378,13 @@ func (r *RecvState) Start() error {
 				}
 
 				// drop non-session packets: they are for other sessions
-				if r.TcpState >= Established && pack.DestSessNonce != r.LocalSessNonce {
+				if (pack.DestSessNonce != "" || r.TcpState >= Established) &&
+					pack.DestSessNonce != r.LocalSessNonce {
 					//log.Printf("warning %v pack.DestSessNonce('%s') != r.LocalSessNonce('%s'): recvloop (in TcpState==%s) dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.DestSessNonce, r.LocalSessNonce, r.TcpState, pack.SeqNum, pack.TcpEvent, pack.AckNum)
 					continue // drop others
 				}
-				if r.TcpState >= Established && pack.FromSessNonce != r.RemoteSessNonce {
+				if r.RemoteSessNonce != "" &&
+					pack.FromSessNonce != r.RemoteSessNonce {
 					//log.Printf("warining %v pack.FromSessNonce('%s') != r.RemoteSessNonce('%s'): recvloop (in TcpState==%s) dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.FromSessNonce, r.RemoteSessNonce, pack.SeqNum, r.TcpState, pack.TcpEvent, pack.AckNum)
 					continue // drop others
 				}
