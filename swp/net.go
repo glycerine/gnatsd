@@ -14,4 +14,7 @@ type Network interface {
 	// Flush waits for roundtrip to gnatsd broker to complete; or
 	// for 60 seconds to elapse.
 	Flush()
+
+	// release the inbox subscription
+	Close()
 }

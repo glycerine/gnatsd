@@ -32,9 +32,17 @@ func (n *NatsNet) BufferCaps() (bytecap int64, msgcap int64) {
 	return GetSubscripCap(n.Cli.Scrip)
 }
 
+func (n *NatsNet) Close() {
+	if n != nil && n.Cli != nil {
+		n.Cli.Close()
+	}
+}
+
 // Listen starts receiving packets addressed to inbox on the returned channel.
 func (n *NatsNet) Listen(inbox string) (chan *Packet, error) {
 	mr := make(chan *Packet)
+
+	//p("%s NatsNet.Listen(inbox='%s') called... (prior n.Cli.Scrip='%#v') ... attempting subscription on inbox", n.Cli.Cfg.NatsNodeName, inbox, n.Cli.Scrip)
 
 	// do actual subscription
 	err := n.Cli.MakeSub(inbox, func(msg *nats.Msg) {
@@ -48,7 +56,7 @@ func (n *NatsNet) Listen(inbox string) (chan *Packet, error) {
 			//			p("NatsNet dropping pack.SeqNum=%v after 10 seconds of failing to deliver to receiver", pack.SeqNum)
 		}
 	})
-	//p("subscription by %v on subject %v succeeded", n.Cli.Cfg.NatsNodeName, inbox)
+	//p("end of Listen(): subscription %v by %v on subject %v succeeded", n.Cli.Scrip.Subject, n.Cli.Cfg.NatsNodeName, inbox)
 	return mr, err
 }
 
@@ -67,6 +75,7 @@ func (n *NatsNet) Send(pack *Packet, why string) error {
 func (n *NatsNet) Stop() {
 	//p("NatsNet.Stop called!")
 	n.Halt.RequestStop()
+	n.Close()
 	n.Halt.Done.Close()
 }
 

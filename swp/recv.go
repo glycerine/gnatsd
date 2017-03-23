@@ -196,6 +196,7 @@ func (r *RecvState) Start() error {
 			if r.snd != nil && r.snd.Halt != nil {
 				r.snd.Halt.RequestStop()
 			}
+			r.Net.Close() // cleanup subscription of network
 		}()
 
 		// send keepalives (for resuming flow from a
