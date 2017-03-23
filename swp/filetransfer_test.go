@@ -24,7 +24,8 @@ func Test040FileTransfer(t *testing.T) {
 
 		host := "127.0.0.1"
 		port := getAvailPort()
-		gnats := StartGnatsd(host, port)
+		gnats, err := StartGnatsd(host, port)
+		panicOn(err)
 		p("started gnatsd on %v:%v", host, port)
 		defer func() {
 			p("calling gnats.Shutdown()")
@@ -309,7 +310,8 @@ func Test042FileTransferWithReadAndWrite(t *testing.T) {
 
 		host := "127.0.0.1"
 		port := getAvailPort()
-		gnats := StartGnatsd(host, port)
+		gnats, err := StartGnatsd(host, port)
+		panicOn(err)
 		defer func() {
 			p("calling gnats.Shutdown()")
 			gnats.Shutdown() // when done
@@ -450,7 +452,8 @@ func Test043SendFileHeadersAheadOfCheckpoints(t *testing.T) {
 
 		host := "127.0.0.1"
 		port := getAvailPort()
-		gnats := StartGnatsd(host, port)
+		gnats, err := StartGnatsd(host, port)
+		panicOn(err)
 		defer func() {
 			p("calling gnats.Shutdown()")
 			gnats.Shutdown() // when done

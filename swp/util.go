@@ -23,7 +23,7 @@ func exampleSetup_test() {
 
 	host := "127.0.0.1"
 	port := getAvailPort()
-	gnats := StartGnatsd(host, port)
+	gnats, err := StartGnatsd(host, port)
 	defer func() {
 		p("calling gnats.Shutdown()")
 		gnats.Shutdown() // when done
@@ -31,7 +31,7 @@ func exampleSetup_test() {
 
 	subC := NewNatsClientConfig(host, port, "B-subscriber", "toB", true, true, nil)
 	sub := NewNatsClient(subC)
-	err := sub.Start()
+	err = sub.Start()
 	panicOn(err)
 	defer sub.Close()
 
@@ -87,7 +87,7 @@ func getAvailPort() int {
 	return r.(*net.TCPAddr).Port
 }
 
-func StartGnatsd(host string, port int) *server.Server {
+func StartGnatsd(host string, port int) (*server.Server, error) {
 	//serverList := fmt.Sprintf("nats://%v:%v", host, port)
 
 	// start yourself an embedded gnatsd server
@@ -107,9 +107,9 @@ func StartGnatsd(host string, port int) *server.Server {
 	//logger := log.New(os.Stderr, "gnatsd: ", log.LUTC|log.Ldate|log.Ltime|log.Lmicroseconds|log.Llongfile)
 	addr := fmt.Sprintf("%v:%v", host, port)
 	if !portIsBound(addr) {
-		panic("port not bound " + addr)
+		return nil, fmt.Errorf("hnatsd did not appear to start, as '%s' is not bound.", addr)
 	}
-	return gnats
+	return gnats, nil
 }
 
 func portIsBound(addr string) bool {
@@ -166,7 +166,6 @@ func (s *NatsClient) Start() error {
 func (s *NatsClient) MakeSub(subject string, hand nats.MsgHandler) error {
 	var err error
 	s.Scrip, err = s.Nc.Subscribe(s.Subject, hand)
-	panicOn(err)
 	return err
 }
 
@@ -175,8 +174,8 @@ func (s *NatsClient) MakeSub(subject string, hand nats.MsgHandler) error {
 func (s *NatsClient) Close() {
 	//p("%s NatsClient.Close() unsubscribe and close starting.", s.Subject)
 	if s.Scrip != nil {
-		err := s.Scrip.Unsubscribe()
-		panicOn(err)
+		s.Scrip.Unsubscribe()
+		// ignore error, we are closing.
 	}
 	if s.Nc != nil {
 		s.Nc.Close()
