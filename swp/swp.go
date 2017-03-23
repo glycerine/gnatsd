@@ -540,6 +540,8 @@ func (s *Session) Read(fillme []byte) (n int, err error) {
 		// good, proceed to get reply
 	case <-s.Halt.Done.Chan:
 		return 0, ErrSessDone
+	case <-s.Halt.ReqStop.Chan:
+		return 0, ErrSessDone
 	}
 	// now get reply.
 	select {
@@ -547,6 +549,8 @@ func (s *Session) Read(fillme []byte) (n int, err error) {
 		//p("Read: got rr.Done closed, rr.N=%v, rr.Err=%v", rr.N, rr.Err)
 		return rr.N, rr.Err
 	case <-s.Halt.Done.Chan:
+		return 0, ErrSessDone
+	case <-s.Halt.ReqStop.Chan:
 		return 0, ErrSessDone
 	}
 }
