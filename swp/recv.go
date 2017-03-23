@@ -369,7 +369,7 @@ func (r *RecvState) Start() error {
 						r.RemoteSessNonce = pack.FromSessNonce
 					}
 				}
-				if pack.From != r.RemoteInbox {
+				if r.RemoteInbox != "" && pack.From != r.RemoteInbox {
 					// drop other remotes,
 					// also enforcing that we see Syn 1st.
 					mylog.Printf("%s dropping pack that isn't from '%s'", r.Inbox, r.RemoteInbox)
