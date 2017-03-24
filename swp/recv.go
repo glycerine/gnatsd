@@ -3,6 +3,7 @@ package swp
 import (
 	"bytes"
 	"fmt"
+	"runtime"
 	"sync"
 	"time"
 
@@ -190,6 +191,11 @@ func (r *RecvState) Start() error {
 	go func() {
 		defer func() {
 			mylog.Printf("%s RecvState defer/shutdown happening.", r.Inbox)
+			stacktrace := make([]byte, 1<<20)
+			length := runtime.Stack(stacktrace, true)
+			mylog.Printf("full stack during RecvState defer:\n %s\n",
+				string(stacktrace[:length]))
+
 			r.Halt.RequestStop()
 			r.Halt.MarkDone()
 			r.cleanupOnExit()
