@@ -143,6 +143,7 @@ func Test102LocalSet(t *testing.T) {
 
 		p0, err := NewPeer(peer0cfg, "p0")
 		panicOn(err)
+		defer os.Remove("p0.boltdb")
 
 		t3 := time.Now().UTC()
 		t2 := t3.Add(-time.Minute)
@@ -203,6 +204,9 @@ func Test103BcastGet(t *testing.T) {
 		panicOn(err)
 		p2, err := NewPeer(peer2cfg, "p2")
 		panicOn(err)
+		defer os.Remove("p0.boltdb")
+		defer os.Remove("p1.boltdb")
+		defer os.Remove("p2.boltdb")
 
 		t3 := time.Now().UTC()
 		t2 := t3.Add(-time.Minute)
