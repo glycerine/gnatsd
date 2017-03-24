@@ -131,6 +131,7 @@ func (b *BoltSaver) LocalSet(ki *KeyInv) error {
 func (b *BoltSaver) LocalGet(key []byte, includeValue bool) (ki *KeyInv, err error) {
 
 	ki = &KeyInv{
+		Key: copyBytes(key),
 		Who: b.whoami,
 	}
 
@@ -173,12 +174,17 @@ func (b *BoltSaver) LocalGet(key []byte, includeValue bool) (ki *KeyInv, err err
 			if len(d) > 0 {
 				// must copy since d is only good during
 				// this txn.
-				ki.Val = make([]byte, len(d))
-				copy(ki.Val, d)
+				ki.Val = copyBytes(d)
 			}
 		}
 
 		return nil
 	})
 	return
+}
+
+func copyBytes(d []byte) []byte {
+	cp := make([]byte, len(d))
+	copy(cp, d)
+	return cp
 }

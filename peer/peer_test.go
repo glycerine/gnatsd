@@ -152,11 +152,15 @@ func Test102LocalSet(t *testing.T) {
 		data0 := []byte(fmt.Sprintf("dataset 0 at %v", t0))
 		key := []byte("chk")
 
-		err = p0.LocalSet(&KeyInv{Key: key, Val: data0, When: t0})
+		err = p0.LocalSet(&KeyInv{Key: key, Val: data0, When: t0, Size: int64(len(data0))})
 		panicOn(err)
 
 		k, err := p0.LocalGet(key, true)
+		p("k = %#v", k)
+		panicOn(err)
+		cv.So(string(k.Key), cv.ShouldResemble, string(key))
 		cv.So(k.Key, cv.ShouldResemble, key)
+		cv.So(k.Size, cv.ShouldResemble, int64(len(data0)))
 		cv.So(k.Val, cv.ShouldResemble, data0)
 		cv.So(k.When, cv.ShouldResemble, t0)
 	})

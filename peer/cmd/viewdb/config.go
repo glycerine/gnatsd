@@ -9,7 +9,8 @@ import (
 )
 
 type ViewBoltConfig struct {
-	DbPath string
+	DbPath   string
+	ShowData bool
 
 	Bopt *bolt.Options
 	Db   *bolt.DB
@@ -19,6 +20,7 @@ type ViewBoltConfig struct {
 func (c *ViewBoltConfig) DefineFlags(fs *flag.FlagSet) {
 
 	fs.StringVar(&c.DbPath, "db", "", "path to our boltdb file")
+	fs.BoolVar(&c.ShowData, "data", false, "show the data")
 }
 
 // ValidateConfig() should be called after myflags.Parse().

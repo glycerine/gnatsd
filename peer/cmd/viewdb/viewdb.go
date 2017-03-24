@@ -38,7 +38,16 @@ func (cfg *ViewBoltConfig) Dump(db *bolt.DB, w io.Writer) error {
 		return tx.ForEach(func(name []byte, buck *bolt.Bucket) error {
 			switch {
 			case 0 == bytes.Compare(name, peer.BoltDataBucketName):
-
+				if cfg.ShowData {
+					fmt.Fprintf(w, "* 'data' bucket:\n")
+					j := 0
+					buck.ForEach(func(k, v []byte) error {
+						fmt.Fprintf(w, "%s%v) '%v' -> '%v'\n",
+							indent, j, string(k), string(v))
+						j++
+						return nil
+					})
+				}
 			case 0 == bytes.Compare(name, peer.BoltTsBucketName):
 				fmt.Fprintf(w, "* 'ts' bucket:\n")
 				j := 0
