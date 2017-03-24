@@ -28,7 +28,16 @@ type KeyInv struct {
 }
 
 type BcastGetRequest struct {
-	Key          []byte
+
+	// Key specifies the key to query and return the value of.
+	Key []byte
+
+	// Who should be left empty to get all replies.
+	// Otherwise only the peer whose name matches will reply.
+	Who string
+
+	// IncludeValue when false returns the timestamp and size without
+	// the whole (big) value.
 	IncludeValue bool
 }
 
@@ -50,7 +59,7 @@ const RequestChanLen = 8
 
 var ErrTimedOut = fmt.Errorf("timed out")
 
-func (peer *Peer) BcastGet(key []byte, includeValue bool, timeout time.Duration) (kis []*KeyInv, err error) {
+func (peer *Peer) BcastGet(key []byte, includeValue bool, timeout time.Duration, who string) (kis []*KeyInv, err error) {
 
 	peers, err := peer.GetPeerList(timeout)
 	if err != nil || peers == nil || len(peers.Members) <= 1 {
@@ -64,10 +73,15 @@ func (peer *Peer) BcastGet(key []byte, includeValue bool, timeout time.Duration)
 		return kis, err
 	}
 	numPeers := len(peers.Members)
+	if who != "" {
+		// request to restrict to just one peer.
+		numPeers = 1
+	}
 	p("numPeers = %v", numPeers)
 
 	bgr := &BcastGetRequest{
 		Key:          key,
+		Who:          who,
 		IncludeValue: includeValue,
 	}
 	mm, err := bgr.MarshalMsg(nil)
@@ -185,6 +199,21 @@ func (peer *Peer) LocalSet(ki *KeyInv) error {
 }
 
 func (peer *Peer) GetLatest(key []byte, includeValue bool) (ki *KeyInv, err error) {
-	ret := &KeyInv{}
-	return ret, nil
+	kis, err := peer.BcastGet(key, false, time.Second*60, "")
+	if err != nil {
+		return nil, err
+	}
+	p("kis=%#v", kis)
+	// come back sorted by time, so latest is the last.
+	n := len(kis)
+	target := kis[n-1]
+	if !includeValue {
+		return target, nil
+	}
+	// now fetch the data
+	kisData, err := peer.BcastGet(key, true, time.Second*60, target.Who)
+	if err != nil {
+		return nil, err
+	}
+	return kisData[0], nil
 }

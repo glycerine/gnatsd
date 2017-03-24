@@ -185,6 +185,11 @@ func (z *BcastGetRequest) DecodeMsg(dc *msgp.Reader) (err error) {
 			if err != nil {
 				return
 			}
+		case "Who":
+			z.Who, err = dc.ReadString()
+			if err != nil {
+				return
+			}
 		case "IncludeValue":
 			z.IncludeValue, err = dc.ReadBool()
 			if err != nil {
@@ -202,13 +207,22 @@ func (z *BcastGetRequest) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *BcastGetRequest) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 2
+	// map header, size 3
 	// write "Key"
-	err = en.Append(0x82, 0xa3, 0x4b, 0x65, 0x79)
+	err = en.Append(0x83, 0xa3, 0x4b, 0x65, 0x79)
 	if err != nil {
 		return err
 	}
 	err = en.WriteBytes(z.Key)
+	if err != nil {
+		return
+	}
+	// write "Who"
+	err = en.Append(0xa3, 0x57, 0x68, 0x6f)
+	if err != nil {
+		return err
+	}
+	err = en.WriteString(z.Who)
 	if err != nil {
 		return
 	}
@@ -227,10 +241,13 @@ func (z *BcastGetRequest) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z *BcastGetRequest) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 2
+	// map header, size 3
 	// string "Key"
-	o = append(o, 0x82, 0xa3, 0x4b, 0x65, 0x79)
+	o = append(o, 0x83, 0xa3, 0x4b, 0x65, 0x79)
 	o = msgp.AppendBytes(o, z.Key)
+	// string "Who"
+	o = append(o, 0xa3, 0x57, 0x68, 0x6f)
+	o = msgp.AppendString(o, z.Who)
 	// string "IncludeValue"
 	o = append(o, 0xac, 0x49, 0x6e, 0x63, 0x6c, 0x75, 0x64, 0x65, 0x56, 0x61, 0x6c, 0x75, 0x65)
 	o = msgp.AppendBool(o, z.IncludeValue)
@@ -258,6 +275,11 @@ func (z *BcastGetRequest) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			if err != nil {
 				return
 			}
+		case "Who":
+			z.Who, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				return
+			}
 		case "IncludeValue":
 			z.IncludeValue, bts, err = msgp.ReadBoolBytes(bts)
 			if err != nil {
@@ -276,7 +298,7 @@ func (z *BcastGetRequest) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *BcastGetRequest) Msgsize() (s int) {
-	s = 1 + 4 + msgp.BytesPrefixSize + len(z.Key) + 13 + msgp.BoolSize
+	s = 1 + 4 + msgp.BytesPrefixSize + len(z.Key) + 4 + msgp.StringPrefixSize + len(z.Who) + 13 + msgp.BoolSize
 	return
 }
 

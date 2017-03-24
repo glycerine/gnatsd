@@ -276,6 +276,19 @@ func (peer *Peer) setupNatsClient() error {
 		mylog.Printf("peer recevied subjBcastGet for key '%s'",
 			string(bgr.Key))
 
+		// are we filtered down to a specific peer request?
+		if bgr.Who != "" {
+			// yep
+			if bgr.Who == peer.saver.whoami {
+				p("%s sees peer-specific BcastGet request!", bgr.Who)
+			} else {
+				p("%s sees peer-specific BcastGet request for '%s' which is not us!", peer.saver.whoami, bgr.Who)
+				return
+			}
+		} else {
+			p("bgr.Who was not set...")
+		}
+
 		var reply BcastGetReply
 
 		ki, err := peer.LocalGet(bgr.Key, bgr.IncludeValue)
