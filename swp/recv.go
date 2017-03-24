@@ -189,7 +189,7 @@ func (r *RecvState) Start() error {
 
 	go func() {
 		defer func() {
-			//p("%s RecvState defer/shutdown happening.", r.Inbox)
+			mylog.Printf("%s RecvState defer/shutdown happening.", r.Inbox)
 			r.Halt.RequestStop()
 			r.Halt.MarkDone()
 			r.cleanupOnExit()
@@ -198,6 +198,7 @@ func (r *RecvState) Start() error {
 			}
 			r.Net.Close() // cleanup subscription of network
 		}()
+		mylog.Printf("%s RecvState.Start() running.", r.Inbox)
 
 		// send keepalives (for resuming flow from a
 		// stopped state) at least this often:
