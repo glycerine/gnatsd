@@ -3,21 +3,9 @@ package peer
 import (
 	"bytes"
 	"fmt"
-	"time"
 
 	"github.com/glycerine/rbtree"
 )
-
-// KeyInv supplies the keys and their
-// peer location (Who) and their timestamps
-// (When) without necessarily providing
-// their data.
-type KeyInv struct {
-	Key  []byte
-	Who  string
-	When time.Time
-	Val  []byte
-}
 
 func (k *KeyInv) String() string {
 	return fmt.Sprintf(`{Key:"%s", Who:"%s", When:"%v"}`,

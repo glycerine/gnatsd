@@ -9,9 +9,9 @@ import (
 	cv "github.com/glycerine/goconvey/convey"
 )
 
-func Test001PeerToPeerFileTransfer(t *testing.T) {
+func Test001PeerToPeerKeyFileTransfer(t *testing.T) {
 
-	cv.Convey("Peers get and set key/value pairs between themselves. Where BcastKeyVal() will broadcast the change to all peers, and LocalGetKeyVal will locally query for the latest observed value for the key.", t, func() {
+	cv.Convey("Peers get and set key/value pairs between themselves. Where BcastSet() will broadcast the change to all peers, and LocalGet will locally query for the latest observed value for the key. GetLatest() will survey all peers and return the most recent value.", t, func() {
 
 		nPeerPort0, lsn0 := getAvailPort()
 		nPeerPort1, lsn1 := getAvailPort()
@@ -59,26 +59,26 @@ func Test001PeerToPeerFileTransfer(t *testing.T) {
 
 		key := []byte("checkpoint")
 
-		err = p0.StoreLocalKeyVal(key, data0, t0)
+		err = p0.LocalSet(&KeyInv{Key: key, Val: data0, When: t0})
 		panicOn(err)
-		err = p1.StoreLocalKeyVal(key, data1, t1)
+		err = p1.LocalSet(&KeyInv{Key: key, Val: data1, When: t1})
 		panicOn(err)
-		err = p2.StoreLocalKeyVal(key, data2, t2)
+		err = p2.LocalSet(&KeyInv{Key: key, Val: data2, When: t2})
 		panicOn(err)
 
 		// GetLatest should return only the most
 		// recent key, no matter where we query from.
 		{
-			dlatest, tmStampLatest, err := p0.GetLatest(key)
+			ki, err := p0.GetLatest(key, true)
 			panicOn(err)
-			cv.So(tmStampLatest, cv.ShouldEqual, t2)
-			cv.So(dlatest, cv.ShouldResemble, data2)
+			cv.So(ki.When, cv.ShouldEqual, t2)
+			cv.So(ki.Val, cv.ShouldResemble, data2)
 
 			// likewise, BcastGetKeyTimes, used by GetLatest,
 			// should reveal who has what and when, without
 			// doing full data value transfers. And the keys
 			// should be sorted by increasing time.
-			inv, err := p0.BcastGetKeyTimes(key)
+			inv, err := p0.BcastGet(key, false)
 			panicOn(err)
 			cv.So(inv[0].Key, cv.ShouldResemble, key)
 			cv.So(inv[0].When, cv.ShouldEqual, t0)
@@ -88,38 +88,39 @@ func Test001PeerToPeerFileTransfer(t *testing.T) {
 			cv.So(inv[2].When, cv.ShouldEqual, t2)
 		}
 		{
-			dlatest, tmStampLatest, err := p1.GetLatest(key)
+			lat, err := p1.GetLatest(key, true)
 			panicOn(err)
-			cv.So(tmStampLatest, cv.ShouldEqual, t2)
-			cv.So(dlatest, cv.ShouldResemble, data2)
+			cv.So(lat.When, cv.ShouldEqual, t2)
+			cv.So(lat.Val, cv.ShouldResemble, data2)
 		}
 		{
-			dlatest, tmStampLatest, err := p2.GetLatest(key)
+			lat, err := p2.GetLatest(key, true)
 			panicOn(err)
-			cv.So(tmStampLatest, cv.ShouldEqual, t2)
-			cv.So(dlatest, cv.ShouldResemble, data2)
+			cv.So(lat.When, cv.ShouldEqual, t2)
+			cv.So(lat.Val, cv.ShouldResemble, data2)
 		}
 
 		// BcastKeyValue should overwrite everywhere.
-		err = p0.BcastKeyVal(key, data3, t3)
+
+		err = p0.BcastSet(&KeyInv{Key: key, Val: data3, When: t3})
 		panicOn(err)
 		{
-			got, gotTm, err := p0.GetLocal(key)
+			got, err := p0.LocalGet(key, true)
 			panicOn(err)
-			cv.So(gotTm, cv.ShouldEqual, t3)
-			cv.So(got, cv.ShouldResemble, data3)
+			cv.So(got.When, cv.ShouldEqual, t3)
+			cv.So(got.Val, cv.ShouldResemble, data3)
 		}
 		{
-			got, gotTm, err := p1.GetLocal(key)
+			got, err := p1.LocalGet(key, true)
 			panicOn(err)
-			cv.So(gotTm, cv.ShouldEqual, t3)
-			cv.So(got, cv.ShouldResemble, data3)
+			cv.So(got.When, cv.ShouldEqual, t3)
+			cv.So(got.Val, cv.ShouldResemble, data3)
 		}
 		{
-			got, gotTm, err := p2.GetLocal(key)
+			got, err := p2.LocalGet(key, true)
 			panicOn(err)
-			cv.So(gotTm, cv.ShouldEqual, t3)
-			cv.So(got, cv.ShouldResemble, data3)
+			cv.So(got.When, cv.ShouldEqual, t3)
+			cv.So(got.Val, cv.ShouldResemble, data3)
 		}
 	})
 }
