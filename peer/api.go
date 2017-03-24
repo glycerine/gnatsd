@@ -4,6 +4,10 @@ import (
 	"time"
 )
 
+func (peer *Peer) BcastGetKeyTimes(key []byte) ([]*KeyInv, error) {
+	return nil, nil
+}
+
 func (peer *Peer) BcastKeyVal(key []byte, data []byte, tm time.Time) error {
 	return nil
 }

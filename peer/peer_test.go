@@ -73,6 +73,19 @@ func Test001PeerToPeerFileTransfer(t *testing.T) {
 			panicOn(err)
 			cv.So(tmStampLatest, cv.ShouldEqual, t2)
 			cv.So(dlatest, cv.ShouldResemble, data2)
+
+			// likewise, BcastGetKeyTimes, used by GetLatest,
+			// should reveal who has what and when, without
+			// doing full data value transfers. And the keys
+			// should be sorted by increasing time.
+			inv, err := p0.BcastGetKeyTimes(key)
+			panicOn(err)
+			cv.So(inv[0].Key, cv.ShouldResemble, key)
+			cv.So(inv[0].When, cv.ShouldEqual, t0)
+			cv.So(inv[1].Key, cv.ShouldResemble, key)
+			cv.So(inv[1].When, cv.ShouldEqual, t1)
+			cv.So(inv[2].Key, cv.ShouldResemble, key)
+			cv.So(inv[2].When, cv.ShouldEqual, t2)
 		}
 		{
 			dlatest, tmStampLatest, err := p1.GetLatest(key)
