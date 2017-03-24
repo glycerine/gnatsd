@@ -2,7 +2,6 @@ package swp
 
 import (
 	"fmt"
-	"runtime/debug"
 	"time"
 
 	"github.com/glycerine/hnatsd/server"
@@ -166,10 +165,8 @@ func (s *NatsClient) Start() error {
 // hand as the callback handler.
 func (s *NatsClient) MakeSub(subject string, hand nats.MsgHandler) error {
 	var err error
-	mylog.Printf("jea/debug: NatsClient: subscription to s.Subject='%s' vs subject call param='%s'",
-		s.Subject, subject)
-	debug.PrintStack()
-	s.Scrip, err = s.Nc.Subscribe(s.Subject, hand)
+	s.Scrip, err = s.Nc.Subscribe(subject, hand)
+	s.Subject = subject
 	return err
 }
 
