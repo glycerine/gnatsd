@@ -86,7 +86,10 @@ func (b *BoltSaver) InitDbIfNeeded() error {
 	})
 }
 
+// LocalSet will set ki.Size from len(ki.Val) before
+// saving.
 func (b *BoltSaver) LocalSet(ki *KeyInv) error {
+	ki.Size = int64(len(ki.Val))
 
 	return b.db.Update(func(tx *bolt.Tx) error {
 

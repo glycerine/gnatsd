@@ -165,3 +165,83 @@ func Test102LocalSet(t *testing.T) {
 		cv.So(k.When, cv.ShouldResemble, t0)
 	})
 }
+
+func Test103BcastGet(t *testing.T) {
+
+	cv.Convey("Given three peers p0, p1, and p2, BcastGet should return KeyInv from both", t, func() {
+
+		nPeerPort0, lsn0 := getAvailPort()
+		nPeerPort1, lsn1 := getAvailPort()
+		nPeerPort2, lsn2 := getAvailPort()
+		nPeerPort3, lsn3 := getAvailPort()
+		nPeerPort4, lsn4 := getAvailPort()
+		nPeerPort5, lsn5 := getAvailPort()
+
+		// don't close until now. Now we have non-overlapping ports.
+		lsn0.Close()
+		lsn1.Close()
+		lsn2.Close()
+		lsn3.Close()
+		lsn4.Close()
+		lsn5.Close()
+
+		cluster0 := fmt.Sprintf("-cluster=nats://localhost:%v", nPeerPort2)
+		cluster1 := fmt.Sprintf("-cluster=nats://localhost:%v", nPeerPort3)
+		cluster2 := fmt.Sprintf("-cluster=nats://localhost:%v", nPeerPort4)
+		routes1 := fmt.Sprintf("-routes=nats://localhost:%v", nPeerPort2)
+
+		// want peer0 to be lead, so we give it lower rank.
+		peer0cfg := strings.Join([]string{"-rank=0", "-health", "-p", fmt.Sprintf("%v", nPeerPort0), cluster0}, " ")
+
+		peer1cfg := strings.Join([]string{"-rank=3", "-health", "-p", fmt.Sprintf("%v", nPeerPort1), cluster1, routes1}, " ")
+
+		peer2cfg := strings.Join([]string{"-rank=6", "-health", "-p", fmt.Sprintf("%v", nPeerPort5), cluster2, routes1}, " ")
+
+		p0, err := NewPeer(peer0cfg, "p0")
+		panicOn(err)
+		p1, err := NewPeer(peer1cfg, "p1")
+		panicOn(err)
+		p2, err := NewPeer(peer2cfg, "p2")
+		panicOn(err)
+
+		t3 := time.Now().UTC()
+		t2 := t3.Add(-time.Minute)
+		t1 := t2.Add(-time.Minute)
+		t0 := t1.Add(-time.Minute)
+
+		data0 := []byte(fmt.Sprintf("dataset 0 at %v", t0))
+		data1 := []byte(fmt.Sprintf("dataset 1 at %v plus blah", t1))
+		data2 := []byte(fmt.Sprintf("dataset 2 at %v plush blahblah", t2))
+
+		key := []byte("checkpoint")
+
+		err = p0.LocalSet(&KeyInv{Key: key, Val: data0, When: t0})
+		panicOn(err)
+		err = p1.LocalSet(&KeyInv{Key: key, Val: data1, When: t1})
+		panicOn(err)
+		err = p2.LocalSet(&KeyInv{Key: key, Val: data2, When: t2})
+		panicOn(err)
+
+		// likewise, BcastGetKeyTimes, used by GetLatest,
+		// should reveal who has what and when, without
+		// doing full data value transfers. And the keys
+		// should be sorted by increasing time.
+		inv, err := p0.BcastGet(key, false)
+		panicOn(err)
+		cv.So(len(inv), cv.ShouldEqual, 3)
+		cv.So(inv[0].Key, cv.ShouldResemble, key)
+		cv.So(inv[0].When, cv.ShouldEqual, t0)
+		cv.So(inv[0].Size, cv.ShouldEqual, len(data0))
+		cv.So(inv[0].Val, cv.ShouldBeNil)
+
+		cv.So(inv[1].Key, cv.ShouldResemble, key)
+		cv.So(inv[1].When, cv.ShouldEqual, t1)
+		cv.So(inv[1].Size, cv.ShouldEqual, len(data1))
+		cv.So(inv[1].Val, cv.ShouldBeNil)
+
+		cv.So(inv[2].Key, cv.ShouldResemble, key)
+		cv.So(inv[2].When, cv.ShouldEqual, t2)
+		cv.So(inv[2].Size, cv.ShouldEqual, len(data2))
+		cv.So(inv[2].Val, cv.ShouldBeNil)
+	})
+}
