@@ -64,7 +64,7 @@ func (peer *Peer) BcastGet(key []byte, includeValue bool, timeout time.Duration,
 	peers, err := peer.GetPeerList(timeout)
 	if err != nil || peers == nil || len(peers.Members) <= 1 {
 		// no peers, just do the local get.
-		p("no peers in BcastGet!?")
+		//p("no peers in BcastGet!?")
 		ki, err := peer.LocalGet(key, includeValue)
 		if err != nil {
 			return nil, err
@@ -77,7 +77,7 @@ func (peer *Peer) BcastGet(key []byte, includeValue bool, timeout time.Duration,
 		// request to restrict to just one peer.
 		numPeers = 1
 	}
-	p("numPeers = %v", numPeers)
+	//p("numPeers = %v", numPeers)
 
 	bgr := &BcastGetRequest{
 		Key:          key,
@@ -110,7 +110,7 @@ func (peer *Peer) BcastGet(key []byte, includeValue bool, timeout time.Duration,
 		case <-toCh:
 			return nil, ErrTimedOut
 		case reply := <-ch:
-			p("BcastGet got a reply, on i = %v", i)
+			//p("BcastGet got a reply, on i = %v", i)
 			var bgr BcastGetReply
 			_, err := bgr.UnmarshalMsg(reply.Data)
 			if err != nil {
@@ -124,7 +124,7 @@ func (peer *Peer) BcastGet(key []byte, includeValue bool, timeout time.Duration,
 			}
 		}
 	}
-	p("done with collection loop, we have %v replies", sorter.Len())
+	//p("done with collection loop, we have %v replies", sorter.Len())
 	// sorter sorts them by key, then time, then who.
 	for it := sorter.Min(); !it.Limit(); it = it.Next() {
 		kis = append(kis, it.Item().(*KeyInv))
@@ -137,11 +137,11 @@ func (peer *Peer) BcastSet(ki *KeyInv) error {
 	peers, err := peer.GetPeerList(timeout)
 	if err != nil || peers == nil || len(peers.Members) <= 1 {
 		// no peers, just do the local get.
-		p("no peers in BcastGet!?")
+		//p("no peers in BcastGet!?")
 		return peer.LocalSet(ki)
 	}
 	numPeers := len(peers.Members)
-	p("BcastSet sees numPeers = %v", numPeers)
+	//p("BcastSet sees numPeers = %v", numPeers)
 
 	req := &BcastSetRequest{
 		Ki: ki,
@@ -172,7 +172,7 @@ func (peer *Peer) BcastSet(ki *KeyInv) error {
 		case <-toCh:
 			return ErrTimedOut
 		case reply := <-ch:
-			p("BcastSet got a reply, on i = %v", i)
+			//p("BcastSet got a reply, on i = %v", i)
 			var rep BcastSetReply
 			_, err := rep.UnmarshalMsg(reply.Data)
 			if err != nil {
@@ -203,7 +203,7 @@ func (peer *Peer) GetLatest(key []byte, includeValue bool) (ki *KeyInv, err erro
 	if err != nil {
 		return nil, err
 	}
-	p("kis=%#v", kis)
+	//p("kis=%#v", kis)
 	// come back sorted by time, so latest is the last.
 	n := len(kis)
 	target := kis[n-1]

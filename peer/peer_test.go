@@ -64,6 +64,12 @@ func Test001PeerToPeerKeyFileTransfer(t *testing.T) {
 		defer os.Remove("p1.boltdb")
 		defer os.Remove("p2.boltdb")
 
+		peers, err := p0.WaitForPeerCount(3, 120*time.Second)
+		if err != nil || peers == nil || len(peers.Members) != 3 {
+			p("peers = %#v", peers)
+			panic(fmt.Sprintf("could not setup all 3 peers?!?: err = '%v'. ", err))
+		}
+
 		t3 := time.Now().UTC()
 		t2 := t3.Add(-time.Minute)
 		t1 := t2.Add(-time.Minute)
@@ -88,7 +94,7 @@ func Test001PeerToPeerKeyFileTransfer(t *testing.T) {
 		{
 			ki, err := p0.GetLatest(key, true)
 			panicOn(err)
-			cv.So(ki.When, cv.ShouldEqual, t2)
+			cv.So(ki.When, cv.ShouldResemble, t2)
 			cv.So(ki.Val, cv.ShouldResemble, data2)
 
 			// likewise, BcastGetKeyTimes, used by GetLatest,
@@ -99,24 +105,24 @@ func Test001PeerToPeerKeyFileTransfer(t *testing.T) {
 			inv, err := p0.BcastGet(key, false, to, "")
 			panicOn(err)
 			cv.So(inv[0].Key, cv.ShouldResemble, key)
-			cv.So(inv[0].When, cv.ShouldEqual, t0)
+			cv.So(inv[0].When, cv.ShouldResemble, t0)
 
 			cv.So(inv[1].Key, cv.ShouldResemble, key)
-			cv.So(inv[1].When, cv.ShouldEqual, t1)
+			cv.So(inv[1].When, cv.ShouldResemble, t1)
 
 			cv.So(inv[2].Key, cv.ShouldResemble, key)
-			cv.So(inv[2].When, cv.ShouldEqual, t2)
+			cv.So(inv[2].When, cv.ShouldResemble, t2)
 		}
 		{
 			lat, err := p1.GetLatest(key, true)
 			panicOn(err)
-			cv.So(lat.When, cv.ShouldEqual, t2)
+			cv.So(lat.When, cv.ShouldResemble, t2)
 			cv.So(lat.Val, cv.ShouldResemble, data2)
 		}
 		{
 			lat, err := p2.GetLatest(key, true)
 			panicOn(err)
-			cv.So(lat.When, cv.ShouldEqual, t2)
+			cv.So(lat.When, cv.ShouldResemble, t2)
 			cv.So(lat.Val, cv.ShouldResemble, data2)
 		}
 
@@ -127,19 +133,19 @@ func Test001PeerToPeerKeyFileTransfer(t *testing.T) {
 		{
 			got, err := p0.LocalGet(key, true)
 			panicOn(err)
-			cv.So(got.When, cv.ShouldEqual, t3)
+			cv.So(got.When, cv.ShouldResemble, t3)
 			cv.So(got.Val, cv.ShouldResemble, data3)
 		}
 		{
 			got, err := p1.LocalGet(key, true)
 			panicOn(err)
-			cv.So(got.When, cv.ShouldEqual, t3)
+			cv.So(got.When, cv.ShouldResemble, t3)
 			cv.So(got.Val, cv.ShouldResemble, data3)
 		}
 		{
 			got, err := p2.LocalGet(key, true)
 			panicOn(err)
-			cv.So(got.When, cv.ShouldEqual, t3)
+			cv.So(got.When, cv.ShouldResemble, t3)
 			cv.So(got.Val, cv.ShouldResemble, data3)
 		}
 	})
