@@ -190,7 +190,7 @@ func (r *RecvState) Start() error {
 
 	go func() {
 		defer func() {
-			mylog.Printf("%s RecvState defer/shutdown happening.", r.Inbox)
+			//mylog.Printf("%s RecvState defer/shutdown happening.", r.Inbox)
 			//mylog.Printf("full stack during RecvState defer:\n %s\n", fullStackTraceString())
 			r.Halt.RequestStop()
 			r.Halt.MarkDone()
@@ -199,7 +199,7 @@ func (r *RecvState) Start() error {
 				r.snd.Halt.RequestStop()
 			}
 		}()
-		mylog.Printf("%s RecvState.Start() running.", r.Inbox)
+		//mylog.Printf("%s RecvState.Start() running.", r.Inbox)
 
 		// send keepalives (for resuming flow from a
 		// stopped state) at least this often:
@@ -355,7 +355,7 @@ func (r *RecvState) Start() error {
 				//p("%v recvloop sees ReqStop waiting on r.MsgRecv, shutting down. [2]", r.Inbox)
 				return
 			case <-r.snd.SenderShutdown:
-				mylog.Printf("recvloop: got <-r.snd.SenderShutdown. note that len(r.RcvdButNotConsumed)=%v", len(r.RcvdButNotConsumed))
+				//mylog.Printf("recvloop: got <-r.snd.SenderShutdown. note that len(r.RcvdButNotConsumed)=%v", len(r.RcvdButNotConsumed))
 				return
 			case pack := <-r.MsgRecv:
 				//p("%v recvloop (in state '%s') sees packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, r.TcpState, pack.SeqNum, pack.TcpEvent, pack.AckNum)
