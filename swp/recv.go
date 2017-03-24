@@ -191,15 +191,13 @@ func (r *RecvState) Start() error {
 	go func() {
 		defer func() {
 			mylog.Printf("%s RecvState defer/shutdown happening.", r.Inbox)
-			mylog.Printf("full stack during RecvState defer:\n %s\n", fullStackTraceString())
-
+			//mylog.Printf("full stack during RecvState defer:\n %s\n", fullStackTraceString())
 			r.Halt.RequestStop()
 			r.Halt.MarkDone()
 			r.cleanupOnExit()
 			if r.snd != nil && r.snd.Halt != nil {
 				r.snd.Halt.RequestStop()
 			}
-			r.Net.Close() // cleanup subscription of network
 		}()
 		mylog.Printf("%s RecvState.Start() running.", r.Inbox)
 
@@ -384,12 +382,12 @@ func (r *RecvState) Start() error {
 				// drop non-session packets: they are for other sessions
 				if (pack.DestSessNonce != "" || r.TcpState >= Established) &&
 					pack.DestSessNonce != r.LocalSessNonce {
-					//mylog.Printf("warning %v pack.DestSessNonce('%s') != r.LocalSessNonce('%s'): recvloop (in TcpState==%s) dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.DestSessNonce, r.LocalSessNonce, r.TcpState, pack.SeqNum, pack.TcpEvent, pack.AckNum)
+					mylog.Printf("warning %v pack.DestSessNonce('%s') != r.LocalSessNonce('%s'): recvloop (in TcpState==%s) dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.DestSessNonce, r.LocalSessNonce, r.TcpState, pack.SeqNum, pack.TcpEvent, pack.AckNum)
 					continue // drop others
 				}
 				if r.RemoteSessNonce != "" &&
 					pack.FromSessNonce != r.RemoteSessNonce {
-					//mylog.Printf("warining %v pack.FromSessNonce('%s') != r.RemoteSessNonce('%s'): recvloop (in TcpState==%s) dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.FromSessNonce, r.RemoteSessNonce, pack.SeqNum, r.TcpState, pack.TcpEvent, pack.AckNum)
+					mylog.Printf("warining %v pack.FromSessNonce('%s') != r.RemoteSessNonce('%s'): recvloop (in TcpState==%s) dropping packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, pack.FromSessNonce, r.RemoteSessNonce, pack.SeqNum, r.TcpState, pack.TcpEvent, pack.AckNum)
 					continue // drop others
 				}
 
@@ -641,7 +639,7 @@ func (r *RecvState) ack(seqno int64, pack *Packet, event TcpEvent) {
 // Stop the RecvState componennt
 func (r *RecvState) Stop() {
 	//p("%v RecvState.Stop() called.", r.Inbox)
-	mylog.Printf("%v RecvState.Stop() called. stack trace::\n %s\n", r.Inbox, fullStackTraceString())
+	//mylog.Printf("%v RecvState.Stop() called. stack trace::\n %s\n", r.Inbox, fullStackTraceString())
 
 	r.Halt.ReqStop.Close()
 	<-r.Halt.Done.Chan

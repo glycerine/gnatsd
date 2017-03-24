@@ -32,12 +32,6 @@ func (n *NatsNet) BufferCaps() (bytecap int64, msgcap int64) {
 	return GetSubscripCap(n.Cli.Scrip)
 }
 
-func (n *NatsNet) Close() {
-	if n != nil && n.Cli != nil {
-		n.Cli.Close()
-	}
-}
-
 // Listen starts receiving packets addressed to inbox on the returned channel.
 func (n *NatsNet) Listen(inbox string) (chan *Packet, error) {
 	mr := make(chan *Packet)
@@ -75,7 +69,6 @@ func (n *NatsNet) Send(pack *Packet, why string) error {
 func (n *NatsNet) Stop() {
 	//p("NatsNet.Stop called!")
 	n.Halt.RequestStop()
-	n.Close()
 	n.Halt.Done.Close()
 }
 

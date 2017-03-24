@@ -74,10 +74,6 @@ func (sim *SimNet) Listen(inbox string) (chan *Packet, error) {
 	return ch, nil
 }
 
-func (sim *SimNet) Close() {
-	// add any cleanup here
-}
-
 // Send sends the packet pack to pack.Dest. The why
 // annoation is optional and allows the logs to illumate
 // the purpose of each send (ack, keepAlive, data, etc).
