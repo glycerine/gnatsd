@@ -40,11 +40,11 @@ func Test001PeerToPeerKeyFileTransfer(t *testing.T) {
 
 		peer2cfg := strings.Join([]string{"-rank=6", "-health", "-p", fmt.Sprintf("%v", nPeerPort5), cluster2, routes1}, " ")
 
-		p0, err := NewPeer(peer0cfg)
+		p0, err := NewPeer(peer0cfg, "p0")
 		panicOn(err)
-		p1, err := NewPeer(peer1cfg)
+		p1, err := NewPeer(peer1cfg, "p1")
 		panicOn(err)
-		p2, err := NewPeer(peer2cfg)
+		p2, err := NewPeer(peer2cfg, "p2")
 		panicOn(err)
 
 		t3 := time.Now().UTC()
@@ -82,8 +82,10 @@ func Test001PeerToPeerKeyFileTransfer(t *testing.T) {
 			panicOn(err)
 			cv.So(inv[0].Key, cv.ShouldResemble, key)
 			cv.So(inv[0].When, cv.ShouldEqual, t0)
+
 			cv.So(inv[1].Key, cv.ShouldResemble, key)
 			cv.So(inv[1].When, cv.ShouldEqual, t1)
+
 			cv.So(inv[2].Key, cv.ShouldResemble, key)
 			cv.So(inv[2].When, cv.ShouldEqual, t2)
 		}
@@ -122,5 +124,40 @@ func Test001PeerToPeerKeyFileTransfer(t *testing.T) {
 			cv.So(got.When, cv.ShouldEqual, t3)
 			cv.So(got.Val, cv.ShouldResemble, data3)
 		}
+	})
+}
+
+func Test102LocalSet(t *testing.T) {
+
+	cv.Convey("Peer LocalSet should save the ki locally", t, func() {
+
+		nPeerPort0, lsn0 := getAvailPort()
+		nPeerPort2, lsn2 := getAvailPort()
+		lsn0.Close()
+		lsn2.Close()
+
+		cluster0 := fmt.Sprintf("-cluster=nats://localhost:%v", nPeerPort2)
+
+		// want peer0 to be lead, so we give it lower rank.
+		peer0cfg := strings.Join([]string{"-rank=0", "-health", "-p", fmt.Sprintf("%v", nPeerPort0), cluster0}, " ")
+
+		p0, err := NewPeer(peer0cfg, "p0")
+		panicOn(err)
+
+		t3 := time.Now().UTC()
+		t2 := t3.Add(-time.Minute)
+		t1 := t2.Add(-time.Minute)
+		t0 := t1.Add(-time.Minute)
+
+		data0 := []byte(fmt.Sprintf("dataset 0 at %v", t0))
+		key := []byte("chk")
+
+		err = p0.LocalSet(&KeyInv{Key: key, Val: data0, When: t0})
+		panicOn(err)
+
+		k, err := p0.LocalGet(key, true)
+		cv.So(k.Key, cv.ShouldResemble, key)
+		cv.So(k.Val, cv.ShouldResemble, data0)
+		cv.So(k.When, cv.ShouldResemble, t0)
 	})
 }

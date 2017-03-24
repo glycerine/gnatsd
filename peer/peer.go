@@ -65,7 +65,7 @@ type Peer struct {
 	clientOpts *[]nats.Option
 
 	LeadStatus leadFlag
-	saver      Saver
+	saver      *BoltSaver
 }
 
 type leadFlag struct {
@@ -110,7 +110,12 @@ func has(haystack []string, needle string) bool {
 // to form a cluster, the -routes of subsequent nodes
 // need to point at one of the -cluster of an earlier started node.
 //
-func NewPeer(args string) (*Peer, error) {
+func NewPeer(args, whoami string) (*Peer, error) {
+
+	saver, err := NewBoltSaver(whoami+".boltdb", whoami)
+	if err != nil {
+		return nil, err
+	}
 
 	argv := strings.Fields(args)
 	// ensure -health is given
@@ -124,6 +129,7 @@ func NewPeer(args string) (*Peer, error) {
 		LeadAndFollowBchan: bchan.New(2),
 		MemberGainedBchan:  bchan.New(2),
 		MemberLostBchan:    bchan.New(2),
+		saver:              saver,
 	}
 	serv, opts, err := hnatsdMain(argv)
 	if err != nil {
@@ -319,7 +325,7 @@ var ErrAmLead = fmt.Errorf("error: I am lead")
 var ErrNoFollowers = fmt.Errorf("error: no followers")
 
 type Saver interface {
-	WriteSnap(date []byte, timestamp time.Time) error
+	WriteKv(key, val []byte, timestamp time.Time) error
 }
 
 // LeadTransferCheckpoint is called when we've just generated
@@ -610,19 +616,19 @@ func (peer *Peer) StartBackgroundRecv(myID, myFollowSubj string) {
 			}
 			// INVAR: err == nil, so our file arrived intact and
 			// the blake2b checksum matched. We can and should
-			// write this to the boltdb.
+			// write this to the saver.
 
 			mylog.Printf("%s follow received good file '%s' of size %v, stamped '%v'.", myID, bigfile.Filepath, bigfile.SizeInBytes, bigfile.SendTime)
 			peer.SetFollowSess(nil)
 			sessF.Close()
 			sessF.Stop()
 
-			err = peer.saver.WriteSnap(bigfile.Data, bigfile.SendTime)
+			err = peer.saver.LocalSet(&KeyInv{Key: []byte("chk"), Val: bigfile.Data, When: bigfile.SendTime})
 			if err != nil {
-				mylog.Printf("%s peer.saver.WriteSnap() got error '%v'", myID, err)
+				mylog.Printf("%s peer.saver.WriteKv() got error '%v'", myID, err)
 				continue
 			}
-			mylog.Printf("%s saver.WriteSnap() done with nil error, wrote data len = %v.", myID, len(bigfile.Data))
+			mylog.Printf("%s peer.saver.WriteKv() done with nil error, wrote data len = %v.", myID, len(bigfile.Data))
 
 			select {
 			case <-peer.Halt.ReqStop.Chan:
