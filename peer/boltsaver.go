@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/boltdb/bolt"
@@ -17,6 +18,9 @@ type BoltSaver struct {
 	db       *bolt.DB
 	filepath string
 	whoami   string
+
+	// only one op at a time
+	mut sync.Mutex
 }
 
 func (b *BoltSaver) Close() {
@@ -62,6 +66,8 @@ func NewBoltSaver(filepath string, who string) (*BoltSaver, error) {
 }
 
 func (b *BoltSaver) InitDbIfNeeded() error {
+	b.mut.Lock()
+	defer b.mut.Unlock()
 
 	// make the data and ts buckets, if need be.
 	return b.db.Update(func(tx *bolt.Tx) error {
@@ -89,6 +95,9 @@ func (b *BoltSaver) InitDbIfNeeded() error {
 // LocalSet will set ki.Size from len(ki.Val) before
 // saving.
 func (b *BoltSaver) LocalSet(ki *KeyInv) error {
+	b.mut.Lock()
+	defer b.mut.Unlock()
+
 	ki.Size = int64(len(ki.Val))
 
 	return b.db.Update(func(tx *bolt.Tx) error {
@@ -132,6 +141,8 @@ func (b *BoltSaver) LocalSet(ki *KeyInv) error {
 }
 
 func (b *BoltSaver) LocalGet(key []byte, includeValue bool) (ki *KeyInv, err error) {
+	b.mut.Lock()
+	defer b.mut.Unlock()
 
 	ki = &KeyInv{
 		Key: copyBytes(key),

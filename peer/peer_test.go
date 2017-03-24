@@ -2,6 +2,7 @@ package peer
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -78,7 +79,8 @@ func Test001PeerToPeerKeyFileTransfer(t *testing.T) {
 			// should reveal who has what and when, without
 			// doing full data value transfers. And the keys
 			// should be sorted by increasing time.
-			inv, err := p0.BcastGet(key, false)
+			to := time.Second * 10
+			inv, err := p0.BcastGet(key, false, to)
 			panicOn(err)
 			cv.So(inv[0].Key, cv.ShouldResemble, key)
 			cv.So(inv[0].When, cv.ShouldEqual, t0)
@@ -204,9 +206,18 @@ func Test103BcastGet(t *testing.T) {
 		panicOn(err)
 		p2, err := NewPeer(peer2cfg, "p2")
 		panicOn(err)
-		defer os.Remove("p0.boltdb")
-		defer os.Remove("p1.boltdb")
-		defer os.Remove("p2.boltdb")
+
+		// start em up
+		err = p0.Start()
+		panicOn(err)
+		err = p1.Start()
+		panicOn(err)
+		err = p2.Start()
+		panicOn(err)
+
+		//defer os.Remove("p0.boltdb")
+		//defer os.Remove("p1.boltdb")
+		//defer os.Remove("p2.boltdb")
 
 		t3 := time.Now().UTC()
 		t2 := t3.Add(-time.Minute)
@@ -230,21 +241,22 @@ func Test103BcastGet(t *testing.T) {
 		// should reveal who has what and when, without
 		// doing full data value transfers. And the keys
 		// should be sorted by increasing time.
-		inv, err := p0.BcastGet(key, false)
+		to := time.Second * 60
+		inv, err := p0.BcastGet(key, false, to)
 		panicOn(err)
 		cv.So(len(inv), cv.ShouldEqual, 3)
 		cv.So(inv[0].Key, cv.ShouldResemble, key)
-		cv.So(inv[0].When, cv.ShouldEqual, t0)
+		cv.So(inv[0].When, cv.ShouldResemble, t0)
 		cv.So(inv[0].Size, cv.ShouldEqual, len(data0))
 		cv.So(inv[0].Val, cv.ShouldBeNil)
 
 		cv.So(inv[1].Key, cv.ShouldResemble, key)
-		cv.So(inv[1].When, cv.ShouldEqual, t1)
+		cv.So(inv[1].When, cv.ShouldResemble, t1)
 		cv.So(inv[1].Size, cv.ShouldEqual, len(data1))
 		cv.So(inv[1].Val, cv.ShouldBeNil)
 
 		cv.So(inv[2].Key, cv.ShouldResemble, key)
-		cv.So(inv[2].When, cv.ShouldEqual, t2)
+		cv.So(inv[2].When, cv.ShouldResemble, t2)
 		cv.So(inv[2].Size, cv.ShouldEqual, len(data2))
 		cv.So(inv[2].Val, cv.ShouldBeNil)
 	})

@@ -36,11 +36,11 @@ type Inventory struct {
 	*rbtree.Tree
 }
 
-func (t *Inventory) insert(j *KeyInv) {
+func (t *Inventory) Upsert(j *KeyInv) {
 	t.Insert(j)
 }
 
-func (t *Inventory) deleteJob(j *KeyInv) {
+func (t *Inventory) deleteKi(j *KeyInv) {
 	t.DeleteWithKey(j)
 }
 

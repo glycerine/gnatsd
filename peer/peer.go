@@ -56,6 +56,8 @@ type Peer struct {
 	subjMembership  string
 	subjMemberLost  string
 	subjMemberAdded string
+	subjBcastGet    string
+	subjBcastSet    string
 
 	loc *nats.ServerLoc
 	nc  *nats.Conn
@@ -265,6 +267,49 @@ func (peer *Peer) setupNatsClient() error {
 	peer.subjMembership = health.SysMemberPrefix + "list"
 	peer.subjMemberLost = health.SysMemberPrefix + "lost"
 	peer.subjMemberAdded = health.SysMemberPrefix + "added"
+	peer.subjBcastGet = "bcast_get"
+	peer.subjBcastSet = "bcast_set"
+
+	nc.Subscribe(peer.subjBcastGet, func(msg *nats.Msg) {
+		var bgr BcastGetRequest
+		bgr.UnmarshalMsg(msg.Data)
+		mylog.Printf("peer recevied subjBcastGet for key '%s'",
+			string(bgr.Key))
+
+		var reply BcastGetReply
+
+		ki, err := peer.LocalGet(bgr.Key, bgr.IncludeValue)
+		if err != nil {
+			mylog.Printf("peer.LocalGet('%s' returned error '%v'", string(bgr.Key), err)
+			reply.Err = err.Error()
+		} else {
+			reply.Ki = ki
+		}
+		mm, err := reply.MarshalMsg(nil)
+		panicOn(err)
+		err = nc.Publish(msg.Reply, mm)
+		panicOn(err)
+	})
+
+	// BcastSet
+	nc.Subscribe(peer.subjBcastSet, func(msg *nats.Msg) {
+		var bsr BcastSetRequest
+		bsr.UnmarshalMsg(msg.Data)
+		mylog.Printf("peer recevied subjBcastSet for key '%s'",
+			string(bsr.Ki.Key))
+
+		var reply BcastSetReply
+
+		err := peer.LocalSet(bsr.Ki)
+		if err != nil {
+			mylog.Printf("peer.LocalSet(key='%s') returned error '%v'", string(bsr.Ki.Key), err)
+			reply.Err = err.Error()
+		}
+		mm, err := reply.MarshalMsg(nil)
+		panicOn(err)
+		err = nc.Publish(msg.Reply, mm)
+		panicOn(err)
+	})
 
 	// reporting
 	nc.Subscribe(peer.subjMemberLost, func(msg *nats.Msg) {
@@ -650,4 +695,17 @@ func (peer *Peer) GetFollowSess() (sessF *swp.Session) {
 	sessF = peer.followSess
 	peer.mut.Unlock()
 	return
+}
+
+func (peer *Peer) GetPeerList(timeout time.Duration) (*LeadAndFollowList, error) {
+
+	select {
+	case <-time.After(timeout):
+		return nil, ErrTimedOut
+	case list := <-peer.LeadAndFollowBchan.Ch:
+		peer.LeadAndFollowBchan.BcastAck()
+		laf := list.(*LeadAndFollowList)
+		return laf, nil
+	}
+	return nil, nil
 }
