@@ -165,6 +165,8 @@ func (s *NatsClient) Start() error {
 // hand as the callback handler.
 func (s *NatsClient) MakeSub(subject string, hand nats.MsgHandler) error {
 	var err error
+	mylog.Printf("jea/debug: NatsClient: subscription to s.Subject='%s' vs subject call param='%s'",
+		s.Subject, subject)
 	s.Scrip, err = s.Nc.Subscribe(s.Subject, hand)
 	return err
 }

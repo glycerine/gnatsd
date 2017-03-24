@@ -273,8 +273,8 @@ func (peer *Peer) setupNatsClient() error {
 	nc.Subscribe(peer.subjBcastGet, func(msg *nats.Msg) {
 		var bgr BcastGetRequest
 		bgr.UnmarshalMsg(msg.Data)
-		mylog.Printf("peer recevied subjBcastGet for key '%s'",
-			string(bgr.Key))
+		mylog.Printf("%s peer recevied subjBcastGet for key '%s'",
+			peer.saver.whoami, string(bgr.Key))
 
 		// are we filtered down to a specific peer request?
 		if bgr.Who != "" {
