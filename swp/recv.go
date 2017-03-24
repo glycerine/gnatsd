@@ -191,10 +191,7 @@ func (r *RecvState) Start() error {
 	go func() {
 		defer func() {
 			mylog.Printf("%s RecvState defer/shutdown happening.", r.Inbox)
-			stacktrace := make([]byte, 1<<20)
-			length := runtime.Stack(stacktrace, true)
-			mylog.Printf("full stack during RecvState defer:\n %s\n",
-				string(stacktrace[:length]))
+			mylog.Printf("full stack during RecvState defer:\n %s\n", fullStackTraceString())
 
 			r.Halt.RequestStop()
 			r.Halt.MarkDone()
@@ -360,7 +357,7 @@ func (r *RecvState) Start() error {
 				//p("%v recvloop sees ReqStop waiting on r.MsgRecv, shutting down. [2]", r.Inbox)
 				return
 			case <-r.snd.SenderShutdown:
-				//p("recvloop: got <-r.snd.SenderShutdown. note that len(r.RcvdButNotConsumed)=%v", len(r.RcvdButNotConsumed))
+				mylog.Printf("recvloop: got <-r.snd.SenderShutdown. note that len(r.RcvdButNotConsumed)=%v", len(r.RcvdButNotConsumed))
 				return
 			case pack := <-r.MsgRecv:
 				//p("%v recvloop (in state '%s') sees packet.SeqNum '%v', event:'%s', AckNum:%v", r.Inbox, r.TcpState, pack.SeqNum, pack.TcpEvent, pack.AckNum)
@@ -644,6 +641,8 @@ func (r *RecvState) ack(seqno int64, pack *Packet, event TcpEvent) {
 // Stop the RecvState componennt
 func (r *RecvState) Stop() {
 	//p("%v RecvState.Stop() called.", r.Inbox)
+	mylog.Printf("%v RecvState.Stop() called. stack trace::\n %s\n", r.Inbox, fullStackTraceString())
+
 	r.Halt.ReqStop.Close()
 	<-r.Halt.Done.Chan
 }
@@ -896,4 +895,10 @@ func (r *RecvState) Close(zr *closeReq) error {
 		return ErrTimeoutClose
 	}
 	return nil
+}
+
+func fullStackTraceString() string {
+	stacktrace := make([]byte, 1<<20)
+	length := runtime.Stack(stacktrace, true)
+	return string(stacktrace[:length])
 }
