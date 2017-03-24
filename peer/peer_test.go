@@ -56,6 +56,10 @@ func Test001PeerToPeerKeyFileTransfer(t *testing.T) {
 		err = p2.Start()
 		panicOn(err)
 
+		defer p0.Stop()
+		defer p1.Stop()
+		defer p2.Stop()
+
 		t3 := time.Now().UTC()
 		t2 := t3.Add(-time.Minute)
 		t1 := t2.Add(-time.Minute)
@@ -223,6 +227,10 @@ func Test103BcastGet(t *testing.T) {
 		err = p2.Start()
 		panicOn(err)
 
+		defer p0.Stop()
+		defer p1.Stop()
+		defer p2.Stop()
+
 		// let peers come up and start talking
 		peers, err := p0.WaitForPeerCount(3, 120*time.Second)
 		if err != nil || peers == nil || len(peers.Members) != 3 {
@@ -322,6 +330,10 @@ func Test104BcastSet(t *testing.T) {
 		panicOn(err)
 		err = p2.Start()
 		panicOn(err)
+
+		defer p0.Stop()
+		defer p1.Stop()
+		defer p2.Stop()
 
 		// let peers come up and start talking
 		peers, err := p0.WaitForPeerCount(3, 120*time.Second)
