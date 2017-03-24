@@ -659,7 +659,18 @@ func (s *Session) GetErr() (err error) {
 // BigFile represents the transmission of a file;
 // size is limited only by memory. Since the primary
 // use is to capture the state that is being held
-// in memory, this is a reasonable approach.
+// in memory, this is a reasonable limit.
+//
+// If you requirer larger than memory transfers,
+// can always do infinitely sized streams by
+// using the Session implementations of the
+// stardard io.Reader and io.Writer interfaces
+// (the Read() and Write() methods) directly.
+//
+// For example, you could use io.Copy() to copy
+// a file on one end and a file on the other
+// end of two nats clients joined by *Session.
+//
 type BigFile struct {
 	Filepath    string
 	SizeInBytes int64

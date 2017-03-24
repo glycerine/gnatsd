@@ -10,7 +10,7 @@ import (
 	cv "github.com/glycerine/goconvey/convey"
 )
 
-func Test001PeerToPeerKeyFileTransfer(t *testing.T) {
+func Test101PeerToPeerKeyFileTransfer(t *testing.T) {
 
 	cv.Convey("Peers get and set key/value pairs between themselves. Where BcastSet() will broadcast the change to all peers, and LocalGet will locally query for the latest observed value for the key. GetLatest() will survey all peers and return the most recent value.", t, func() {
 
