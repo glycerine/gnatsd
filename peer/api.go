@@ -52,8 +52,7 @@ var ErrTimedOut = fmt.Errorf("timed out")
 
 func (peer *Peer) BcastGet(key []byte, includeValue bool, timeout time.Duration) (kis []*KeyInv, err error) {
 
-	//peers, err := peer.GetPeerList(timeout)
-	peers, err := peer.GetPeerList(120 * time.Second)
+	peers, err := peer.GetPeerList(timeout)
 	if err != nil || peers == nil || len(peers.Members) <= 1 {
 		// no peers, just do the local get.
 		p("no peers in BcastGet!?")

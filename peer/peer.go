@@ -709,3 +709,21 @@ func (peer *Peer) GetPeerList(timeout time.Duration) (*LeadAndFollowList, error)
 	}
 	return nil, nil
 }
+
+func (peer *Peer) WaitForPeerCount(n int, timeout time.Duration) (*LeadAndFollowList, error) {
+	toCh := time.After(timeout)
+	for {
+		select {
+		case <-toCh:
+			return nil, ErrTimedOut
+		case list := <-peer.LeadAndFollowBchan.Ch:
+			peer.LeadAndFollowBchan.BcastAck()
+			laf := list.(*LeadAndFollowList)
+			if len(laf.Members) >= n {
+				return laf, nil
+			}
+			time.Sleep(time.Second)
+		}
+	}
+	return nil, nil
+}
