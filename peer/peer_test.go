@@ -496,3 +496,5 @@ func Test105GetLatest(t *testing.T) {
 		cv.So(ki0.Val, cv.ShouldResemble, data2)
 	})
 }
+
+// TODO: now test for full-file transfer over swp.

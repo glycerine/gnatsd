@@ -163,7 +163,7 @@ func (peer *Peer) Start() error {
 	// are pushing or receiving
 	// checkpoints.
 	err := peer.setupNatsClient()
-	p("%v peer.Start() done with peer.setupNatsClient() err='%v'", peer.loc.ID, err)
+	//p("%v peer.Start() done with peer.setupNatsClient() err='%v'", peer.loc.ID, err)
 
 	if err != nil {
 		mylog.Printf("warning: not starting background peer goroutine, as we got err from setupNatsCli: '%v'", err)
@@ -280,13 +280,13 @@ func (peer *Peer) setupNatsClient() error {
 		if bgr.Who != "" {
 			// yep
 			if bgr.Who == peer.saver.whoami {
-				p("%s sees peer-specific BcastGet request!", bgr.Who)
+				//p("%s sees peer-specific BcastGet request!", bgr.Who)
 			} else {
-				p("%s sees peer-specific BcastGet request for '%s' which is not us!", peer.saver.whoami, bgr.Who)
+				//p("%s sees peer-specific BcastGet request for '%s' which is not us!", peer.saver.whoami, bgr.Who)
 				return
 			}
 		} else {
-			p("bgr.Who was not set...")
+			//p("bgr.Who was not set...")
 		}
 
 		var reply BcastGetReply
