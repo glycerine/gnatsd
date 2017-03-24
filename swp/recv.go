@@ -641,6 +641,13 @@ func (r *RecvState) Stop() {
 	//p("%v RecvState.Stop() called.", r.Inbox)
 	//mylog.Printf("%v RecvState.Stop() called. stack trace::\n %s\n", r.Inbox, fullStackTraceString())
 
+	nn, ok := r.Net.(*NatsNet)
+	if ok {
+		if nn.Cli != nil && nn.Cli.Scrip != nil {
+			nn.Cli.Scrip.Unsubscribe()
+		}
+	}
+
 	r.Halt.ReqStop.Close()
 	<-r.Halt.Done.Chan
 }
