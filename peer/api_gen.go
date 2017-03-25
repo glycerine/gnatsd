@@ -567,6 +567,11 @@ func (z *KeyInv) DecodeMsg(dc *msgp.Reader) (err error) {
 			if err != nil {
 				return
 			}
+		case "Blake2b":
+			z.Blake2b, err = dc.ReadBytes(z.Blake2b)
+			if err != nil {
+				return
+			}
 		case "Val":
 			z.Val, err = dc.ReadBytes(z.Val)
 			if err != nil {
@@ -584,9 +589,9 @@ func (z *KeyInv) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *KeyInv) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 5
+	// map header, size 6
 	// write "Key"
-	err = en.Append(0x85, 0xa3, 0x4b, 0x65, 0x79)
+	err = en.Append(0x86, 0xa3, 0x4b, 0x65, 0x79)
 	if err != nil {
 		return err
 	}
@@ -621,6 +626,15 @@ func (z *KeyInv) EncodeMsg(en *msgp.Writer) (err error) {
 	if err != nil {
 		return
 	}
+	// write "Blake2b"
+	err = en.Append(0xa7, 0x42, 0x6c, 0x61, 0x6b, 0x65, 0x32, 0x62)
+	if err != nil {
+		return err
+	}
+	err = en.WriteBytes(z.Blake2b)
+	if err != nil {
+		return
+	}
 	// write "Val"
 	err = en.Append(0xa3, 0x56, 0x61, 0x6c)
 	if err != nil {
@@ -636,9 +650,9 @@ func (z *KeyInv) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z *KeyInv) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 5
+	// map header, size 6
 	// string "Key"
-	o = append(o, 0x85, 0xa3, 0x4b, 0x65, 0x79)
+	o = append(o, 0x86, 0xa3, 0x4b, 0x65, 0x79)
 	o = msgp.AppendBytes(o, z.Key)
 	// string "Who"
 	o = append(o, 0xa3, 0x57, 0x68, 0x6f)
@@ -649,6 +663,9 @@ func (z *KeyInv) MarshalMsg(b []byte) (o []byte, err error) {
 	// string "Size"
 	o = append(o, 0xa4, 0x53, 0x69, 0x7a, 0x65)
 	o = msgp.AppendInt64(o, z.Size)
+	// string "Blake2b"
+	o = append(o, 0xa7, 0x42, 0x6c, 0x61, 0x6b, 0x65, 0x32, 0x62)
+	o = msgp.AppendBytes(o, z.Blake2b)
 	// string "Val"
 	o = append(o, 0xa3, 0x56, 0x61, 0x6c)
 	o = msgp.AppendBytes(o, z.Val)
@@ -691,6 +708,11 @@ func (z *KeyInv) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			if err != nil {
 				return
 			}
+		case "Blake2b":
+			z.Blake2b, bts, err = msgp.ReadBytesBytes(bts, z.Blake2b)
+			if err != nil {
+				return
+			}
 		case "Val":
 			z.Val, bts, err = msgp.ReadBytesBytes(bts, z.Val)
 			if err != nil {
@@ -709,6 +731,6 @@ func (z *KeyInv) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *KeyInv) Msgsize() (s int) {
-	s = 1 + 4 + msgp.BytesPrefixSize + len(z.Key) + 4 + msgp.StringPrefixSize + len(z.Who) + 5 + msgp.TimeSize + 5 + msgp.Int64Size + 4 + msgp.BytesPrefixSize + len(z.Val)
+	s = 1 + 4 + msgp.BytesPrefixSize + len(z.Key) + 4 + msgp.StringPrefixSize + len(z.Who) + 5 + msgp.TimeSize + 5 + msgp.Int64Size + 8 + msgp.BytesPrefixSize + len(z.Blake2b) + 4 + msgp.BytesPrefixSize + len(z.Val)
 	return
 }

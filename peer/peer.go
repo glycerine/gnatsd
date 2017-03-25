@@ -16,6 +16,7 @@ import (
 	"github.com/glycerine/nats"
 
 	"github.com/glycerine/bchan"
+	"github.com/glycerine/blake2b" // vendor https://github.com/dchest/blake2b"
 	"github.com/glycerine/hnatsd/swp"
 	"github.com/glycerine/idem"
 )
@@ -739,4 +740,11 @@ func (peer *Peer) WaitForPeerCount(n int, timeout time.Duration) (*LeadAndFollow
 		}
 	}
 	return nil, nil
+}
+
+func blake2bOfBytes(by []byte) []byte {
+	h, err := blake2b.New(nil)
+	panicOn(err)
+	h.Write(by)
+	return []byte(h.Sum(nil))
 }

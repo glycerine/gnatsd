@@ -1,8 +1,8 @@
 package peer
 
 import (
+	"encoding/binary"
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -10,188 +10,7 @@ import (
 	cv "github.com/glycerine/goconvey/convey"
 )
 
-func Test101PeerToPeerKeyValueTransfer(t *testing.T) {
-
-	cv.Convey("Peers get and set key/value pairs between themselves. Where BcastSet() will broadcast the change to all peers, and LocalGet will locally query for the latest observed value for the key. GetLatest() will survey all peers and return the most recent value.", t, func() {
-
-		nPeerPort0, lsn0 := getAvailPort()
-		nPeerPort1, lsn1 := getAvailPort()
-		nPeerPort2, lsn2 := getAvailPort()
-		nPeerPort3, lsn3 := getAvailPort()
-		nPeerPort4, lsn4 := getAvailPort()
-		nPeerPort5, lsn5 := getAvailPort()
-
-		// don't close until now. Now we have non-overlapping ports.
-		lsn0.Close()
-		lsn1.Close()
-		lsn2.Close()
-		lsn3.Close()
-		lsn4.Close()
-		lsn5.Close()
-
-		cluster0 := fmt.Sprintf("-cluster=nats://localhost:%v", nPeerPort2)
-		cluster1 := fmt.Sprintf("-cluster=nats://localhost:%v", nPeerPort3)
-		cluster2 := fmt.Sprintf("-cluster=nats://localhost:%v", nPeerPort4)
-		routes1 := fmt.Sprintf("-routes=nats://localhost:%v", nPeerPort2)
-
-		// want peer0 to be lead, so we give it lower rank.
-		peer0cfg := strings.Join([]string{"-rank=0", "-health", "-p", fmt.Sprintf("%v", nPeerPort0), cluster0}, " ")
-
-		peer1cfg := strings.Join([]string{"-rank=3", "-health", "-p", fmt.Sprintf("%v", nPeerPort1), cluster1, routes1}, " ")
-
-		peer2cfg := strings.Join([]string{"-rank=6", "-health", "-p", fmt.Sprintf("%v", nPeerPort5), cluster2, routes1}, " ")
-
-		p0, err := NewPeer(peer0cfg, "p0")
-		panicOn(err)
-		p1, err := NewPeer(peer1cfg, "p1")
-		panicOn(err)
-		p2, err := NewPeer(peer2cfg, "p2")
-		panicOn(err)
-
-		// start em up
-		err = p0.Start()
-		panicOn(err)
-		err = p1.Start()
-		panicOn(err)
-		err = p2.Start()
-		panicOn(err)
-
-		defer p0.Stop()
-		defer p1.Stop()
-		defer p2.Stop()
-
-		defer os.Remove("p0.boltdb")
-		defer os.Remove("p1.boltdb")
-		defer os.Remove("p2.boltdb")
-
-		peers, err := p0.WaitForPeerCount(3, 120*time.Second)
-		if err != nil || peers == nil || len(peers.Members) != 3 {
-			p("peers = %#v", peers)
-			panic(fmt.Sprintf("could not setup all 3 peers?!?: err = '%v'. ", err))
-		}
-
-		t3 := time.Now().UTC()
-		t2 := t3.Add(-time.Minute)
-		t1 := t2.Add(-time.Minute)
-		t0 := t1.Add(-time.Minute)
-
-		data0 := []byte(fmt.Sprintf("dataset 0 at %v", t0))
-		data1 := []byte(fmt.Sprintf("dataset 1 at %v", t1))
-		data2 := []byte(fmt.Sprintf("dataset 2 at %v", t2))
-		data3 := []byte(fmt.Sprintf("dataset 3 at %v", t3))
-
-		key := []byte("chk")
-
-		err = p0.LocalSet(&KeyInv{Key: key, Val: data0, When: t0})
-		panicOn(err)
-		err = p1.LocalSet(&KeyInv{Key: key, Val: data1, When: t1})
-		panicOn(err)
-		err = p2.LocalSet(&KeyInv{Key: key, Val: data2, When: t2})
-		panicOn(err)
-
-		// GetLatest should return only the most
-		// recent key, no matter where we query from.
-		{
-			ki, err := p0.GetLatest(key, true)
-			panicOn(err)
-			cv.So(ki.When, cv.ShouldResemble, t2)
-			cv.So(ki.Val, cv.ShouldResemble, data2)
-
-			// likewise, BcastGetKeyTimes, used by GetLatest,
-			// should reveal who has what and when, without
-			// doing full data value transfers. And the keys
-			// should be sorted by increasing time.
-			to := time.Second * 10
-			inv, err := p0.BcastGet(key, false, to, "")
-			panicOn(err)
-			cv.So(inv[0].Key, cv.ShouldResemble, key)
-			cv.So(inv[0].When, cv.ShouldResemble, t0)
-
-			cv.So(inv[1].Key, cv.ShouldResemble, key)
-			cv.So(inv[1].When, cv.ShouldResemble, t1)
-
-			cv.So(inv[2].Key, cv.ShouldResemble, key)
-			cv.So(inv[2].When, cv.ShouldResemble, t2)
-		}
-		{
-			lat, err := p1.GetLatest(key, true)
-			panicOn(err)
-			cv.So(lat.When, cv.ShouldResemble, t2)
-			cv.So(lat.Val, cv.ShouldResemble, data2)
-		}
-		{
-			lat, err := p2.GetLatest(key, true)
-			panicOn(err)
-			cv.So(lat.When, cv.ShouldResemble, t2)
-			cv.So(lat.Val, cv.ShouldResemble, data2)
-		}
-
-		// BcastKeyValue should overwrite everywhere.
-
-		err = p0.BcastSet(&KeyInv{Key: key, Val: data3, When: t3})
-		panicOn(err)
-		{
-			got, err := p0.LocalGet(key, true)
-			panicOn(err)
-			cv.So(got.When, cv.ShouldResemble, t3)
-			cv.So(got.Val, cv.ShouldResemble, data3)
-		}
-		{
-			got, err := p1.LocalGet(key, true)
-			panicOn(err)
-			cv.So(got.When, cv.ShouldResemble, t3)
-			cv.So(got.Val, cv.ShouldResemble, data3)
-		}
-		{
-			got, err := p2.LocalGet(key, true)
-			panicOn(err)
-			cv.So(got.When, cv.ShouldResemble, t3)
-			cv.So(got.Val, cv.ShouldResemble, data3)
-		}
-	})
-}
-
-func Test102LocalSet(t *testing.T) {
-
-	cv.Convey("Peer LocalSet should save the ki locally", t, func() {
-
-		nPeerPort0, lsn0 := getAvailPort()
-		nPeerPort2, lsn2 := getAvailPort()
-		lsn0.Close()
-		lsn2.Close()
-
-		cluster0 := fmt.Sprintf("-cluster=nats://localhost:%v", nPeerPort2)
-
-		// want peer0 to be lead, so we give it lower rank.
-		peer0cfg := strings.Join([]string{"-rank=0", "-health", "-p", fmt.Sprintf("%v", nPeerPort0), cluster0}, " ")
-
-		p0, err := NewPeer(peer0cfg, "p0")
-		panicOn(err)
-		defer os.Remove("p0.boltdb")
-
-		t3 := time.Now().UTC()
-		t2 := t3.Add(-time.Minute)
-		t1 := t2.Add(-time.Minute)
-		t0 := t1.Add(-time.Minute)
-
-		data0 := []byte(fmt.Sprintf("dataset 0 at %v", t0))
-		key := []byte("chk")
-
-		err = p0.LocalSet(&KeyInv{Key: key, Val: data0, When: t0, Size: int64(len(data0))})
-		panicOn(err)
-
-		k, err := p0.LocalGet(key, true)
-		p("k = %#v", k)
-		panicOn(err)
-		cv.So(string(k.Key), cv.ShouldResemble, string(key))
-		cv.So(k.Key, cv.ShouldResemble, key)
-		cv.So(k.Size, cv.ShouldResemble, int64(len(data0)))
-		cv.So(k.Val, cv.ShouldResemble, data0)
-		cv.So(k.When, cv.ShouldResemble, t0)
-	})
-}
-
-func Test103BcastGet(t *testing.T) {
+func Test203BcastGetBigFile(t *testing.T) {
 
 	cv.Convey("Given three peers p0, p1, and p2, BcastGet should return KeyInv from both", t, func() {
 
@@ -248,18 +67,19 @@ func Test103BcastGet(t *testing.T) {
 			panic(fmt.Sprintf("could not setup all 3 peers?!?: err = '%v'. ", err))
 		}
 
-		defer os.Remove("p0.boltdb")
-		defer os.Remove("p1.boltdb")
-		defer os.Remove("p2.boltdb")
+		//		defer os.Remove("p0.boltdb")
+		//		defer os.Remove("p1.boltdb")
+		//		defer os.Remove("p2.boltdb")
 
 		t3 := time.Now().UTC()
 		t2 := t3.Add(-time.Minute)
 		t1 := t2.Add(-time.Minute)
 		t0 := t1.Add(-time.Minute)
 
-		data0 := []byte(fmt.Sprintf("dataset 0 at %v", t0))
-		data1 := []byte(fmt.Sprintf("dataset 1 at %v plus blah", t1))
-		data2 := []byte(fmt.Sprintf("dataset 2 at %v plush blahblah", t2))
+		n := 1 << 24 // 16MB
+		data0 := SequentialPayload(int64(n), 0)
+		data1 := SequentialPayload(int64(n), 1)
+		data2 := SequentialPayload(int64(n), 2)
 
 		key := []byte("chk")
 
@@ -295,6 +115,7 @@ func Test103BcastGet(t *testing.T) {
 	})
 }
 
+/*
 func Test104BcastSet(t *testing.T) {
 
 	cv.Convey("Given three peers p0, p1, and p2, BcastSet should set the broadcast value on on all peers", t, func() {
@@ -497,4 +318,52 @@ func Test105GetLatest(t *testing.T) {
 	})
 }
 
-// TODO: now test for full-file transfer over swp.
+*/
+
+func SequentialPayload(n int64, offset uint64) []byte {
+	if n%8 != 0 {
+		panic(fmt.Sprintf("n == %v must be a multiple of 8; has remainder %v", n, n%8))
+	}
+
+	k := uint64(n / 8)
+	by := make([]byte, n)
+	j := uint64(0)
+	for i := uint64(0); i < k; i++ {
+		j = i * 8
+		binary.LittleEndian.PutUint64(by[j:j+8], j+offset)
+	}
+	return by
+}
+
+func verifySame(writeme, got []byte) {
+	cv.So(len(got), cv.ShouldResemble, len(writeme))
+	firstDiff := -1
+	for i := 0; i < len(got); i++ {
+		if got[i] != writeme[i] {
+			firstDiff = i
+			break
+		}
+	}
+	if firstDiff != -1 {
+		p("first Diff at %v, got %v, expected %v", firstDiff, got[firstDiff], writeme[firstDiff])
+		a, b, c := nearestOctet(firstDiff, got)
+		wa, wb, wc := nearestOctet(firstDiff, writeme)
+		p("first Diff at %v for got: [%v, %v, %v]; for writem: [%v, %v, %v]", firstDiff, a, b, c, wa, wb, wc)
+	}
+	cv.So(firstDiff, cv.ShouldResemble, -1)
+}
+
+func nearestOctet(pos int, by []byte) (a, b, c int64) {
+	n := len(by)
+	pos -= (pos % 8)
+	if pos-8 >= 0 && pos < n {
+		a = int64(binary.LittleEndian.Uint64(by[pos-8 : pos]))
+	}
+	if pos >= 0 && pos+8 < n {
+		b = int64(binary.LittleEndian.Uint64(by[pos : pos+8]))
+	}
+	if pos+8 >= 0 && pos+16 < n {
+		c = int64(binary.LittleEndian.Uint64(by[pos+8 : pos+16]))
+	}
+	return a, b, c
+}

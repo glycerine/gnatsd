@@ -1,7 +1,6 @@
 package peer
 
 import (
-	"encoding/binary"
 	"fmt"
 	"os"
 	"sync"
@@ -11,7 +10,7 @@ import (
 )
 
 var BoltDataBucketName = []byte("data") // bucket
-var BoltTsBucketName = []byte("ts")     // bucket
+var BoltMetaBucketName = []byte("meta") // bucket
 var BoltSizeBucketName = []byte("size") // bucket
 
 type BoltSaver struct {
@@ -77,10 +76,10 @@ func (b *BoltSaver) InitDbIfNeeded() error {
 				string(BoltDataBucketName), err)
 		}
 
-		_, err = tx.CreateBucketIfNotExists(BoltTsBucketName)
+		_, err = tx.CreateBucketIfNotExists(BoltMetaBucketName)
 		if err != nil {
 			return fmt.Errorf("boltdb: CreateBucketIfNotExists(boltBucketName='%s') saw error: %s",
-				string(BoltTsBucketName), err)
+				string(BoltMetaBucketName), err)
 		}
 		_, err = tx.CreateBucketIfNotExists(BoltSizeBucketName)
 		if err != nil {
@@ -99,32 +98,26 @@ func (b *BoltSaver) LocalSet(ki *KeyInv) error {
 	defer b.mut.Unlock()
 
 	ki.Size = int64(len(ki.Val))
+	ki.Blake2b = blake2bOfBytes(ki.Val)
+	ki.Who = b.whoami
+
+	// meta is a KeyInv but without the Val
+	meta := *ki
+	meta.Val = nil
+	metabytes, err := meta.MarshalMsg(nil)
+	if err != nil {
+		return err
+	}
 
 	return b.db.Update(func(tx *bolt.Tx) error {
 
-		// store timestamp
-		tsbuck := tx.Bucket(BoltTsBucketName)
-		if tsbuck == nil {
-			return fmt.Errorf("bucket '%s' does not exist", string(BoltTsBucketName))
+		// store meta
+		metabuck := tx.Bucket(BoltMetaBucketName)
+		if metabuck == nil {
+			return fmt.Errorf("bucket '%s' does not exist", string(BoltMetaBucketName))
 		}
 
-		var stamp [8]byte
-		nano := ki.When.UnixNano()
-		binary.LittleEndian.PutUint64(stamp[:8], uint64(nano))
-		err := tsbuck.Put(ki.Key, stamp[:])
-		if err != nil {
-			return err
-		}
-
-		// store size
-		sizebuck := tx.Bucket(BoltSizeBucketName)
-		if sizebuck == nil {
-			return fmt.Errorf("bucket '%s' does not exist", string(BoltSizeBucketName))
-		}
-
-		var size [8]byte
-		binary.LittleEndian.PutUint64(size[:8], uint64(ki.Size))
-		err = sizebuck.Put(ki.Key, size[:])
+		err := metabuck.Put(ki.Key, metabytes)
 		if err != nil {
 			return err
 		}
@@ -149,31 +142,26 @@ func (b *BoltSaver) LocalGet(key []byte, includeValue bool) (ki *KeyInv, err err
 		Who: b.whoami,
 	}
 
+	var meta KeyInv
+
 	err = b.db.View(func(tx *bolt.Tx) error {
 
-		// get the timestamp
-		tsbuck := tx.Bucket(BoltTsBucketName)
-		if tsbuck == nil {
-			return fmt.Errorf("bucket '%s' does not exist", string(BoltTsBucketName))
+		// get the meta info
+		metabuck := tx.Bucket(BoltMetaBucketName)
+		if metabuck == nil {
+			return fmt.Errorf("bucket '%s' does not exist", string(BoltMetaBucketName))
 		}
-		stamp := tsbuck.Get(key)
-		if len(stamp) == 8 {
-			nano := binary.LittleEndian.Uint64(stamp)
-			ki.When = time.Unix(0, int64(nano)).UTC()
+		metabytes := metabuck.Get(key)
+		if len(metabytes) > 0 {
+			_, err := meta.UnmarshalMsg(metabytes)
+			if err != nil {
+				return err
+			}
+			ki.When = meta.When.UTC()
+			ki.Size = meta.Size
+			ki.Blake2b = meta.Blake2b
 		} else {
-			return fmt.Errorf("key '%s' in bucket '%s' does not exist", string(key), string(BoltTsBucketName))
-		}
-
-		// get the size
-		sizebuck := tx.Bucket(BoltSizeBucketName)
-		if sizebuck == nil {
-			return fmt.Errorf("bucket '%s' does not exist", string(BoltSizeBucketName))
-		}
-		size := sizebuck.Get(key)
-		if len(size) == 8 {
-			ki.Size = int64(binary.LittleEndian.Uint64(size))
-		} else {
-			return fmt.Errorf("key '%s' in bucket '%s' does not exist", string(key), string(BoltSizeBucketName))
+			return fmt.Errorf("key '%s' in bucket '%s' does not exist", string(key), string(BoltMetaBucketName))
 		}
 
 		// get the data, if requested

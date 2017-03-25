@@ -7,11 +7,6 @@ import (
 	"github.com/glycerine/rbtree"
 )
 
-func (k *KeyInv) String() string {
-	return fmt.Sprintf(`{Key:"%s", Who:"%s", When:"%v"}`,
-		string(k.Key), k.Who, k.When.UTC())
-}
-
 func compare(a, b *KeyInv) int {
 	cmp := bytes.Compare(a.Key, b.Key)
 	if 0 != cmp {

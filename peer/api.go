@@ -20,11 +20,17 @@ import (
 // on Set.
 //
 type KeyInv struct {
-	Key  []byte
-	Who  string
-	When time.Time
-	Size int64
-	Val  []byte
+	Key     []byte
+	Who     string
+	When    time.Time
+	Size    int64
+	Blake2b []byte
+	Val     []byte
+}
+
+func (ki *KeyInv) String() string {
+	return fmt.Sprintf(`{Key:"%s", Who:"%s", When:"%s", Size:%v, Blake2b:"%x"}`,
+		string(ki.Key), ki.Who, ki.When.UTC(), ki.Size, ki.Blake2b)
 }
 
 type BcastGetRequest struct {

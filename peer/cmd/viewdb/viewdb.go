@@ -25,7 +25,12 @@ func main() {
 	cfg.Bopt = &bolt.Options{Timeout: 1 * time.Second, ReadOnly: true}
 	cfg.Db, err = bolt.Open(cfg.DbPath, 0600, cfg.Bopt)
 	if err != nil {
-		panic(err)
+		if err.Error() == "timeout" {
+			fmt.Fprintf(os.Stderr, "file open timedout, probably locked by another process.\n")
+			os.Exit(1)
+		} else {
+			panic(err)
+		}
 	}
 	cfg.Dump(cfg.Db, os.Stdout)
 }
@@ -48,24 +53,18 @@ func (cfg *ViewBoltConfig) Dump(db *bolt.DB, w io.Writer) error {
 						return nil
 					})
 				}
-			case 0 == bytes.Compare(name, peer.BoltTsBucketName):
-				fmt.Fprintf(w, "* 'ts' bucket:\n")
+			case 0 == bytes.Compare(name, peer.BoltMetaBucketName):
+				fmt.Fprintf(w, "* 'meta' bucket:\n")
 				j := 0
 				buck.ForEach(func(k, v []byte) error {
-					n := BytesToInt64(v)
-					fmt.Fprintf(w, "%s%v) '%v' -> %v\n",
-						indent, j, string(k), time.Unix(0, n).UTC())
-					j++
-					return nil
-				})
+					var meta peer.KeyInv
+					_, err := meta.UnmarshalMsg(v)
+					if err != nil {
+						return err
+					}
 
-			case 0 == bytes.Compare(name, peer.BoltSizeBucketName):
-				fmt.Fprintf(w, "* 'size' bucket:\n")
-				j := 0
-				buck.ForEach(func(k, v []byte) error {
-					n := BytesToInt64(v)
-					fmt.Fprintf(w, "%s%v) '%v' -> %v #bytes\n",
-						indent, j, string(k), n)
+					fmt.Fprintf(w, "%s%v) '%v' -> %s\n",
+						indent, j, string(k), &meta)
 					j++
 					return nil
 				})
