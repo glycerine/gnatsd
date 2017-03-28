@@ -6,6 +6,7 @@ import (
 	"net"
 
 	"github.com/glycerine/hnatsd/peer/api"
+	"github.com/glycerine/idem"
 	tun "github.com/glycerine/sshego"
 	"google.golang.org/grpc"
 )
@@ -26,6 +27,7 @@ type ServerConfig struct {
 	SshegoCfg *tun.SshegoConfig
 
 	ServerGotReply chan *api.BcastGetReply
+	Halt           *idem.Halter
 
 	GrpcServer *grpc.Server
 }
@@ -33,6 +35,7 @@ type ServerConfig struct {
 func NewServerConfig() *ServerConfig {
 	return &ServerConfig{
 		ServerGotReply: make(chan *api.BcastGetReply),
+		Halt:           idem.NewHalter(),
 	}
 }
 

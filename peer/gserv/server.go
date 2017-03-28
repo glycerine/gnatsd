@@ -26,22 +26,24 @@ import (
 
 type PeerServerClass struct {
 	peer api.LocalGetSet
+	cfg  *ServerConfig
 }
 
-func NewPeerServerClass(peer api.LocalGetSet) *PeerServerClass {
+func NewPeerServerClass(peer api.LocalGetSet, cfg *ServerConfig) *PeerServerClass {
 	return &PeerServerClass{
 		peer: peer,
+		cfg:  cfg,
 	}
 }
 
-// implement pb.PeerServer interface
-func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) error {
+// implement pb.PeerServer interface; the server is receiving a file here,
+//  because the client called SendFile() on the other end.
+//
+func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 	p("peer.Server SendFile starting!")
 	var chunkCount int64
 	path := ""
-	var bc int64
 	var hasher hash.Hash
-	var err error
 
 	hasher, err = blake2b.New(nil)
 	if err != nil {
@@ -50,21 +52,41 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) error {
 
 	var finalChecksum []byte
 	var fd *os.File
-	bytesSeen := 0
+	var bytesSeen int64
 
 	defer func() {
 		if fd != nil {
 			fd.Close()
 		}
+		finalChecksum = []byte(hasher.Sum(nil))
+		endTime := time.Now()
+
 		p("this server.SendFile() call got %v chunks, byteCount=%v. with "+
-			"final checksum '%x'", chunkCount, bytesSeen, finalChecksum)
+			"final checksum '%x'. defer running/is returning with err='%v'",
+			chunkCount, bytesSeen, finalChecksum, err)
+		errStr := ""
+		if err != nil {
+			errStr = err.Error()
+		}
+
+		sacErr := stream.SendAndClose(&pb.BigFileAck{
+			Filepath:         path,
+			SizeInBytes:      bytesSeen,
+			RecvTime:         uint64(endTime.UnixNano()),
+			WholeFileBlake2B: finalChecksum,
+			Err:              errStr,
+		})
+		if sacErr != nil {
+			log.Printf("warning: sacErr='%s' in gserv server.go PeerServerClass.SendFile() attempt to stream.SendAndClose().", sacErr)
+		}
 	}()
 
 	firstChunkSeen := false
 	var allChunks bytes.Buffer
+	var nk *pb.BigFileChunk
 
 	for {
-		nk, err := stream.Recv()
+		nk, err = stream.Recv()
 		if err == io.EOF {
 			if nk != nil && len(nk.Data) > 0 {
 				// we are assuming that this never happens!
@@ -74,19 +96,11 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) error {
 				"io.EOF. nk=%p. bytesSeen=%v. chunkCount=%v.",
 				nk, bytesSeen, chunkCount)
 
-			finalChecksum = []byte(hasher.Sum(nil))
-			endTime := time.Now()
-			return stream.SendAndClose(&pb.BigFileAck{
-				Filepath:         path,
-				SizeInBytes:      bc,
-				RecvTime:         uint64(endTime.UnixNano()),
-				WholeFileBlake2B: finalChecksum,
-			})
+			return nil
 		}
 		if err != nil {
 			return err
 		}
-		bytesSeen += len(nk.Data)
 
 		// INVAR: we have a chunk
 		if !firstChunkSeen {
@@ -126,10 +140,11 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) error {
 		}
 
 		// INVAR: chunk passes tests, keep it.
-		bc += nk.SizeInBytes
+		bytesSeen += int64(len(nk.Data))
 		chunkCount++
+		var nw int
 
-		nw, err := allChunks.Write(nk.Data)
+		nw, err = allChunks.Write(nk.Data)
 		panicOn(err)
 		if nw != len(nk.Data) {
 			panic("short write to bytes.Buffer")
@@ -139,6 +154,20 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) error {
 			toWrite := allChunks.Bytes()
 			err = s.peer.LocalSet(&api.KeyInv{Key: []byte("chk"), Val: toWrite, When: time.Unix(0, int64(nk.SendTime))})
 			p("server sees the last chunk of '%s', writing to bolt %v bytes gave '%v', and returning now.", nk.Filepath, len(toWrite), err)
+
+			var reply api.BcastGetReply
+			_, err = reply.UnmarshalMsg(toWrite)
+			if err != nil {
+				return fmt.Errorf("reply.UnmarshalMsg() errored '%v'", err)
+			}
+
+			select {
+			case s.cfg.ServerGotReply <- &reply:
+				p("gserv server.go sent reply on s.cfg.ServerGotReply; reply='%s'/'%#v'")
+			case <-s.cfg.Halt.ReqStop.Chan:
+			}
+
+			return err
 		}
 
 	} // end for
@@ -150,7 +179,7 @@ const ProgramName = "gprcServer"
 func MainExample() {
 
 	myflags := flag.NewFlagSet(ProgramName, flag.ExitOnError)
-	cfg := &ServerConfig{}
+	cfg := NewServerConfig()
 	cfg.DefineFlags(myflags)
 
 	sshegoCfg := setupSshFlags(myflags)
@@ -223,7 +252,7 @@ func (cfg *ServerConfig) StartGrpcServer(peer api.LocalGetSet, sshdReady chan bo
 	}
 
 	cfg.GrpcServer = grpc.NewServer(opts...)
-	pb.RegisterPeerServer(cfg.GrpcServer, NewPeerServerClass(peer))
+	pb.RegisterPeerServer(cfg.GrpcServer, NewPeerServerClass(peer, cfg))
 
 	// blocks until shutdown
 	cfg.GrpcServer.Serve(lis)

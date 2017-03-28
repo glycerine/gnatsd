@@ -326,6 +326,7 @@ func (peer *Peer) setupNatsClient() error {
 		} else {
 			reply.Ki = ki
 		}
+		p("debug peer.LocalGet(key='%s') returned ki.Key='%s' and ki.Val='%s'", string(bgr.Key), string(ki.Key), string(ki.Val))
 
 		// use the SendFile() client to return the BigFile
 
@@ -685,15 +686,13 @@ func (peer *Peer) StartBackgroundSshdRecv(myID, myFollowSubj string) {
 		lsn1.Close()
 		lsn2.Close()
 
-		peer.GservCfg = &gserv.ServerConfig{
-			ServerGotReply:  make(chan *api.BcastGetReply),
-			Host:            peer.serverOpts.Host,
-			ExternalLsnPort: port0,
-			InternalLsnPort: port1,
-			SshegoCfg: &tun.SshegoConfig{
-				Username:                peer.serverOpts.Username,
-				TestAllowOneshotConnect: peer.TestAllowOneshotConnect,
-			},
+		peer.GservCfg = gserv.NewServerConfig()
+		peer.GservCfg.Host = peer.serverOpts.Host
+		peer.GservCfg.ExternalLsnPort = port0
+		peer.GservCfg.InternalLsnPort = port1
+		peer.GservCfg.SshegoCfg = &tun.SshegoConfig{
+			Username:                peer.serverOpts.Username,
+			TestAllowOneshotConnect: peer.TestAllowOneshotConnect,
 		}
 
 		// fill default SshegoCfg
