@@ -69,6 +69,7 @@ type Peer struct {
 
 	LeadStatus leadFlag
 	saver      *BoltSaver
+	grpcAddr   string
 }
 
 type leadFlag struct {
@@ -150,6 +151,8 @@ func NewPeer(args, whoami string) (*Peer, error) {
 	const debug = false
 
 	r.plog = logger.NewStdLogger(micros, debug, trace, colors, pid, log.LUTC)
+
+	// start grpc server endpoint
 
 	return r, nil
 }
@@ -370,6 +373,28 @@ func (peer *Peer) setupNatsClient() error {
 		laf.MyID = peer.loc.ID
 
 		peer.LeadAndFollowBchan.Bcast(&laf)
+	})
+
+	// queries to the peer - for grpc port info, for example
+	nc.Subscribe(peer.loc.ID+".>", func(msg *nats.Msg) {
+
+		subSubject := msg.Subject[len(peer.loc.ID)+1:]
+
+		mylog.Printf("peer '%s' receved on subSubject %s: '%s'",
+			peer.loc.ID,
+			subSubject,
+			string(msg.Data))
+
+		switch subSubject {
+		case "grpc-port-query":
+			var port [8]byte
+			err = nc.Publish(msg.Reply, []byte(GetGrpcAddr()))
+			if err != nil {
+				mylog.Printf("warning: '%s' publish to '%s' got error '%v'",
+					subSubject,
+					msg.Reply, err)
+			}
+		}
 	})
 
 	return nil
@@ -754,4 +779,11 @@ func blake2bOfBytes(by []byte) []byte {
 	panicOn(err)
 	h.Write(by)
 	return []byte(h.Sum(nil))
+}
+
+func (peer *Peer) GetGrpcAddr() string {
+	peer.mut.Lock()
+	port := peer.grpcAddr
+	peer.mut.Unlock()
+	return port
 }
