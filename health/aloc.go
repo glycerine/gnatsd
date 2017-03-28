@@ -12,15 +12,11 @@ import (
 // the Id and location of one gnatsd
 // server in the cluster.
 type AgentLoc struct {
-	ID   string `json:"serverId"`
-	Host string `json:"host"`
-	Port int    `json:"port"`
+	ID       string `json:"serverId"`
+	Host     string `json:"host"`
+	NatsPort int    `json:"natsPort"`
 
-	// LeaseExpires is zero for any
-	// non-leader. For the leader,
-	// LeaseExpires tells you when
-	// the leaders lease expires.
-	LeaseExpires time.Time `json:"leaseExpires"`
+	GrpcPort int `json:"grpcPort"`
 
 	// lower rank is leader until lease
 	// expires. Ties are broken by ID.
@@ -35,7 +31,7 @@ type AgentLoc struct {
 	// sometimes, if they share the
 	// same nats server.
 	//
-	// Pid is the one difference between
+	// Pid is one difference between
 	// a nats.ServerLoc and a health.AgentLoc.
 	//
 	Pid int `json:"pid"`

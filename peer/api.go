@@ -102,6 +102,8 @@ func (peer *Peer) BcastGet(key []byte, includeValue bool, timeout time.Duration,
 	if err != nil {
 		return nil, err
 	}
+	s.SetPendingLimits(-1, -1)
+
 	defer s.Unsubscribe()
 
 	err = peer.nc.PublishRequest(peer.subjBcastGet, inbox, mm)
@@ -137,6 +139,10 @@ func (peer *Peer) BcastGet(key []byte, includeValue bool, timeout time.Duration,
 	}
 	return
 }
+
+// This versino of BcastSet is unreliable, and only works for
+// small values. See bcast.go for reliable big value handling.
+/*
 func (peer *Peer) BcastSet(ki *KeyInv) error {
 
 	timeout := 10 * time.Second
@@ -195,6 +201,7 @@ func (peer *Peer) BcastSet(ki *KeyInv) error {
 	}
 	return fmt.Errorf(errs)
 }
+*/
 
 func (peer *Peer) LocalGet(key []byte, includeValue bool) (ki *KeyInv, err error) {
 	return peer.saver.LocalGet(key, includeValue)

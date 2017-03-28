@@ -190,12 +190,12 @@ func (peer *Peer) Start() error {
 // Stop shutsdown the embedded gnatsd
 // instance.
 func (peer *Peer) Stop() {
-	//p("%s peer.Stop() invoked, shutting down...", peer.loc.ID)
+	p("%s peer.Stop() invoked, shutting down...", peer.loc.ID)
 	if peer != nil {
 		sessF := peer.GetFollowSess()
 		if sessF != nil {
 			peer.SetFollowSess(nil)
-			//p("%s peer.Stop() is invoking sessF.Close() and Stop()", peer.loc.ID)
+			p("%s peer.Stop() is invoking sessF.Close() and Stop()", peer.loc.ID)
 			// unblock Session.Read() from sessF.RecvFile()
 			sessF.Close()
 			sessF.Stop()
@@ -210,7 +210,10 @@ func (peer *Peer) Stop() {
 			peer.serv = nil
 		}
 		peer.Halt.ReqStop.Close()
-		<-peer.Halt.Done.Chan
+		select {
+		case <-peer.Halt.Done.Chan:
+		case <-time.After(5 * time.Second):
+		}
 	}
 }
 
@@ -271,7 +274,7 @@ func (peer *Peer) setupNatsClient() error {
 	peer.subjBcastGet = "bcast_get"
 	peer.subjBcastSet = "bcast_set"
 
-	nc.Subscribe(peer.subjBcastGet, func(msg *nats.Msg) {
+	getScrip, err := nc.Subscribe(peer.subjBcastGet, func(msg *nats.Msg) {
 		var bgr BcastGetRequest
 		bgr.UnmarshalMsg(msg.Data)
 		//mylog.Printf("%s peer recevied subjBcastGet for key '%s'",
@@ -304,9 +307,11 @@ func (peer *Peer) setupNatsClient() error {
 		err = nc.Publish(msg.Reply, mm)
 		panicOn(err)
 	})
+	panicOn(err)
+	getScrip.SetPendingLimits(-1, -1)
 
 	// BcastSet
-	nc.Subscribe(peer.subjBcastSet, func(msg *nats.Msg) {
+	setScrip, err := nc.Subscribe(peer.subjBcastSet, func(msg *nats.Msg) {
 		var bsr BcastSetRequest
 		bsr.UnmarshalMsg(msg.Data)
 		mylog.Printf("peer recevied subjBcastSet for key '%s'",
@@ -324,6 +329,8 @@ func (peer *Peer) setupNatsClient() error {
 		err = nc.Publish(msg.Reply, mm)
 		panicOn(err)
 	})
+	panicOn(err)
+	setScrip.SetPendingLimits(-1, -1)
 
 	// reporting
 	nc.Subscribe(peer.subjMemberLost, func(msg *nats.Msg) {

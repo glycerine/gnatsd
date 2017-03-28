@@ -272,7 +272,7 @@ type Session struct {
 // SessionConfig configures a Session.
 type SessionConfig struct {
 
-	// the network the use, NatsNet or SimNet
+	// the network to use, NatsNet or SimNet
 	Net Network
 
 	// where we listen

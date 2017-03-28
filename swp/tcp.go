@@ -82,7 +82,19 @@ const (
 	SendDataAck  TcpAction = 7
 )
 
-// e is the received event
+// UpdateTcp is a simplified version of the TCP state
+// machine. We open with the same 3-way handshake,
+// with Syn, SynAck, and EstabAck;
+// but simplify the close process, opting to avoid
+// the four-way close handshake. Typically our
+// sessions will disappear quickly so this
+// quick close down was more practical.
+//
+// Any TcpAction returned is executed by the
+// RecvState.doTcpAction method in recv.go.
+//
+// Argument e is the received event, coming from
+// the remote endpoint.
 func (s *TcpState) UpdateTcp(e TcpEvent, fromState TcpState) TcpAction {
 
 	switch *s {

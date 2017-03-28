@@ -27,7 +27,7 @@ const (
 
 	// MAX_PAYLOAD_SIZE is the maximum allowed payload size. Should be using
 	// something different if > 1MB payloads are needed.
-	MAX_PAYLOAD_SIZE = (1024 * 1024)
+	MAX_PAYLOAD_SIZE = (1024 * 1024 * 1030)
 
 	// DEFAULT_MAX_CONNECTIONS is the default maximum connections allowed.
 	DEFAULT_MAX_CONNECTIONS = (64 * 1024)

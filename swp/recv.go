@@ -645,6 +645,7 @@ func (r *RecvState) Stop() {
 	if ok {
 		if nn.Cli != nil && nn.Cli.Scrip != nil {
 			nn.Cli.Scrip.Unsubscribe()
+			nn.Cli.Scrip = nil
 		}
 	}
 

@@ -1,2 +1,3 @@
 0000000000000000000000000000000000000000 557cc584f350aef60104322cd44d294d4d5bee68 Jason E. Aten <j.e.aten@gmail.com> 1489059365 -0600	clone: from https://github.com/glycerine/go-nats
 557cc584f350aef60104322cd44d294d4d5bee68 17935ed904924589fd9486f1cfe3c05c6e2ad289 Jason E. Aten <j.e.aten@gmail.com> 1489060121 -0600	commit: import nats-io -> glycerine
+17935ed904924589fd9486f1cfe3c05c6e2ad289 30bf900818660bd855bbe496ea4d185878c098db Jason E. Aten <jaten@saucelabs.com> 1490679948 -0500	pull: Fast-forward
