@@ -24,18 +24,18 @@ import (
 	pb "github.com/glycerine/hnatsd/peer/streambigfile"
 )
 
-type PeerServer struct {
+type PeerServerClass struct {
 	peer api.LocalGetSet
 }
 
-func NewPeerServer(peer api.LocalGetSet) *PeerServer {
-	return &PeerServer{
+func NewPeerServerClass(peer api.LocalGetSet) *PeerServerClass {
+	return &PeerServerClass{
 		peer: peer,
 	}
 }
 
 // implement pb.PeerServer interface
-func (s *PeerServer) SendFile(stream pb.Peer_SendFileServer) error {
+func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) error {
 	p("peer.Server SendFile starting!")
 	var chunkCount int64
 	path := ""
@@ -206,7 +206,7 @@ func (cfg *ServerConfig) StartGrpcServer(peer api.LocalGetSet) {
 	}
 
 	grpcServer := grpc.NewServer(opts...)
-	pb.RegisterPeerServer(grpcServer, NewPeerServer(peer))
+	pb.RegisterPeerServer(grpcServer, NewPeerServerClass(peer))
 	grpcServer.Serve(lis)
 }
 

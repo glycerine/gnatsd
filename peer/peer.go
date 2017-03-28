@@ -78,6 +78,7 @@ type Peer struct {
 
 	gservCfg *gserv.ServerConfig
 	grpcAddr string
+	Whoami   string
 }
 
 type leadFlag struct {
@@ -142,6 +143,7 @@ func NewPeer(args, whoami string) (*Peer, error) {
 		MemberGainedBchan:  bchan.New(2),
 		MemberLostBchan:    bchan.New(2),
 		saver:              saver,
+		Whoami:             whoami,
 	}
 	serv, opts, err := hnatsdMain(argv)
 	if err != nil {
@@ -648,8 +650,10 @@ func (peer *Peer) StartBackgroundRecv(myID, myFollowSubj string) {
 
 		port0, lsn0 := getAvailPort()
 		port1, lsn1 := getAvailPort()
+		port2, lsn2 := getAvailPort()
 		lsn0.Close()
 		lsn1.Close()
+		lsn2.Close()
 
 		peer.gservCfg = &gserv.ServerConfig{
 			Host:            peer.serverOpts.Host,
@@ -664,7 +668,9 @@ func (peer *Peer) StartBackgroundRecv(myID, myFollowSubj string) {
 		dummyFlagSet := &flag.FlagSet{}
 		peer.gservCfg.SshegoCfg.DefineFlags(dummyFlagSet)
 
-		peer.gservCfg.SshegoCfg.EmbeddedSSHdHostDbPath = ""
+		// make these unique for each peer by adding Whoami
+		peer.gservCfg.SshegoCfg.EmbeddedSSHdHostDbPath += ("." + peer.Whoami)
+		peer.gservCfg.SshegoCfg.SshegoSystemMutexPort = port2
 
 		peer.grpcAddr = fmt.Sprintf("%v:%v", peer.gservCfg.Host, peer.gservCfg.ExternalLsnPort)
 		// will block until server exits:
