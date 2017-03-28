@@ -67,6 +67,10 @@ type BcastGetReply struct {
 
 type BcastSetRequest struct {
 	Ki *KeyInv
+
+	ReplyGrpcHost  string
+	ReplyGrpcXPort int
+	ReplyGrpcIPort int
 }
 
 type BcastSetReply struct {
