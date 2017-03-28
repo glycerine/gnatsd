@@ -50,13 +50,14 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) error {
 
 	var finalChecksum []byte
 	var fd *os.File
+	bytesSeen := 0
 
 	defer func() {
 		if fd != nil {
 			fd.Close()
 		}
-		p("this server.SendFile() call got %v chunks, with "+
-			"final checksum '%x'", chunkCount, finalChecksum)
+		p("this server.SendFile() call got %v chunks, byteCount=%v. with "+
+			"final checksum '%x'", chunkCount, bytesSeen, finalChecksum)
 	}()
 
 	firstChunkSeen := false
@@ -69,6 +70,10 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) error {
 				// we are assuming that this never happens!
 				panic("we need to save this last chunk too!")
 			}
+			p("server doing stream.Recv(); sees err == "+
+				"io.EOF. nk=%p. bytesSeen=%v. chunkCount=%v.",
+				nk, bytesSeen, chunkCount)
+
 			finalChecksum = []byte(hasher.Sum(nil))
 			endTime := time.Now()
 			return stream.SendAndClose(&pb.BigFileAck{
@@ -81,6 +86,7 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) error {
 		if err != nil {
 			return err
 		}
+		bytesSeen += len(nk.Data)
 
 		// INVAR: we have a chunk
 		if !firstChunkSeen {
@@ -97,6 +103,8 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) error {
 		cumul := []byte(hasher.Sum(nil))
 		if 0 != bytes.Compare(cumul, nk.Blake2BCumulative) {
 			return fmt.Errorf("cumulative checksums failed at chunk %v of '%s'. Observed: '%x', expected: '%x'.", nk.ChunkNumber, nk.Filepath, cumul, nk.Blake2BCumulative)
+		} else {
+			p("cumulative checksum on nk.ChunkNumber=%v looks good; cumul='%x'.  nk.IsLastChunk=%v", nk.ChunkNumber, nk.Blake2BCumulative, nk.IsLastChunk)
 		}
 		if path == "" {
 			path = nk.Filepath
@@ -128,7 +136,9 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) error {
 		}
 
 		if nk.IsLastChunk {
-			return s.peer.LocalSet(&api.KeyInv{Key: []byte("chk"), Val: allChunks.Bytes(), When: time.Unix(0, int64(nk.SendTime))})
+			toWrite := allChunks.Bytes()
+			err = s.peer.LocalSet(&api.KeyInv{Key: []byte("chk"), Val: toWrite, When: time.Unix(0, int64(nk.SendTime))})
+			p("server sees the last chunk of '%s', writing to bolt %v bytes gave '%v', and returning now.", nk.Filepath, len(toWrite), err)
 		}
 
 	} // end for

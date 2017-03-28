@@ -52,7 +52,7 @@ func (c *client) runSendFile(path string, data []byte, maxChunkSize int) error {
 	}
 	nextByte := 0
 	lastChunk := numChunk - 1
-	p("'%s' client sees %v chunks of size ~ %v bytes", path, numChunk, maxChunkSize)
+	p("'%s' client sees %v chunks of size ~ %v bytes", path, numChunk, intMin(n, maxChunkSize))
 	for i := 0; i < numChunk; i++ {
 		sendLen := intMin(maxChunkSize, n-(i*maxChunkSize))
 		chunk := data[nextByte:(nextByte + sendLen)]
@@ -73,9 +73,9 @@ func (c *client) runSendFile(path string, data []byte, maxChunkSize int) error {
 		c.nextChunk++
 		nk.IsLastChunk = (i == lastChunk)
 
-		if nk.ChunkNumber%100 == 0 {
-			p("client, on chunk %v of '%s', checksum='%x', and cumul='%x'", nk.ChunkNumber, nk.Filepath, nk.Blake2B, nk.Blake2BCumulative)
-		}
+		//		if nk.ChunkNumber%100 == 0 {
+		p("client, on chunk %v of '%s', checksum='%x', and cumul='%x'", nk.ChunkNumber, nk.Filepath, nk.Blake2B, nk.Blake2BCumulative)
+		//		}
 
 		if err := stream.Send(&nk); err != nil {
 			// EOF?
@@ -93,7 +93,9 @@ func (c *client) runSendFile(path string, data []byte, maxChunkSize int) error {
 	}
 	reply, err := stream.CloseAndRecv()
 	if err != nil {
-		grpclog.Fatalf("%v.CloseAndRecv() got error %v, want %v", stream, err, nil)
+		// EOF ??
+		grpclog.Printf("%v.CloseAndRecv() got error %v, want %v. reply=%v", stream, err, nil, reply)
+		return err
 	}
 
 	compared := bytes.Compare(reply.WholeFileBlake2B, []byte(c.hasher.Sum(nil)))

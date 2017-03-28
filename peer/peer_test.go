@@ -275,15 +275,15 @@ func Test103BcastGet(t *testing.T) {
 
 		p0.SshClientLoginUsername = u.mylogin
 		p0.SshClientPrivateKeyPath = u.rsaPath
-		p0.SshClientClientKnownHostsPath = p0.Whoami + ".sshcli.known.hosts"
+		p0.SshClientClientKnownHostsPath = "p0.sshcli.known.hosts"
 
 		p1.SshClientLoginUsername = u.mylogin
 		p1.SshClientPrivateKeyPath = u.rsaPath
-		p1.SshClientClientKnownHostsPath = p1.Whoami + ".sshcli.known.hosts"
+		p1.SshClientClientKnownHostsPath = "p1.sshcli.known.hosts"
 
 		p2.SshClientLoginUsername = u.mylogin
 		p2.SshClientPrivateKeyPath = u.rsaPath
-		p2.SshClientClientKnownHostsPath = p2.Whoami + ".sshcli.known.hosts"
+		p2.SshClientClientKnownHostsPath = "p2.sshcli.known.hosts"
 
 		// set to allow new hosts (turn off MITM protection)
 		// Have to wait until sshd is ready to set this.
@@ -558,4 +558,7 @@ func cleanupTestUserDatabases() {
 	os.Remove("p0.boltdb")
 	os.Remove("p1.boltdb")
 	os.Remove("p2.boltdb")
+	os.Remove("p0.sshcli.known.hosts")
+	os.Remove("p1.sshcli.known.hosts")
+	os.Remove("p2.sshcli.known.hosts")
 }
