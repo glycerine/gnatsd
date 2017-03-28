@@ -258,6 +258,7 @@ func Test103BcastGet(t *testing.T) {
 
 		// add account to all peers, once their sshd is ready
 		<-p0.SshdReady
+		// 1st time sets u.rsaPath, whill will be re-used here-after.
 		creds0, err := u.addUserToSshd(p0.GservCfg.SshegoCfg)
 		panicOn(err)
 		p("creds0=%#v", creds0)
@@ -272,22 +273,23 @@ func Test103BcastGet(t *testing.T) {
 		panicOn(err)
 		p("creds2=%#v", creds2)
 
+		p0.SshClientLoginUsername = u.mylogin
+		p0.SshClientPrivateKeyPath = u.rsaPath
+		p0.SshClientClientKnownHostsPath = p0.Whoami + ".sshcli.known.hosts"
+
+		p1.SshClientLoginUsername = u.mylogin
+		p1.SshClientPrivateKeyPath = u.rsaPath
+		p1.SshClientClientKnownHostsPath = p1.Whoami + ".sshcli.known.hosts"
+
+		p2.SshClientLoginUsername = u.mylogin
+		p2.SshClientPrivateKeyPath = u.rsaPath
+		p2.SshClientClientKnownHostsPath = p2.Whoami + ".sshcli.known.hosts"
+
 		// set to allow new hosts (turn off MITM protection)
 		// Have to wait until sshd is ready to set this.
-		p0.GservCfg.SshegoCfg.TestAllowOneshotConnect = true
-		p1.GservCfg.SshegoCfg.TestAllowOneshotConnect = true
-		p2.GservCfg.SshegoCfg.TestAllowOneshotConnect = true
-
-		// defer cleanups
-		defer os.RemoveAll(".p0")
-		defer os.RemoveAll(".p0.hostkey")
-		defer os.RemoveAll(".p0.hostkey.pub")
-		defer os.RemoveAll(".p1")
-		defer os.RemoveAll(".p1.hostkey")
-		defer os.RemoveAll(".p1.hostkey.pub")
-		defer os.RemoveAll(".p2")
-		defer os.RemoveAll(".p2.hostkey")
-		defer os.RemoveAll(".p2.hostkey.pub")
+		//		p0.GservCfg.SshegoCfg.TestAllowOneshotConnect = true
+		//		p1.GservCfg.SshegoCfg.TestAllowOneshotConnect = true
+		//		p2.GservCfg.SshegoCfg.TestAllowOneshotConnect = true
 
 		// let peers come up and start talking
 		peers, err := p0.WaitForPeerCount(3, 120*time.Second)
@@ -514,10 +516,6 @@ func Test105GetLatest(t *testing.T) {
 			panic(fmt.Sprintf("could not setup all 3 peers??? count=%v. ", len(peers.Members)))
 		}
 
-		defer os.Remove("p0.boltdb")
-		defer os.Remove("p1.boltdb")
-		defer os.Remove("p2.boltdb")
-
 		t3 := time.Now().UTC()
 		t2 := t3.Add(-time.Minute)
 		t1 := t2.Add(-time.Minute)
@@ -557,4 +555,7 @@ func cleanupTestUserDatabases() {
 	os.RemoveAll(".p2")
 	os.RemoveAll(".p2.hostkey")
 	os.RemoveAll(".p2.hostkey.pub")
+	os.Remove("p0.boltdb")
+	os.Remove("p1.boltdb")
+	os.Remove("p2.boltdb")
 }

@@ -78,7 +78,11 @@ type Peer struct {
 
 	GservCfg *gserv.ServerConfig
 	grpcAddr string
-	Whoami   string
+	Whoami   string // as a host
+
+	SshClientLoginUsername        string
+	SshClientPrivateKeyPath       string
+	SshClientClientKnownHostsPath string
 
 	SshdReady                    chan bool
 	SshClientAllowsNewSshdServer bool
@@ -325,8 +329,6 @@ func (peer *Peer) setupNatsClient() error {
 
 		// use the SendFile() client to return the BigFile
 
-		home := os.Getenv("HOME")
-		user := os.Getenv("USER")
 		clicfg := &gcli.ClientConfig{
 			AllowNewServer:          peer.SshClientAllowsNewSshdServer,
 			TestAllowOneshotConnect: peer.TestAllowOneshotConnect,
@@ -335,9 +337,9 @@ func (peer *Peer) setupNatsClient() error {
 			ServerInternalHost:      "127.0.0.1",
 			ServerInternalPort:      bgr.ReplyGrpcIPort,
 
-			Username:             peer.serverOpts.Username,
-			PrivateKeyPath:       home + "/.ssh/.sshego.sshd.db/users/" + user + "/id_rsa",
-			ClientKnownHostsPath: home + "/.ssh/.sshego.cli.known.hosts." + peer.Whoami,
+			Username:             peer.SshClientLoginUsername,
+			PrivateKeyPath:       peer.SshClientPrivateKeyPath,
+			ClientKnownHostsPath: peer.SshClientClientKnownHostsPath,
 		}
 
 		replyData, err := reply.MarshalMsg(nil)

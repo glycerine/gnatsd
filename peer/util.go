@@ -13,6 +13,7 @@ type sshUser struct {
 	pw       string
 	fullname string
 	issuer   string
+	rsaPath  string
 }
 
 type sshUserCreds struct {
@@ -36,7 +37,7 @@ func newTestSshUser() *sshUser {
 func (u *sshUser) addUserToSshd(srvCfg *tun.SshegoConfig) (*sshUserCreds, error) {
 	// create a new acct
 	toptPath, qrPath, rsaPath, err := srvCfg.HostDb.AddUser(
-		u.mylogin, u.myemail, u.pw, u.issuer, u.fullname)
+		u.mylogin, u.myemail, u.pw, u.issuer, u.fullname, u.rsaPath)
 	if err != nil {
 		return nil, err
 	}
@@ -46,5 +47,6 @@ func (u *sshUser) addUserToSshd(srvCfg *tun.SshegoConfig) (*sshUserCreds, error)
 		qrPath:   qrPath,
 		rsaPath:  rsaPath,
 	}
+	u.rsaPath = rsaPath
 	return r, nil
 }
