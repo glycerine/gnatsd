@@ -163,7 +163,7 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 
 			select {
 			case s.cfg.ServerGotReply <- &reply:
-				p("gserv server.go sent reply on s.cfg.ServerGotReply; reply='%s'/'%#v'")
+				p("gserv server.go sent reply on s.cfg.ServerGotReply; reply='%s'/'%#v'", reply, reply)
 			case <-s.cfg.Halt.ReqStop.Chan:
 			}
 
