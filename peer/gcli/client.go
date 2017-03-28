@@ -4,12 +4,8 @@ package gcli
 import (
 	"bytes"
 	"encoding/binary"
-	"flag"
 	"fmt"
 	"io"
-	"log"
-	"os"
-	"runtime/pprof"
 	"time"
 
 	"github.com/glycerine/blake2b" // vendor https://github.com/dchest/blake2b"
@@ -139,7 +135,7 @@ func SequentialPayload(n int64) []byte {
 	return by
 }
 
-func (cfg *ClientCfg) ClientSendFile(path string, data []byte) error {
+func (cfg *ClientConfig) ClientSendFile(path string, data []byte) error {
 
 	var opts []grpc.DialOption
 	if cfg.UseTLS {
@@ -167,7 +163,7 @@ func (cfg *ClientCfg) ClientSendFile(path string, data []byte) error {
 	if err != nil {
 		return err
 	}
-	mb := float64(len(data3)) / float64(1<<20)
+	mb := float64(len(data)) / float64(1<<20)
 	elap := t1.Sub(t0)
 	p("c: elap time to send %v MB was %v => %.03f MB/sec", mb, elap, mb/(float64(elap)/1e9))
 	return nil
@@ -195,7 +191,7 @@ func (cfg *ClientConfig) setupSSH(opts *[]grpc.DialOption) {
 
 	destAddr := fmt.Sprintf("%v:%v", cfg.ServerInternalHost, cfg.ServerInternalPort)
 
-	dialer, err := clientSshMain(cfg.AllowNewServer, cfg.PrivateKeyPath, cfg.ClientKnownHostsPath, cfg.Username, cfg.ServerHost, destAddr, int64(cfg.ServerPort))
+	dialer, err := clientSshMain(cfg.AllowNewServer, cfg.TestAllowOneshotConnect, cfg.PrivateKeyPath, cfg.ClientKnownHostsPath, cfg.Username, cfg.ServerHost, destAddr, int64(cfg.ServerPort))
 	panicOn(err)
 
 	*opts = append(*opts, grpc.WithDialer(dialer))

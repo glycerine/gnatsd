@@ -7,15 +7,16 @@ import (
 )
 
 type ClientConfig struct {
-	UseTLS             bool
-	AllowNewServer     bool // only give once to prevent MITM.
-	CertPath           string
-	KeyPath            string
-	ServerHost         string // ip address
-	ServerPort         int
-	ServerInternalHost string // ip address
-	ServerInternalPort int
-	ServerHostOverride string
+	UseTLS                  bool
+	AllowNewServer          bool // only give once to prevent MITM.
+	TestAllowOneshotConnect bool
+	CertPath                string
+	KeyPath                 string
+	ServerHost              string // ip address
+	ServerPort              int
+	ServerInternalHost      string // ip address
+	ServerInternalPort      int
+	ServerHostOverride      string
 
 	Username             string
 	PrivateKeyPath       string

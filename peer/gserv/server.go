@@ -165,12 +165,12 @@ func MainExample() {
 }
 
 func (cfg *ServerConfig) Stop() {
-	if cfg != nil && cfg.grpcServer != nil {
-		cfg.grpcServer.Stop()
+	if cfg != nil && cfg.GrpcServer != nil {
+		cfg.GrpcServer.Stop()
 	}
 }
 
-func (cfg *ServerConfig) StartGrpcServer(peer api.LocalGetSet) {
+func (cfg *ServerConfig) StartGrpcServer(peer api.LocalGetSet, sshdReady chan bool) {
 
 	var gRpcBindPort int
 	var gRpcHost string
@@ -209,11 +209,14 @@ func (cfg *ServerConfig) StartGrpcServer(peer api.LocalGetSet) {
 		err = serverSshMain(cfg.SshegoCfg, cfg.Host,
 			cfg.ExternalLsnPort, cfg.InternalLsnPort)
 		panicOn(err)
+		close(sshdReady)
 	}
 
-	cfg.grpcServer = grpc.NewServer(opts...)
-	pb.RegisterPeerServer(cfg.grpcServer, NewPeerServerClass(peer))
-	cfg.grpcServer.Serve(lis)
+	cfg.GrpcServer = grpc.NewServer(opts...)
+	pb.RegisterPeerServer(cfg.GrpcServer, NewPeerServerClass(peer))
+
+	// blocks until shutdown
+	cfg.GrpcServer.Serve(lis)
 }
 
 func blake2bOfBytes(by []byte) []byte {

@@ -93,27 +93,19 @@ func (peer *Peer) BcastGet(key []byte, includeValue bool, timeout time.Duration,
 	//p("numPeers = %v", numPeers)
 
 	bgr := &api.BcastGetRequest{
-		Key:          key,
-		Who:          who,
-		IncludeValue: includeValue,
+		Key:            key,
+		Who:            who,
+		IncludeValue:   includeValue,
+		ReplyGrpcHost:  peer.GservCfg.Host,
+		ReplyGrpcXPort: peer.GservCfg.ExternalLsnPort,
+		ReplyGrpcIPort: peer.GservCfg.InternalLsnPort,
 	}
 	mm, err := bgr.MarshalMsg(nil)
 	if err != nil {
 		return nil, err
 	}
 
-	inbox := nats.NewInbox()
-	ch := make(chan *nats.Msg, RequestChanLen)
-
-	s, err := peer.nc.ChanSubscribe(inbox, ch)
-	if err != nil {
-		return nil, err
-	}
-	s.SetPendingLimits(-1, -1)
-
-	defer s.Unsubscribe()
-
-	err = peer.nc.PublishRequest(peer.subjBcastGet, inbox, mm)
+	err = peer.nc.Publish(peer.subjBcastGet, mm)
 	if err != nil {
 		return nil, err
 	}
@@ -124,13 +116,8 @@ func (peer *Peer) BcastGet(key []byte, includeValue bool, timeout time.Duration,
 		select {
 		case <-toCh:
 			return nil, ErrTimedOut
-		case reply := <-ch:
+		case bgr := <-peer.GservCfg.ServerGotReply:
 			//p("BcastGet got a reply, on i = %v", i)
-			var bgr api.BcastGetReply
-			_, err := bgr.UnmarshalMsg(reply.Data)
-			if err != nil {
-				return nil, err
-			}
 			if bgr.Err != "" {
 				return nil, fmt.Errorf(bgr.Err)
 			} else {

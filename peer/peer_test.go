@@ -197,6 +197,11 @@ func Test103BcastGet(t *testing.T) {
 
 	cv.Convey("Given three peers p0, p1, and p2, BcastGet should return KeyInv from both", t, func() {
 
+		cleanupTestUserDatabases()
+		defer cleanupTestUserDatabases()
+
+		u := newTestSshUser()
+
 		nPeerPort0, lsn0 := getAvailPort()
 		nPeerPort1, lsn1 := getAvailPort()
 		nPeerPort2, lsn2 := getAvailPort()
@@ -231,6 +236,14 @@ func Test103BcastGet(t *testing.T) {
 		p2, err := NewPeer(peer2cfg, "p2")
 		panicOn(err)
 
+		p0.SshClientAllowsNewSshdServer = true
+		p1.SshClientAllowsNewSshdServer = true
+		p2.SshClientAllowsNewSshdServer = true
+
+		p0.TestAllowOneshotConnect = true
+		p1.TestAllowOneshotConnect = true
+		p2.TestAllowOneshotConnect = true
+
 		// start em up
 		err = p0.Start()
 		panicOn(err)
@@ -242,6 +255,39 @@ func Test103BcastGet(t *testing.T) {
 		defer p0.Stop()
 		defer p1.Stop()
 		defer p2.Stop()
+
+		// add account to all peers, once their sshd is ready
+		<-p0.SshdReady
+		creds0, err := u.addUserToSshd(p0.GservCfg.SshegoCfg)
+		panicOn(err)
+		p("creds0=%#v", creds0)
+
+		<-p1.SshdReady
+		creds1, err := u.addUserToSshd(p1.GservCfg.SshegoCfg)
+		panicOn(err)
+		p("creds1=%#v", creds1)
+
+		<-p2.SshdReady
+		creds2, err := u.addUserToSshd(p2.GservCfg.SshegoCfg)
+		panicOn(err)
+		p("creds2=%#v", creds2)
+
+		// set to allow new hosts (turn off MITM protection)
+		// Have to wait until sshd is ready to set this.
+		p0.GservCfg.SshegoCfg.TestAllowOneshotConnect = true
+		p1.GservCfg.SshegoCfg.TestAllowOneshotConnect = true
+		p2.GservCfg.SshegoCfg.TestAllowOneshotConnect = true
+
+		// defer cleanups
+		defer os.RemoveAll(".p0")
+		defer os.RemoveAll(".p0.hostkey")
+		defer os.RemoveAll(".p0.hostkey.pub")
+		defer os.RemoveAll(".p1")
+		defer os.RemoveAll(".p1.hostkey")
+		defer os.RemoveAll(".p1.hostkey.pub")
+		defer os.RemoveAll(".p2")
+		defer os.RemoveAll(".p2.hostkey")
+		defer os.RemoveAll(".p2.hostkey.pub")
 
 		// let peers come up and start talking
 		peers, err := p0.WaitForPeerCount(3, 120*time.Second)
@@ -500,3 +546,15 @@ func Test105GetLatest(t *testing.T) {
 }
 
 // TODO: now test for full-file transfer over swp.
+
+func cleanupTestUserDatabases() {
+	os.RemoveAll(".p0")
+	os.RemoveAll(".p0.hostkey")
+	os.RemoveAll(".p0.hostkey.pub")
+	os.RemoveAll(".p1")
+	os.RemoveAll(".p1.hostkey")
+	os.RemoveAll(".p1.hostkey.pub")
+	os.RemoveAll(".p2")
+	os.RemoveAll(".p2.hostkey")
+	os.RemoveAll(".p2.hostkey.pub")
+}

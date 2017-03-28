@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/glycerine/hnatsd/peer/api"
 	tun "github.com/glycerine/sshego"
 	"google.golang.org/grpc"
 )
@@ -24,7 +25,15 @@ type ServerConfig struct {
 
 	SshegoCfg *tun.SshegoConfig
 
-	grpcServer *grpc.Server
+	ServerGotReply chan *api.BcastGetReply
+
+	GrpcServer *grpc.Server
+}
+
+func NewServerConfig() *ServerConfig {
+	return &ServerConfig{
+		ServerGotReply: make(chan *api.BcastGetReply),
+	}
 }
 
 func (c *ServerConfig) DefineFlags(fs *flag.FlagSet) {

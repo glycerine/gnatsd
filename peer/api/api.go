@@ -55,8 +55,9 @@ type BcastGetRequest struct {
 	// the whole (big) value.
 	IncludeValue bool
 
-	ReplyGrpcHost string
-	ReplyGrpcPort int
+	ReplyGrpcHost  string
+	ReplyGrpcXPort int
+	ReplyGrpcIPort int
 }
 
 type BcastGetReply struct {

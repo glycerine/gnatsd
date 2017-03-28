@@ -1,7 +1,6 @@
 package peer
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -77,9 +76,13 @@ type Peer struct {
 	LeadStatus leadFlag
 	saver      *BoltSaver
 
-	gservCfg *gserv.ServerConfig
+	GservCfg *gserv.ServerConfig
 	grpcAddr string
 	Whoami   string
+
+	SshdReady                    chan bool
+	SshClientAllowsNewSshdServer bool
+	TestAllowOneshotConnect      bool
 }
 
 type leadFlag struct {
@@ -145,6 +148,7 @@ func NewPeer(args, whoami string) (*Peer, error) {
 		MemberLostBchan:    bchan.New(2),
 		saver:              saver,
 		Whoami:             whoami,
+		SshdReady:          make(chan bool),
 	}
 	serv, opts, err := hnatsdMain(argv)
 	if err != nil {
@@ -194,7 +198,7 @@ func (peer *Peer) Start() error {
 		cs, myFollowSubj := list2status(laf)
 		mylog.Printf("peer.Start(): we have clusterStatus: '%s'", &cs)
 
-		peer.StartBackgroundRecv(laf.MyID, myFollowSubj)
+		peer.StartBackgroundSshdRecv(laf.MyID, myFollowSubj)
 	}
 	return nil
 }
@@ -221,8 +225,8 @@ func (peer *Peer) Stop() {
 			peer.serv.Shutdown()
 			peer.serv = nil
 		}
-		if peer.gservCfg != nil {
-			peer.gservCfg.Stop()
+		if peer.GservCfg != nil {
+			peer.GservCfg.Stop()
 		}
 		peer.Halt.ReqStop.Close()
 		select {
@@ -289,6 +293,7 @@ func (peer *Peer) setupNatsClient() error {
 	peer.subjBcastGet = "bcast_get"
 	peer.subjBcastSet = "bcast_set"
 
+	// BCAST GET handler
 	getScrip, err := nc.Subscribe(peer.subjBcastGet, func(msg *nats.Msg) {
 		var bgr api.BcastGetRequest
 		bgr.UnmarshalMsg(msg.Data)
@@ -323,16 +328,22 @@ func (peer *Peer) setupNatsClient() error {
 		home := os.Getenv("HOME")
 		user := os.Getenv("USER")
 		clicfg := &gcli.ClientConfig{
-			ServerHost:         bgr.ReplyGrpcHost,
-			ServerPort:         bgr.ReplyGrpcPort,
-			ServerInternalHost: "",
-			ServerInternalPort: 0,
+			AllowNewServer:          peer.SshClientAllowsNewSshdServer,
+			TestAllowOneshotConnect: peer.TestAllowOneshotConnect,
+			ServerHost:              bgr.ReplyGrpcHost,
+			ServerPort:              bgr.ReplyGrpcXPort,
+			ServerInternalHost:      "127.0.0.1",
+			ServerInternalPort:      bgr.ReplyGrpcIPort,
 
-			Username:             "",
+			Username:             peer.serverOpts.Username,
 			PrivateKeyPath:       home + "/.ssh/.sshego.sshd.db/users/" + user + "/id_rsa",
 			ClientKnownHostsPath: home + "/.ssh/.sshego.cli.known.hosts." + peer.Whoami,
 		}
-		err = clicfg.ClientSendFile(path, data)
+
+		replyData, err := reply.MarshalMsg(nil)
+		panicOn(err)
+
+		err = clicfg.ClientSendFile(string(bgr.Key), replyData)
 		panicOn(err)
 	})
 	panicOn(err)
@@ -638,7 +649,7 @@ func intMax(a, b int) int {
 // session in Listen for checkpoints.
 // ==================================
 
-// StartBackroundRev will keep a peer
+// StartBackroundSshdRecv will keep a peer
 // running in the background and
 // always accepting and writing checkpoints (as
 // long as we are not lead when they are received).
@@ -646,8 +657,8 @@ func intMax(a, b int) int {
 // (recognized by a more recent timestamp), then
 // save it to disk (this dedups if we get multiples of the same).
 //
-func (peer *Peer) StartBackgroundRecv(myID, myFollowSubj string) {
-	mylog.Printf("beginning StartBackgroundRecv(myID='%s', "+
+func (peer *Peer) StartBackgroundSshdRecv(myID, myFollowSubj string) {
+	mylog.Printf("beginning StartBackgroundSshdRecv(myID='%s', "+
 		"myFollowSubj='%s').",
 		myID, myFollowSubj)
 
@@ -655,7 +666,7 @@ func (peer *Peer) StartBackgroundRecv(myID, myFollowSubj string) {
 		defer func() {
 			peer.Halt.ReqStop.Close()
 			peer.Halt.Done.Close()
-			mylog.Printf("StartBackgroundRecv(myID='%s', "+
+			mylog.Printf("StartBackgroundSshdRecv(myID='%s', "+
 				"myFollowSubj='%s') has shutdown.",
 				myID, myFollowSubj)
 		}()
@@ -672,26 +683,32 @@ func (peer *Peer) StartBackgroundRecv(myID, myFollowSubj string) {
 		lsn1.Close()
 		lsn2.Close()
 
-		peer.gservCfg = &gserv.ServerConfig{
+		peer.GservCfg = &gserv.ServerConfig{
+			ServerGotReply:  make(chan *api.BcastGetReply),
 			Host:            peer.serverOpts.Host,
 			ExternalLsnPort: port0,
 			InternalLsnPort: port1,
 			SshegoCfg: &tun.SshegoConfig{
-				Username: peer.serverOpts.Username,
+				Username:                peer.serverOpts.Username,
+				TestAllowOneshotConnect: peer.TestAllowOneshotConnect,
 			},
 		}
 
-		// fill defaults
-		dummyFlagSet := &flag.FlagSet{}
-		peer.gservCfg.SshegoCfg.DefineFlags(dummyFlagSet)
+		// fill default SshegoCfg
+		cfg := peer.GservCfg.SshegoCfg
+
+		home := os.Getenv("HOME")
+		cfg.PrivateKeyPath = home + "/.ssh/id_rsa_nopw"
+		cfg.ClientKnownHostsPath = home + "/.ssh/.sshego.cli.known.hosts." + peer.Whoami
+		cfg.BitLenRSAkeys = 4096
 
 		// make these unique for each peer by adding Whoami
-		peer.gservCfg.SshegoCfg.EmbeddedSSHdHostDbPath += ("." + peer.Whoami)
-		peer.gservCfg.SshegoCfg.SshegoSystemMutexPort = port2
+		cfg.EmbeddedSSHdHostDbPath += ("." + peer.Whoami)
+		cfg.SshegoSystemMutexPort = port2
 
-		peer.grpcAddr = fmt.Sprintf("%v:%v", peer.gservCfg.Host, peer.gservCfg.ExternalLsnPort)
+		peer.grpcAddr = fmt.Sprintf("%v:%v", peer.GservCfg.Host, peer.GservCfg.ExternalLsnPort)
 		// will block until server exits:
-		peer.gservCfg.StartGrpcServer(peer.saver)
+		peer.GservCfg.StartGrpcServer(peer.saver, peer.SshdReady)
 	}()
 }
 
