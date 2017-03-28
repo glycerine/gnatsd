@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"net"
+
+	tun "github.com/glycerine/sshego"
 )
 
 type ServerConfig struct {
@@ -18,6 +20,8 @@ type ServerConfig struct {
 	ExternalLsnPort int
 	InternalLsnPort int
 	CpuProfilePath  string
+
+	SshegoCfg *tun.SshegoConfig
 }
 
 func (c *ServerConfig) DefineFlags(fs *flag.FlagSet) {

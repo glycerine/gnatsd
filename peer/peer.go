@@ -1,6 +1,7 @@
 package peer
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -19,6 +20,10 @@ import (
 	"github.com/glycerine/blake2b" // vendor https://github.com/dchest/blake2b"
 	"github.com/glycerine/hnatsd/swp"
 	"github.com/glycerine/idem"
+
+	"github.com/glycerine/hnatsd/peer/gserv"
+
+	tun "github.com/glycerine/sshego"
 )
 
 var mylog *log.Logger
@@ -69,7 +74,9 @@ type Peer struct {
 
 	LeadStatus leadFlag
 	saver      *BoltSaver
-	grpcAddr   string
+
+	gservCfg *gserv.ServerConfig
+	grpcAddr string
 }
 
 type leadFlag struct {
@@ -152,7 +159,31 @@ func NewPeer(args, whoami string) (*Peer, error) {
 
 	r.plog = logger.NewStdLogger(micros, debug, trace, colors, pid, log.LUTC)
 
-	// start grpc server endpoint
+	// Start grpc server endpoint.
+	// It writes to boltdb upon receipt
+	// of a checkpoint file; and serves
+	// files upon demand.
+
+	port0, lsn0 := getAvailPort()
+	port1, lsn1 := getAvailPort()
+	lsn0.Close()
+	lsn1.Close()
+
+	r.gservCfg = &gserv.ServerConfig{
+		Host:            opts.Host,
+		ExternalLsnPort: port0,
+		InternalLsnPort: port1,
+		SshegoCfg: &tun.SshegoConfig{
+			Username: opts.Username,
+		},
+	}
+
+	// fill defaults
+	dummyFlagSet := &flag.FlagSet{}
+	r.gservCfg.SshegoCfg.DefineFlags(dummyFlagSet)
+
+	r.grpcAddr = fmt.Sprintf("%v:%v", r.gservCfg.Host, r.gservCfg.ExternalLsnPort)
+	go r.gservCfg.StartGrpcServer()
 
 	return r, nil
 }
@@ -387,8 +418,7 @@ func (peer *Peer) setupNatsClient() error {
 
 		switch subSubject {
 		case "grpc-port-query":
-			var port [8]byte
-			err = nc.Publish(msg.Reply, []byte(GetGrpcAddr()))
+			err = nc.Publish(msg.Reply, []byte(peer.GetGrpcAddr()))
 			if err != nil {
 				mylog.Printf("warning: '%s' publish to '%s' got error '%v'",
 					subSubject,
@@ -402,7 +432,7 @@ func (peer *Peer) setupNatsClient() error {
 
 func agentLoc2RecvCpSubj(a health.AgentLoc) string {
 	return fmt.Sprintf("recv-chkpt;id:%v;host:%v;port:%v;rank:%v;pid:%v",
-		a.ID, a.Host, a.Port, a.Rank, a.Pid)
+		a.ID, a.Host, a.NatsPort, a.Rank, a.Pid)
 }
 
 var ErrShutdown = fmt.Errorf("shutting down")

@@ -141,9 +141,9 @@ func (s *PeerServer) SendFile(stream pb.Peer_SendFileServer) error {
 	return nil
 }
 
-const ProgramName = "server"
+const ProgramName = "gprcServer"
 
-func MainExpample() {
+func MainExample() {
 
 	myflags := flag.NewFlagSet(ProgramName, flag.ExitOnError)
 	cfg := &ServerConfig{}
@@ -151,8 +151,7 @@ func MainExpample() {
 
 	sshegoCfg := setupSshFlags(myflags)
 
-	args := os.Args[1:]
-	err := myflags.Parse(args)
+	err := myflags.Parse(os.Args[1:])
 
 	if cfg.CpuProfilePath != "" {
 		f, err := os.Create(cfg.CpuProfilePath)
@@ -167,6 +166,11 @@ func MainExpample() {
 	if err != nil {
 		log.Fatalf("%s command line flag error: '%s'", ProgramName, err)
 	}
+	cfg.SshegoCfg = sshegoCfg
+	cfg.StartGrpcServer()
+}
+
+func (cfg *ServerConfig) StartGrpcServer() {
 
 	var gRpcBindPort int
 	var gRpcHost string
@@ -202,7 +206,7 @@ func MainExpample() {
 		opts = []grpc.ServerOption{grpc.Creds(creds)}
 	} else {
 		// use SSH
-		err = serverSshMain(sshegoCfg, cfg.Host,
+		err = serverSshMain(cfg.SshegoCfg, cfg.Host,
 			cfg.ExternalLsnPort, cfg.InternalLsnPort)
 		panicOn(err)
 	}
