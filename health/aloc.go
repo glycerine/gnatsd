@@ -18,6 +18,12 @@ type AgentLoc struct {
 
 	GrpcPort int `json:"grpcPort"`
 
+	// LeaseExpires is zero for any
+	// non-leader. For the leader,
+	// LeaseExpires tells you when
+	// the leaders lease expires.
+	LeaseExpires time.Time `json:"leaseExpires"`
+
 	// lower rank is leader until lease
 	// expires. Ties are broken by ID.
 	// Rank should be assignable on the
@@ -70,11 +76,10 @@ func slocEqualIgnoreLease(a, b *AgentLoc) bool {
 // with contents filled from loc.
 func natsLocConvert(loc *nats.ServerLoc) *AgentLoc {
 	return &AgentLoc{
-		ID:           loc.ID,
-		Host:         loc.Host,
-		Port:         loc.Port,
-		LeaseExpires: loc.LeaseExpires,
-		Rank:         loc.Rank,
-		Pid:          os.Getpid(),
+		ID:       loc.ID,
+		Host:     loc.Host,
+		NatsPort: loc.NatsPort,
+		Rank:     loc.Rank,
+		Pid:      os.Getpid(),
 	}
 }

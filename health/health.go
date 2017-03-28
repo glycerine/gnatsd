@@ -58,11 +58,11 @@ type Membership struct {
 }
 
 func (m *Membership) trace(f string, arg ...interface{}) {
-	m.Cfg.Log.Tracef(fmt.Sprintf("my.Port:%v. ", m.myLoc.Port)+f, arg...)
+	m.Cfg.Log.Tracef(fmt.Sprintf("my.NatsPort:%v. ", m.myLoc.NatsPort)+f, arg...)
 }
 
 func (m *Membership) dlog(f string, arg ...interface{}) {
-	m.Cfg.Log.Debugf(fmt.Sprintf("my.Port:%v. ", m.myLoc.Port)+f, arg...)
+	m.Cfg.Log.Debugf(fmt.Sprintf("my.NatsPort:%v. ", m.myLoc.NatsPort)+f, arg...)
 }
 
 func (m *Membership) getMyLocWithAnyLease() AgentLoc {
@@ -420,7 +420,7 @@ func (m *Membership) start() {
 						"in %s",
 						loc.ID,
 						loc.Rank,
-						loc.Port,
+						loc.NatsPort,
 						loc.Host,
 						m.pid,
 						left)
@@ -437,7 +437,7 @@ func (m *Membership) start() {
 						"port %v host %v pid %v lease expires in %s",
 						curLead.ID,
 						curLead.Rank,
-						curLead.Port,
+						curLead.NatsPort,
 						curLead.Host,
 						curLead.Pid,
 						curLead.LeaseExpires.Sub(now))
@@ -453,7 +453,7 @@ func (m *Membership) start() {
 								"port %v. lead is unknown.",
 								m.myLoc.ID,
 								m.myLoc.Rank,
-								m.myLoc.Port)
+								m.myLoc.NatsPort)
 
 						} else {
 							m.dlog("health-agent: "+
@@ -463,12 +463,12 @@ func (m *Membership) start() {
 								m.myLoc.ID,
 								m.myLoc.Rank,
 								m.myLoc.Host,
-								m.myLoc.Port,
+								m.myLoc.NatsPort,
 								m.myLoc.Pid,
 								curLead.ID,
 								curLead.Rank,
 								curLead.Host,
-								curLead.Port,
+								curLead.NatsPort,
 								curLead.Pid,
 								left)
 
@@ -733,8 +733,8 @@ func AgentLocLessThan(i, j *AgentLoc) bool {
 	if i.Host != j.Host {
 		return lessThanString(i.Host, j.Host)
 	}
-	if i.Port != j.Port {
-		return i.Port < j.Port
+	if i.NatsPort != j.NatsPort {
+		return i.NatsPort < j.NatsPort
 	}
 	if i.Pid != j.Pid {
 		return i.Pid < j.Pid
@@ -808,7 +808,7 @@ func (m *Membership) setupNatsClient() error {
 		"rank %v",
 		m.myLoc.ID,
 		m.myLoc.Host,
-		m.myLoc.Port,
+		m.myLoc.NatsPort,
 		m.myLoc.Rank)
 
 	m.subjAllCall = SysMemberPrefix + "allcall"
@@ -909,7 +909,7 @@ func (m *Membership) locDifferent(b *nats.ServerLoc) bool {
 	if b.Host != m.myLoc.Host {
 		return true
 	}
-	if b.Port != m.myLoc.Port {
+	if b.NatsPort != m.myLoc.NatsPort {
 		return true
 	}
 	return false
@@ -920,7 +920,7 @@ func (m *Membership) setLoc(b *nats.ServerLoc) {
 	m.myLoc.ID = b.ID
 	m.myLoc.Rank = b.Rank
 	m.myLoc.Host = b.Host
-	m.myLoc.Port = b.Port
+	m.myLoc.NatsPort = b.NatsPort
 	m.myLoc.Pid = os.Getpid()
 	m.mu.Unlock()
 	m.elec.setMyLoc(&m.myLoc)
