@@ -54,6 +54,9 @@ type BcastGetRequest struct {
 	// IncludeValue when false returns the timestamp and size without
 	// the whole (big) value.
 	IncludeValue bool
+
+	ReplyGrpcHost string
+	ReplyGrpcPort int
 }
 
 type BcastGetReply struct {

@@ -6,6 +6,7 @@ import (
 	"net"
 
 	tun "github.com/glycerine/sshego"
+	"google.golang.org/grpc"
 )
 
 type ServerConfig struct {
@@ -22,6 +23,8 @@ type ServerConfig struct {
 	CpuProfilePath  string
 
 	SshegoCfg *tun.SshegoConfig
+
+	grpcServer *grpc.Server
 }
 
 func (c *ServerConfig) DefineFlags(fs *flag.FlagSet) {

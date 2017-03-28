@@ -21,6 +21,7 @@ import (
 	"github.com/glycerine/hnatsd/swp"
 	"github.com/glycerine/idem"
 
+	"github.com/glycerine/hnatsd/peer/gcli"
 	"github.com/glycerine/hnatsd/peer/gserv"
 
 	"github.com/glycerine/hnatsd/peer/api"
@@ -220,6 +221,9 @@ func (peer *Peer) Stop() {
 			peer.serv.Shutdown()
 			peer.serv = nil
 		}
+		if peer.gservCfg != nil {
+			peer.gservCfg.Stop()
+		}
 		peer.Halt.ReqStop.Close()
 		select {
 		case <-peer.Halt.Done.Chan:
@@ -313,9 +317,22 @@ func (peer *Peer) setupNatsClient() error {
 		} else {
 			reply.Ki = ki
 		}
-		mm, err := reply.MarshalMsg(nil)
-		panicOn(err)
-		err = nc.Publish(msg.Reply, mm)
+
+		// use the SendFile() client to return the BigFile
+
+		home := os.Getenv("HOME")
+		user := os.Getenv("USER")
+		clicfg := &gcli.ClientConfig{
+			ServerHost:         bgr.ReplyGrpcHost,
+			ServerPort:         bgr.ReplyGrpcPort,
+			ServerInternalHost: "",
+			ServerInternalPort: 0,
+
+			Username:             "",
+			PrivateKeyPath:       home + "/.ssh/.sshego.sshd.db/users/" + user + "/id_rsa",
+			ClientKnownHostsPath: home + "/.ssh/.sshego.cli.known.hosts." + peer.Whoami,
+		}
+		err = clicfg.ClientSendFile(path, data)
 		panicOn(err)
 	})
 	panicOn(err)

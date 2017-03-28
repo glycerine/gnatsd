@@ -164,6 +164,12 @@ func MainExample() {
 	//	cfg.StartGrpcServer()
 }
 
+func (cfg *ServerConfig) Stop() {
+	if cfg != nil && cfg.grpcServer != nil {
+		cfg.grpcServer.Stop()
+	}
+}
+
 func (cfg *ServerConfig) StartGrpcServer(peer api.LocalGetSet) {
 
 	var gRpcBindPort int
@@ -205,9 +211,9 @@ func (cfg *ServerConfig) StartGrpcServer(peer api.LocalGetSet) {
 		panicOn(err)
 	}
 
-	grpcServer := grpc.NewServer(opts...)
-	pb.RegisterPeerServer(grpcServer, NewPeerServerClass(peer))
-	grpcServer.Serve(lis)
+	cfg.grpcServer = grpc.NewServer(opts...)
+	pb.RegisterPeerServer(cfg.grpcServer, NewPeerServerClass(peer))
+	cfg.grpcServer.Serve(lis)
 }
 
 func blake2bOfBytes(by []byte) []byte {
@@ -215,13 +221,4 @@ func blake2bOfBytes(by []byte) []byte {
 	panicOn(err)
 	h.Write(by)
 	return []byte(h.Sum(nil))
-}
-
-func subtractArg(args []string, excludeMe string) (res []string) {
-	for _, v := range args {
-		if v != excludeMe {
-			res = append(res, v)
-		}
-	}
-	return
 }

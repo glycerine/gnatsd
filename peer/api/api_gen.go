@@ -195,6 +195,16 @@ func (z *BcastGetRequest) DecodeMsg(dc *msgp.Reader) (err error) {
 			if err != nil {
 				return
 			}
+		case "ReplyGrpcHost":
+			z.ReplyGrpcHost, err = dc.ReadString()
+			if err != nil {
+				return
+			}
+		case "ReplyGrpcPort":
+			z.ReplyGrpcPort, err = dc.ReadInt()
+			if err != nil {
+				return
+			}
 		default:
 			err = dc.Skip()
 			if err != nil {
@@ -207,9 +217,9 @@ func (z *BcastGetRequest) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *BcastGetRequest) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 3
+	// map header, size 5
 	// write "Key"
-	err = en.Append(0x83, 0xa3, 0x4b, 0x65, 0x79)
+	err = en.Append(0x85, 0xa3, 0x4b, 0x65, 0x79)
 	if err != nil {
 		return err
 	}
@@ -235,15 +245,33 @@ func (z *BcastGetRequest) EncodeMsg(en *msgp.Writer) (err error) {
 	if err != nil {
 		return
 	}
+	// write "ReplyGrpcHost"
+	err = en.Append(0xad, 0x52, 0x65, 0x70, 0x6c, 0x79, 0x47, 0x72, 0x70, 0x63, 0x48, 0x6f, 0x73, 0x74)
+	if err != nil {
+		return err
+	}
+	err = en.WriteString(z.ReplyGrpcHost)
+	if err != nil {
+		return
+	}
+	// write "ReplyGrpcPort"
+	err = en.Append(0xad, 0x52, 0x65, 0x70, 0x6c, 0x79, 0x47, 0x72, 0x70, 0x63, 0x50, 0x6f, 0x72, 0x74)
+	if err != nil {
+		return err
+	}
+	err = en.WriteInt(z.ReplyGrpcPort)
+	if err != nil {
+		return
+	}
 	return
 }
 
 // MarshalMsg implements msgp.Marshaler
 func (z *BcastGetRequest) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 3
+	// map header, size 5
 	// string "Key"
-	o = append(o, 0x83, 0xa3, 0x4b, 0x65, 0x79)
+	o = append(o, 0x85, 0xa3, 0x4b, 0x65, 0x79)
 	o = msgp.AppendBytes(o, z.Key)
 	// string "Who"
 	o = append(o, 0xa3, 0x57, 0x68, 0x6f)
@@ -251,6 +279,12 @@ func (z *BcastGetRequest) MarshalMsg(b []byte) (o []byte, err error) {
 	// string "IncludeValue"
 	o = append(o, 0xac, 0x49, 0x6e, 0x63, 0x6c, 0x75, 0x64, 0x65, 0x56, 0x61, 0x6c, 0x75, 0x65)
 	o = msgp.AppendBool(o, z.IncludeValue)
+	// string "ReplyGrpcHost"
+	o = append(o, 0xad, 0x52, 0x65, 0x70, 0x6c, 0x79, 0x47, 0x72, 0x70, 0x63, 0x48, 0x6f, 0x73, 0x74)
+	o = msgp.AppendString(o, z.ReplyGrpcHost)
+	// string "ReplyGrpcPort"
+	o = append(o, 0xad, 0x52, 0x65, 0x70, 0x6c, 0x79, 0x47, 0x72, 0x70, 0x63, 0x50, 0x6f, 0x72, 0x74)
+	o = msgp.AppendInt(o, z.ReplyGrpcPort)
 	return
 }
 
@@ -285,6 +319,16 @@ func (z *BcastGetRequest) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			if err != nil {
 				return
 			}
+		case "ReplyGrpcHost":
+			z.ReplyGrpcHost, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				return
+			}
+		case "ReplyGrpcPort":
+			z.ReplyGrpcPort, bts, err = msgp.ReadIntBytes(bts)
+			if err != nil {
+				return
+			}
 		default:
 			bts, err = msgp.Skip(bts)
 			if err != nil {
@@ -298,7 +342,7 @@ func (z *BcastGetRequest) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *BcastGetRequest) Msgsize() (s int) {
-	s = 1 + 4 + msgp.BytesPrefixSize + len(z.Key) + 4 + msgp.StringPrefixSize + len(z.Who) + 13 + msgp.BoolSize
+	s = 1 + 4 + msgp.BytesPrefixSize + len(z.Key) + 4 + msgp.StringPrefixSize + len(z.Who) + 13 + msgp.BoolSize + 14 + msgp.StringPrefixSize + len(z.ReplyGrpcHost) + 14 + msgp.IntSize
 	return
 }
 
