@@ -117,7 +117,7 @@ func (peer *Peer) BcastGet(key []byte, includeValue bool, timeout time.Duration,
 		case <-toCh:
 			return nil, ErrTimedOut
 		case bgr := <-peer.GservCfg.ServerGotReply:
-			//p("BcastGet got a reply, on i = %v", i)
+			p("BcastGet got a reply, on i = %v", i)
 			if bgr.Err != "" {
 				return nil, fmt.Errorf(bgr.Err)
 			} else {
@@ -126,7 +126,7 @@ func (peer *Peer) BcastGet(key []byte, includeValue bool, timeout time.Duration,
 			}
 		}
 	}
-	//p("done with collection loop, we have %v replies", sorter.Len())
+	p("done with collection loop, we have %v replies", sorter.Len())
 	// sorter sorts them by key, then time, then who.
 	for it := sorter.Min(); !it.Limit(); it = it.Next() {
 		kis = append(kis, it.Item().(*api.KeyInv))

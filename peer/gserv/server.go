@@ -151,16 +151,26 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 		}
 
 		if nk.IsLastChunk {
-			toWrite := allChunks.Bytes()
-			err = s.peer.LocalSet(&api.KeyInv{Key: []byte("chk"), Val: toWrite, When: time.Unix(0, int64(nk.SendTime))})
-			p("server sees the last chunk of '%s', writing to bolt %v bytes gave '%v', and returning now.", nk.Filepath, len(toWrite), err)
+			kiBytes := allChunks.Bytes()
 
 			var reply api.BcastGetReply
-			_, err = reply.UnmarshalMsg(toWrite)
+			_, err = reply.UnmarshalMsg(kiBytes)
 			if err != nil {
-				return fmt.Errorf("reply.UnmarshalMsg() errored '%v'", err)
+				return fmt.Errorf("gserv/server.go SendFile(): reply.UnmarshalMsg() errored '%v'", err)
 			}
 
+			ki := reply.Ki
+			if len(ki.Val) > 0 {
+				err = s.peer.LocalSet(
+					&api.KeyInv{Key: ki.Key, Val: ki.Val, When: ki.When},
+				)
+				p("server sees the last chunk of '%s', writing to bolt key='%s' len: %v bytes gave '%v', and returning now.", nk.Filepath, string(ki.Key), len(ki.Val), err)
+				p("debug! server saw ki.Val='%s'", string(ki.Val))
+				if err != nil {
+					return fmt.Errorf("gserv/server.go SendFile(): s.peer.LocalSet() errored '%v'", err)
+				}
+			}
+			// notify peer by sending on cfg.ServerGotReply
 			select {
 			case s.cfg.ServerGotReply <- &reply:
 				p("gserv server.go sent reply on s.cfg.ServerGotReply; reply='%s'/'%#v'", reply, reply)
