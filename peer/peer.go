@@ -23,6 +23,7 @@ import (
 
 	"github.com/glycerine/hnatsd/peer/gserv"
 
+	"github.com/glycerine/hnatsd/peer/api"
 	tun "github.com/glycerine/sshego"
 )
 
@@ -159,32 +160,6 @@ func NewPeer(args, whoami string) (*Peer, error) {
 
 	r.plog = logger.NewStdLogger(micros, debug, trace, colors, pid, log.LUTC)
 
-	// Start grpc server endpoint.
-	// It writes to boltdb upon receipt
-	// of a checkpoint file; and serves
-	// files upon demand.
-
-	port0, lsn0 := getAvailPort()
-	port1, lsn1 := getAvailPort()
-	lsn0.Close()
-	lsn1.Close()
-
-	r.gservCfg = &gserv.ServerConfig{
-		Host:            opts.Host,
-		ExternalLsnPort: port0,
-		InternalLsnPort: port1,
-		SshegoCfg: &tun.SshegoConfig{
-			Username: opts.Username,
-		},
-	}
-
-	// fill defaults
-	dummyFlagSet := &flag.FlagSet{}
-	r.gservCfg.SshegoCfg.DefineFlags(dummyFlagSet)
-
-	r.grpcAddr = fmt.Sprintf("%v:%v", r.gservCfg.Host, r.gservCfg.ExternalLsnPort)
-	go r.gservCfg.StartGrpcServer()
-
 	return r, nil
 }
 
@@ -309,7 +284,7 @@ func (peer *Peer) setupNatsClient() error {
 	peer.subjBcastSet = "bcast_set"
 
 	getScrip, err := nc.Subscribe(peer.subjBcastGet, func(msg *nats.Msg) {
-		var bgr BcastGetRequest
+		var bgr api.BcastGetRequest
 		bgr.UnmarshalMsg(msg.Data)
 		//mylog.Printf("%s peer recevied subjBcastGet for key '%s'",
 		//	peer.saver.whoami, string(bgr.Key))
@@ -327,7 +302,7 @@ func (peer *Peer) setupNatsClient() error {
 			//p("bgr.Who was not set...")
 		}
 
-		var reply BcastGetReply
+		var reply api.BcastGetReply
 
 		ki, err := peer.LocalGet(bgr.Key, bgr.IncludeValue)
 		if err != nil {
@@ -346,12 +321,12 @@ func (peer *Peer) setupNatsClient() error {
 
 	// BcastSet
 	setScrip, err := nc.Subscribe(peer.subjBcastSet, func(msg *nats.Msg) {
-		var bsr BcastSetRequest
+		var bsr api.BcastSetRequest
 		bsr.UnmarshalMsg(msg.Data)
 		mylog.Printf("peer recevied subjBcastSet for key '%s'",
 			string(bsr.Ki.Key))
 
-		var reply BcastSetReply
+		var reply api.BcastSetReply
 
 		err := peer.LocalSet(bsr.Ki)
 		if err != nil {
@@ -666,97 +641,34 @@ func (peer *Peer) StartBackgroundRecv(myID, myFollowSubj string) {
 				myID, myFollowSubj)
 		}()
 
-	makeNewCatcher:
-		for {
-			// accept checkpoints and store them
+		// Start grpc server endpoint.
+		// It writes to boltdb upon receipt
+		// of a checkpoint file; and serves
+		// files upon demand.
 
-			// Even if we are lead, run this receive loop
-			// in the background so that we are ready if
-			// we should become a follower.
+		port0, lsn0 := getAvailPort()
+		port1, lsn1 := getAvailPort()
+		lsn0.Close()
+		lsn1.Close()
 
-			// make a new session without a remote endpoint,
-			// so enter Listen state, wait for connection
-			// from a lead. Leads won't bother to send to
-			// their own recv-chkpoint.* session.
-			leadSubj := ""
-			sessF, err := swp.SetupRecvStream(
-				peer.nc,
-				peer.serverOpts.Host,
-				peer.serverOpts.Port,
-				myID,
-				myFollowSubj,
-				leadSubj,
-				skipTLS,
-				nil,
-				ignoreSlowConsumerErrors)
-
-			if err != nil {
-				mylog.Printf("warning, error back from swp.SetupRecvStream: '%v'", err)
-				time.Sleep(time.Second)
-				continue
-			}
-
-			peer.SetFollowSess(sessF)
-			select {
-			case <-peer.Halt.ReqStop.Chan:
-				//p("%s peer got Halt.ReqStop", myID)
-				return
-			default:
-			}
-
-			var bigfile *swp.BigFile
-			//p("%s StartBackgroundRecv: about to RecvFile", myID)
-
-			bigfile, err = sessF.RecvFile() // can hang until sessF is halted.
-
-			//p("%s StartBackgroundRecv: done with RecvFile, err='%v'", myID, err)
-			if err != nil {
-				if err.Error() != "multiple Read calls return no data or error" {
-					if bigfile != nil {
-						// typical report is of a zero
-						// bigfile that didn't receive
-						// anything.
-					}
-				}
-				// are we shutting down?
-				select {
-				case <-peer.Halt.ReqStop.Chan:
-					//p("%s peer got Halt.ReqStop", myID)
-					return
-				default:
-				}
-				//p("%s trying to RecvFile again, after 1 sec", myID)
-				time.Sleep(time.Second * 2)
-				// we close up shop to let outselves pair
-				// with any new lead that may come along; otherwise
-				// can get stuck on the old one.
-				peer.SetFollowSess(nil)
-				sessF.Close()
-				sessF.Stop()
-				continue makeNewCatcher
-			}
-			// INVAR: err == nil, so our file arrived intact and
-			// the blake2b checksum matched. We can and should
-			// write this to the saver.
-
-			mylog.Printf("%s follow received good file '%s' of size %v, stamped '%v'.", myID, bigfile.Filepath, bigfile.SizeInBytes, bigfile.SendTime)
-			peer.SetFollowSess(nil)
-			sessF.Close()
-			sessF.Stop()
-
-			err = peer.saver.LocalSet(&KeyInv{Key: []byte("chk"), Val: bigfile.Data, When: bigfile.SendTime})
-			if err != nil {
-				mylog.Printf("%s peer.saver.WriteKv() got error '%v'", myID, err)
-				continue
-			}
-			mylog.Printf("%s peer.saver.WriteKv() done with nil error, wrote data len = %v.", myID, len(bigfile.Data))
-
-			select {
-			case <-peer.Halt.ReqStop.Chan:
-				return
-			default:
-			}
+		peer.gservCfg = &gserv.ServerConfig{
+			Host:            peer.serverOpts.Host,
+			ExternalLsnPort: port0,
+			InternalLsnPort: port1,
+			SshegoCfg: &tun.SshegoConfig{
+				Username: peer.serverOpts.Username,
+			},
 		}
+
+		// fill defaults
+		dummyFlagSet := &flag.FlagSet{}
+		peer.gservCfg.SshegoCfg.DefineFlags(dummyFlagSet)
+
+		peer.gservCfg.SshegoCfg.EmbeddedSSHdHostDbPath = ""
+
+		peer.grpcAddr = fmt.Sprintf("%v:%v", peer.gservCfg.Host, peer.gservCfg.ExternalLsnPort)
+		// will block until server exits:
+		peer.gservCfg.StartGrpcServer(peer.saver)
 	}()
 }
 

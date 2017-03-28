@@ -20,13 +20,18 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/grpclog"
 
+	"github.com/glycerine/hnatsd/peer/api"
 	pb "github.com/glycerine/hnatsd/peer/streambigfile"
 )
 
-type PeerServer struct{}
+type PeerServer struct {
+	peer api.LocalGetSet
+}
 
-func NewPeerServer() *PeerServer {
-	return &PeerServer{}
+func NewPeerServer(peer api.LocalGetSet) *PeerServer {
+	return &PeerServer{
+		peer: peer,
+	}
 }
 
 // implement pb.PeerServer interface
@@ -55,6 +60,7 @@ func (s *PeerServer) SendFile(stream pb.Peer_SendFileServer) error {
 	}()
 
 	firstChunkSeen := false
+	var allChunks bytes.Buffer
 
 	for {
 		nk, err := stream.Recv()
@@ -110,34 +116,22 @@ func (s *PeerServer) SendFile(stream pb.Peer_SendFileServer) error {
 			return fmt.Errorf("chunk %v bad .Data, checksum mismatch!",
 				nk.ChunkNumber)
 		}
-		// INVAR: chunk passes tests, keep it.
 
+		// INVAR: chunk passes tests, keep it.
 		bc += nk.SizeInBytes
 		chunkCount++
 
-		// TODO: user should store chunk somewhere here... or accumulate
-		// all the chunks in memory
-		// until ready to store it elsewhere; e.g. in boltdb.
-
-		// For example, we will write to the nk.Filepath, if specified.
-		if fd != nil {
-			rs := 0
-			for {
-				nw, err := fd.Write(nk.Data[rs:])
-				rs += nw
-				if rs == len(nk.Data) {
-					// wrote it all
-					break
-				}
-				if err == io.ErrShortWrite {
-					continue
-				}
-				if err != nil {
-					return err
-				}
-			}
+		nw, err := allChunks.Write(nk.Data)
+		panicOn(err)
+		if nw != len(nk.Data) {
+			panic("short write to bytes.Buffer")
 		}
-	}
+
+		if nk.IsLastChunk {
+			return s.peer.LocalSet(&api.KeyInv{Key: []byte("chk"), Val: allChunks.Bytes(), When: time.Unix(0, int64(nk.SendTime))})
+		}
+
+	} // end for
 	return nil
 }
 
@@ -167,10 +161,10 @@ func MainExample() {
 		log.Fatalf("%s command line flag error: '%s'", ProgramName, err)
 	}
 	cfg.SshegoCfg = sshegoCfg
-	cfg.StartGrpcServer()
+	//	cfg.StartGrpcServer()
 }
 
-func (cfg *ServerConfig) StartGrpcServer() {
+func (cfg *ServerConfig) StartGrpcServer(peer api.LocalGetSet) {
 
 	var gRpcBindPort int
 	var gRpcHost string
@@ -212,7 +206,7 @@ func (cfg *ServerConfig) StartGrpcServer() {
 	}
 
 	grpcServer := grpc.NewServer(opts...)
-	pb.RegisterPeerServer(grpcServer, NewPeerServer())
+	pb.RegisterPeerServer(grpcServer, NewPeerServer(peer))
 	grpcServer.Serve(lis)
 }
 

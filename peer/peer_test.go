@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/glycerine/hnatsd/peer/api"
+
 	cv "github.com/glycerine/goconvey/convey"
 )
 
@@ -82,11 +84,11 @@ func Test101PeerToPeerKeyValueTransfer(t *testing.T) {
 
 		key := []byte("chk")
 
-		err = p0.LocalSet(&KeyInv{Key: key, Val: data0, When: t0})
+		err = p0.LocalSet(&api.KeyInv{Key: key, Val: data0, When: t0})
 		panicOn(err)
-		err = p1.LocalSet(&KeyInv{Key: key, Val: data1, When: t1})
+		err = p1.LocalSet(&api.KeyInv{Key: key, Val: data1, When: t1})
 		panicOn(err)
-		err = p2.LocalSet(&KeyInv{Key: key, Val: data2, When: t2})
+		err = p2.LocalSet(&api.KeyInv{Key: key, Val: data2, When: t2})
 		panicOn(err)
 
 		// GetLatest should return only the most
@@ -128,7 +130,7 @@ func Test101PeerToPeerKeyValueTransfer(t *testing.T) {
 
 		// BcastKeyValue should overwrite everywhere.
 
-		err = p0.BcastSet(&KeyInv{Key: key, Val: data3, When: t3})
+		err = p0.BcastSet(&api.KeyInv{Key: key, Val: data3, When: t3})
 		panicOn(err)
 		{
 			got, err := p0.LocalGet(key, true)
@@ -177,7 +179,7 @@ func Test102LocalSet(t *testing.T) {
 		data0 := []byte(fmt.Sprintf("dataset 0 at %v", t0))
 		key := []byte("chk")
 
-		err = p0.LocalSet(&KeyInv{Key: key, Val: data0, When: t0, Size: int64(len(data0))})
+		err = p0.LocalSet(&api.KeyInv{Key: key, Val: data0, When: t0, Size: int64(len(data0))})
 		panicOn(err)
 
 		k, err := p0.LocalGet(key, true)
@@ -263,11 +265,11 @@ func Test103BcastGet(t *testing.T) {
 
 		key := []byte("chk")
 
-		err = p0.LocalSet(&KeyInv{Key: key, Val: data0, When: t0})
+		err = p0.LocalSet(&api.KeyInv{Key: key, Val: data0, When: t0})
 		panicOn(err)
-		err = p1.LocalSet(&KeyInv{Key: key, Val: data1, When: t1})
+		err = p1.LocalSet(&api.KeyInv{Key: key, Val: data1, When: t1})
 		panicOn(err)
-		err = p2.LocalSet(&KeyInv{Key: key, Val: data2, When: t2})
+		err = p2.LocalSet(&api.KeyInv{Key: key, Val: data2, When: t2})
 		panicOn(err)
 
 		// likewise, BcastGetKeyTimes, used by GetLatest,
@@ -371,14 +373,14 @@ func Test104BcastSet(t *testing.T) {
 
 		key := []byte("chk")
 
-		err = p0.LocalSet(&KeyInv{Key: key, Val: data0, When: t0})
+		err = p0.LocalSet(&api.KeyInv{Key: key, Val: data0, When: t0})
 		panicOn(err)
-		err = p1.LocalSet(&KeyInv{Key: key, Val: data1, When: t1})
+		err = p1.LocalSet(&api.KeyInv{Key: key, Val: data1, When: t1})
 		panicOn(err)
-		err = p2.LocalSet(&KeyInv{Key: key, Val: data2, When: t2})
+		err = p2.LocalSet(&api.KeyInv{Key: key, Val: data2, When: t2})
 		panicOn(err)
 
-		err = p0.BcastSet(&KeyInv{Key: key, Val: data3, When: t3})
+		err = p0.BcastSet(&api.KeyInv{Key: key, Val: data3, When: t3})
 		panicOn(err)
 
 		// verify all local copies.
@@ -481,11 +483,11 @@ func Test105GetLatest(t *testing.T) {
 
 		key := []byte("chk")
 
-		err = p0.LocalSet(&KeyInv{Key: key, Val: data0, When: t0})
+		err = p0.LocalSet(&api.KeyInv{Key: key, Val: data0, When: t0})
 		panicOn(err)
-		err = p1.LocalSet(&KeyInv{Key: key, Val: data1, When: t1})
+		err = p1.LocalSet(&api.KeyInv{Key: key, Val: data1, When: t1})
 		panicOn(err)
-		err = p2.LocalSet(&KeyInv{Key: key, Val: data2, When: t2})
+		err = p2.LocalSet(&api.KeyInv{Key: key, Val: data2, When: t2})
 		panicOn(err)
 
 		ki0, err := p0.GetLatest(key, true)

@@ -75,14 +75,14 @@ func serverSshMain(cfg *tun.SshegoConfig, host string, securedPort, targetPort i
 		tun.DelUserAndExit(cfg)
 	}
 
-	log.Printf("grpc-demo/server/ssh.go is starting -esshd with addr: %s", cfg.EmbeddedSSHd.Addr)
+	log.Printf("hnatsd/peer/gserv/ssh.go is starting -esshd with addr: %s", cfg.EmbeddedSSHd.Addr)
 	err = cfg.EmbeddedSSHd.ParseAddr()
 	if err != nil {
-		p("grpc-demo/server/ssh.go cfg.EmbeddedSSHd.ParseAddr() error = '%s'", err)
+		p("hnatsd/peer/gserv/ssh.go cfg.EmbeddedSSHd.ParseAddr() error = '%s'", err)
 		return err
 	}
 	cfg.NewEsshd()
-	p("grpc-demo/server/ssh.go about to call cfg.Esshd.Start()")
+	p("hnatsd/peer/gserv/ssh.go about to call cfg.Esshd.Start()")
 	go cfg.Esshd.Start()
 
 	return nil

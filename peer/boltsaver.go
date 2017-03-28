@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
+	"github.com/glycerine/hnatsd/peer/api"
 )
 
 var BoltDataBucketName = []byte("data") // bucket
@@ -93,7 +94,7 @@ func (b *BoltSaver) InitDbIfNeeded() error {
 
 // LocalSet will set ki.Size from len(ki.Val) before
 // saving.
-func (b *BoltSaver) LocalSet(ki *KeyInv) error {
+func (b *BoltSaver) LocalSet(ki *api.KeyInv) error {
 	b.mut.Lock()
 	defer b.mut.Unlock()
 
@@ -101,7 +102,7 @@ func (b *BoltSaver) LocalSet(ki *KeyInv) error {
 	ki.Blake2b = blake2bOfBytes(ki.Val)
 	ki.Who = b.whoami
 
-	// meta is a KeyInv but without the Val
+	// meta is a api.KeyInv but without the Val
 	meta := *ki
 	meta.Val = nil
 	metabytes, err := meta.MarshalMsg(nil)
@@ -133,16 +134,16 @@ func (b *BoltSaver) LocalSet(ki *KeyInv) error {
 
 }
 
-func (b *BoltSaver) LocalGet(key []byte, includeValue bool) (ki *KeyInv, err error) {
+func (b *BoltSaver) LocalGet(key []byte, includeValue bool) (ki *api.KeyInv, err error) {
 	b.mut.Lock()
 	defer b.mut.Unlock()
 
-	ki = &KeyInv{
+	ki = &api.KeyInv{
 		Key: copyBytes(key),
 		Who: b.whoami,
 	}
 
-	var meta KeyInv
+	var meta api.KeyInv
 
 	err = b.db.View(func(tx *bolt.Tx) error {
 

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	cv "github.com/glycerine/goconvey/convey"
+	"github.com/glycerine/hnatsd/peer/api"
 )
 
 func Test203BcastGetBigFile(t *testing.T) {
@@ -88,11 +89,11 @@ func Test203BcastGetBigFile(t *testing.T) {
 
 		key := []byte("chk")
 
-		err = p0.LocalSet(&KeyInv{Key: key, Val: data0, When: t0})
+		err = p0.LocalSet(&api.KeyInv{Key: key, Val: data0, When: t0})
 		panicOn(err)
-		err = p1.LocalSet(&KeyInv{Key: key, Val: data1, When: t1})
+		err = p1.LocalSet(&api.KeyInv{Key: key, Val: data1, When: t1})
 		panicOn(err)
-		err = p2.LocalSet(&KeyInv{Key: key, Val: data2, When: t2})
+		err = p2.LocalSet(&api.KeyInv{Key: key, Val: data2, When: t2})
 		panicOn(err)
 
 		// likewise, BcastGetKeyTimes, used by GetLatest,
@@ -155,7 +156,7 @@ func Test203BcastGetBigFile(t *testing.T) {
 
 		// now broadcast a big file
 
-		err = p0.BcastSet(&KeyInv{Key: key, Val: data3, When: t3})
+		err = p0.BcastSet(&api.KeyInv{Key: key, Val: data3, When: t3})
 		panicOn(err)
 
 		// verify all local copies.
@@ -265,11 +266,11 @@ func Test105GetLatest(t *testing.T) {
 
 		key := []byte("chk")
 
-		err = p0.LocalSet(&KeyInv{Key: key, Val: data0, When: t0})
+		err = p0.LocalSet(&api.KeyInv{Key: key, Val: data0, When: t0})
 		panicOn(err)
-		err = p1.LocalSet(&KeyInv{Key: key, Val: data1, When: t1})
+		err = p1.LocalSet(&api.KeyInv{Key: key, Val: data1, When: t1})
 		panicOn(err)
-		err = p2.LocalSet(&KeyInv{Key: key, Val: data2, When: t2})
+		err = p2.LocalSet(&api.KeyInv{Key: key, Val: data2, When: t2})
 		panicOn(err)
 
 		ki0, err := p0.GetLatest(key, true)
