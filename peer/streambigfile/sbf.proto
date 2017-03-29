@@ -59,5 +59,7 @@ message BigFileAck {
 }
 
 service Peer {
+
+    // client always sends a big file to the server.
     rpc SendFile(stream BigFileChunk) returns (BigFileAck) {}
 }

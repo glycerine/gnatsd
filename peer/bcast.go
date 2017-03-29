@@ -194,13 +194,16 @@ func (peer *Peer) doGrpcClientSendFileSetRequest(req *api.BcastSetRequest, cs *c
 		}
 
 		go clicfg.ClientSendFile(string(req.Ki.Key), reqBytes, isBcastSet)
+
+		p("%s in doGrpcClientSendFileSetRequest, about to wait on peer.GservCfg.ServerGotSetRequest chan = %p", peer.loc.ID, peer.GservCfg.ServerGotSetRequest)
+
 		select {
 		case setReq := <-peer.GservCfg.ServerGotSetRequest:
 			p("%s got setReq of len %v on channel peer.GservCfg.ServerGotSetRequest", peer.loc.ID, len(setReq.Ki.Val))
 		case <-peer.Halt.ReqStop.Chan:
 			return ErrShutdown
 		}
-		p("BcastSet successfully clicfg.ClientSendFile to %s:%v", host, eport)
+		p("%s BcastSet successfully clicfg.ClientSendFile to %s:%v", peer.loc.ID, host, eport)
 	}
 
 	return nil

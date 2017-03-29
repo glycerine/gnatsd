@@ -163,7 +163,7 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 					return fmt.Errorf("gserv/server.go SendFile(): req.UnmarshalMsg() errored '%v'", err)
 				}
 
-				p("%s this server.SendFile() with BcastSet, got request from '%s' to set key '%s' with data of len %v. debug Val:'%s'. about to wait on chan %p", s.cfg.MyID, req.FromID, req.Ki.Key, len(req.Ki.Val), string(req.Ki.Val[:intMin(30, len(req.Ki.Val))]), s.cfg.ServerGotSetRequest)
+				p("%s this server.SendFile() with BcastSet, got request from '%s' to set key '%s' with data of len %v. debug Val:'%s'. about to wait on chan %p", s.cfg.MyID, req.FromID, req.Ki.Key, len(req.Ki.Val), string(req.Ki.Val[:intMin(100, len(req.Ki.Val))]), s.cfg.ServerGotSetRequest)
 
 				// notify peer by sending on cfg.ServerGotSetRequest
 				select {
@@ -180,7 +180,7 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 					return fmt.Errorf("gserv/server.go SendFile(): reply.UnmarshalMsg() errored '%v'", err)
 				}
 
-				p("%s this server.SendFile() with BcastGet, got request from '%s' to get key '%s' with data of len %v. debug Val:'%s'. about to send on chan %p", s.cfg.MyID, reply.FromID, reply.Ki.Key, len(reply.Ki.Val), string(reply.Ki.Val[:intMin(30, len(reply.Ki.Val))]), s.cfg.ServerGotGetReply)
+				p("%s this server.SendFile() with BcastGet, got request from '%s' to get key '%s' with data of len %v. debug Val:'%s'. about to send on chan %p", s.cfg.MyID, reply.FromID, reply.Ki.Key, len(reply.Ki.Val), string(reply.Ki.Val[:intMin(100, len(reply.Ki.Val))]), s.cfg.ServerGotGetReply)
 
 				// notify peer by sending on cfg.ServerGotGetReply
 				select {
