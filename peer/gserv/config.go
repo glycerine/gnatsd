@@ -35,6 +35,7 @@ type ServerConfig struct {
 
 	GrpcServer *grpc.Server
 	mut        sync.Mutex
+	Cls        *PeerServerClass
 }
 
 func NewServerConfig(myID string) *ServerConfig {

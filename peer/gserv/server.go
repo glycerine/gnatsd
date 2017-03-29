@@ -11,6 +11,7 @@ import (
 	"net"
 	"os"
 	"runtime/pprof"
+	"sync"
 	"time"
 
 	"google.golang.org/grpc"
@@ -20,20 +21,33 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/grpclog"
 
+	"github.com/glycerine/bchan"
 	"github.com/glycerine/hnatsd/peer/api"
 	pb "github.com/glycerine/hnatsd/peer/streambigfile"
 )
 
 type PeerServerClass struct {
-	lgs api.LocalGetSet
-	cfg *ServerConfig
+	lgs                api.LocalGetSet
+	cfg                *ServerConfig
+	GotFile            *bchan.Bchan
+	mut                sync.Mutex
+	filesReceivedCount int64
 }
 
 func NewPeerServerClass(lgs api.LocalGetSet, cfg *ServerConfig) *PeerServerClass {
 	return &PeerServerClass{
-		lgs: lgs,
-		cfg: cfg,
+		lgs:     lgs,
+		cfg:     cfg,
+		GotFile: bchan.New(1),
 	}
+}
+
+func (s *PeerServerClass) IncrementGotFileCount() {
+	s.mut.Lock()
+	s.filesReceivedCount++
+	count := s.filesReceivedCount
+	s.mut.Unlock()
+	s.GotFile.Bcast(count)
 }
 
 // implement pb.PeerServer interface; the server is receiving a file here,
@@ -161,6 +175,8 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 
 				//p("%s this server.SendFile() with BcastSet, got request from '%s' to set key '%s' with data of len %v. debug Val:'%s'. about to wait on chan %p", s.cfg.MyID, req.FromID, req.Ki.Key, len(req.Ki.Val), string(req.Ki.Val[:intMin(100, len(req.Ki.Val))]), s.cfg.ServerGotSetRequest)
 
+				s.IncrementGotFileCount()
+
 				// notify peer by sending on cfg.ServerGotSetRequest
 				select {
 				case s.cfg.ServerGotSetRequest <- &req:
@@ -280,8 +296,10 @@ func (cfg *ServerConfig) StartGrpcServer(
 
 	cfg.mut.Lock()
 	cfg.GrpcServer = grpc.NewServer(opts...) // race here, prev write, conflicts 226 line. in Test103BcastGet observed with go test -race
+	cls := NewPeerServerClass(peer, cfg)
+	cfg.Cls = cls
 	cfg.mut.Unlock()
-	pb.RegisterPeerServer(cfg.GrpcServer, NewPeerServerClass(peer, cfg))
+	pb.RegisterPeerServer(cfg.GrpcServer, cls)
 
 	// blocks until shutdown
 	cfg.GrpcServer.Serve(lis)
