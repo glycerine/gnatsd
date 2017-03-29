@@ -168,6 +168,8 @@ func (cfg *ClientConfig) ClientSendFile(path string, data []byte, isBcastSet boo
 	}
 	mb := float64(len(data)) / float64(1<<20)
 	elap := t1.Sub(t0)
+	_ = mb
+	_ = elap
 	//p("c: elap time to send %v MB was %v => %.03f MB/sec", mb, elap, mb/(float64(elap)/1e9))
 	return nil
 }
