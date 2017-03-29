@@ -223,8 +223,12 @@ func MainExample() {
 }
 
 func (cfg *ServerConfig) Stop() {
-	if cfg != nil && cfg.GrpcServer != nil {
-		cfg.GrpcServer.Stop()
+	if cfg != nil {
+		cfg.mut.Lock()
+		if cfg.GrpcServer != nil {
+			cfg.GrpcServer.Stop() // race here in Test103BcastGet
+		}
+		cfg.mut.Unlock()
 	}
 }
 
@@ -274,7 +278,9 @@ func (cfg *ServerConfig) StartGrpcServer(
 		close(sshdReady)
 	}
 
-	cfg.GrpcServer = grpc.NewServer(opts...)
+	cfg.mut.Lock()
+	cfg.GrpcServer = grpc.NewServer(opts...) // race here, prev write, conflicts 226 line. in Test103BcastGet observed with go test -race
+	cfg.mut.Unlock()
 	pb.RegisterPeerServer(cfg.GrpcServer, NewPeerServerClass(peer, cfg))
 
 	// blocks until shutdown

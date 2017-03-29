@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"encoding/json"
@@ -356,12 +355,16 @@ func (peer *Peer) setupNatsClient() error {
 
 		var laf LeadAndFollowList
 		json.Unmarshal(msg.Data, &laf)
-		laf.MyID = peer.loc.ID
+
+		peer.mut.Lock()
+		laf.MyID = peer.loc.ID // prev read, race with line 379
+		peer.mut.Unlock()
 
 		peer.MemberGainedBchan.Bcast(&laf)
 	})
 
 	// reporting
+	// problem: reporting every 5msec, not good
 	nc.Subscribe(peer.subjMembership, func(msg *nats.Msg) {
 		mylog.Printf("peer received subjMembership: "+
 			"Received on [%s]: '%s'",
@@ -376,7 +379,7 @@ func (peer *Peer) setupNatsClient() error {
 		// update our peer.loc too, so it is current/accurate.
 		for _, v := range laf.Members {
 			if v.ID == peer.loc.ID {
-				peer.loc = v
+				peer.loc = v // race here, vs line 358
 				break
 			}
 		}
@@ -400,13 +403,14 @@ func (peer *Peer) setupNatsClient() error {
 		internalPort := peer.GservCfg.InternalLsnPort
 		peer.mut.Unlock()
 
+		/* reporting every 10msec problem:
 		mylog.Printf("peer '%s' received on subSubject %s: '%s', where I have peer.loc='%s'",
 			aloc.ID,
 			subSubject,
 			string(msg.Data),
 			&aloc,
 		)
-
+		*/
 		switch subSubject {
 		case "grpc-port-query":
 			aloc.ExternalPort = externalPort
@@ -474,68 +478,6 @@ func (peer *Peer) LeadTransferCheckpoint(chkptData []byte) error {
 		//   if we are newly lead, at startup:
 		//      1) poll and recover state from latest checkpoint
 		// 2) send checkpoints to followers every so often
-
-		// setup sessions with all followers
-		for i := range cs.follow {
-
-			// do pairwise 1:1 transfer for each
-			// follower that is not ourselves.
-
-			//p("LeadTransferCheckpoint transferring checkpoint "+"to cs.follow[i].subj='%s'", cs.follow[i].subj)
-
-			sessL, err := swp.SetupRecvStream(
-				peer.nc,
-				peer.serverOpts.Host,
-				peer.serverOpts.Port,
-				laf.MyID,
-				// We must distinguish our endpoint from
-				// that of the lead's recv-chkpt, or else
-				// the packets will get mixed up between
-				// the two endpoints. Add a prefix that
-				// distinguishes the lead that is originating
-				// (sending) the checkpoint out.
-				"lead-chkpt-origin;"+cs.lead.subj,
-				cs.follow[i].subj,
-				skipTLS,
-				nil,
-				ignoreSlowConsumerErrors)
-
-			panicOn(err)
-
-			//p("sessLead = %p", sessL)
-
-			path := "checkpoint.data"
-			t0 := time.Now()
-
-			// timeout the write after 30 sec
-			fileSent := make(chan bool)
-			var timeOut uint64
-			toDur := time.Second * 30
-			go func() {
-				select {
-				case <-fileSent:
-				case <-time.After(toDur):
-					atomic.AddUint64(&timeOut, 1)
-					sessL.Stop()
-				}
-			}()
-
-			bigfile, err := sessL.SendFile(path, chkptData, time.Now())
-			if atomic.LoadUint64(&timeOut) > 0 {
-				mylog.Printf("%s timeout after %v on sessL.SendFile() to '%s'", laf.MyID, toDur, cs.follow[i].subj)
-				continue
-			}
-			if err != nil {
-				// panic was crashing here with
-				// panic: Connect() timeout waiting to SynAck, after
-				mylog.Printf("error during lead trying to send "+
-					"checkpoint file to '%s': '%v'",
-					cs.follow[i].subj, err)
-			} else {
-				mylog.Printf("lead '%s' sent file '%s' of size %v, stamped '%v', to '%s' in %v", "lead-chkpt-origin;"+cs.lead.subj, bigfile.Filepath, bigfile.SizeInBytes, bigfile.SendTime, cs.follow[i].subj, time.Since(t0))
-			}
-			sessL.Stop()
-		}
 
 	case <-peer.Halt.ReqStop.Chan:
 		// shutting down.

@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"sync"
 
 	"github.com/glycerine/hnatsd/peer/api"
 	"github.com/glycerine/idem"
@@ -33,6 +34,7 @@ type ServerConfig struct {
 	Halt *idem.Halter
 
 	GrpcServer *grpc.Server
+	mut        sync.Mutex
 }
 
 func NewServerConfig(myID string) *ServerConfig {
