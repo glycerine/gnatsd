@@ -306,55 +306,9 @@ func (peer *Peer) setupNatsClient() error {
 
 	// BCAST GET handler
 	getScrip, err := nc.Subscribe(peer.subjBcastGet, func(msg *nats.Msg) {
-		var bgr api.BcastGetRequest
-		bgr.UnmarshalMsg(msg.Data)
-		//mylog.Printf("%s peer recevied subjBcastGet for key '%s'",
-		//	peer.saver.whoami, string(bgr.Key))
-
-		// are we filtered down to a specific peer request?
-		if bgr.Who != "" {
-			// yep
-			if bgr.Who == peer.loc.ID {
-				//p("%s sees peer-specific BcastGet request!", bgr.Who)
-			} else {
-				//p("%s sees peer-specific BcastGet request for '%s' which is not us!", peer.saver.whoami, bgr.Who)
-				return
-			}
-		} else {
-			//p("bgr.Who was not set...")
-		}
-
-		var reply api.BcastGetReply
-
-		ki, err := peer.LocalGet(bgr.Key, bgr.IncludeValue)
-		if err != nil {
-			mylog.Printf("peer.LocalGet('%s' returned error '%v'", string(bgr.Key), err)
-			reply.Err = err.Error()
-		} else {
-			reply.Ki = ki
-		}
-		p("debug peer.LocalGet(key='%s') returned ki.Key='%s' and ki.Val='%s'", string(bgr.Key), string(ki.Key), string(ki.Val[:intMin(100, len(ki.Val))]))
-
-		// Asking for big data or no?
-		// For big data transfer, use gRPC. Can handle unlimited (big) data transfers.
-		// For small meta-data request, use NATS. Will be faster. Small messages only.
-		if bgr.IncludeValue {
-			// gRPC over SSH.
-
-			// use the SendFile() client to return the BigFile
-			err = peer.clientDoGrpcSendFileBcastGetReply(&bgr, &reply)
-			panicOn(err)
-
-		} else {
-			// NATS over TLS.
-
-			mm, err := reply.MarshalMsg(nil)
-			panicOn(err)
-			p("BcastGet handler about to Publish on msg.Reply='%s'", msg.Reply)
-			err = nc.Publish(msg.Reply, mm)
-			panicOn(err)
-		}
-
+		// see bcast.go
+		err := peer.ServerHandleBcastGet(msg)
+		panicOn(err)
 	})
 	panicOn(err)
 	getScrip.SetPendingLimits(-1, -1)

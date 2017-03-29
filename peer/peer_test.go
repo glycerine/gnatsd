@@ -54,7 +54,7 @@ func Test101PeerToPeerKeyValueTransfer(t *testing.T) {
 			// doing full data value transfers. And the keys
 			// should be sorted by increasing time.
 			to := time.Second * 10
-			inv, err := p0.BcastGet(key, false, to, "")
+			inv, err := p0.ClientInitiateBcastGet(key, false, to, "")
 			panicOn(err)
 			cv.So(inv[0].Key, cv.ShouldResemble, key)
 			cv.So(inv[0].When, cv.ShouldResemble, t0)
@@ -270,7 +270,7 @@ func Test103BcastGet(t *testing.T) {
 		// doing full data value transfers. And the keys
 		// should be sorted by increasing time.
 		to := time.Second * 60
-		inv, err := p0.BcastGet(key, false, to, "")
+		inv, err := p0.ClientInitiateBcastGet(key, false, to, "")
 		panicOn(err)
 		cv.So(len(inv), cv.ShouldEqual, 3)
 		cv.So(inv[0].Key, cv.ShouldResemble, key)
