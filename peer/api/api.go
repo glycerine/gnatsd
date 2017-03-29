@@ -43,6 +43,7 @@ func (ki *KeyInv) String() string {
 }
 
 type BcastGetRequest struct {
+	FromID string
 
 	// Key specifies the key to query and return the value of.
 	Key []byte
@@ -61,12 +62,14 @@ type BcastGetRequest struct {
 }
 
 type BcastGetReply struct {
-	Ki  *KeyInv
-	Err string
+	FromID string
+	Ki     *KeyInv
+	Err    string
 }
 
 type BcastSetRequest struct {
-	Ki *KeyInv
+	FromID string
+	Ki     *KeyInv
 }
 
 type BcastSetReply struct {

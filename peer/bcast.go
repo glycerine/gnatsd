@@ -10,6 +10,7 @@ import (
 )
 
 func (peer *Peer) BcastSet(ki *api.KeyInv) error {
+	p("%s top of BcastSet", peer.loc.ID)
 
 	timeout := 120 * time.Second
 	peers, err := peer.GetPeerList(timeout)
@@ -30,13 +31,15 @@ func (peer *Peer) BcastSet(ki *api.KeyInv) error {
 	mylog.Printf("BcastSet: we have clusterStatus: '%s'", &cs)
 
 	req := &api.BcastSetRequest{
-		Ki: ki,
+		Ki:     ki,
+		FromID: peers.MyID,
 	}
 
 	return peer.doGrpcClientSendFileSetRequest(req, &cs)
 }
 
 func (peer *Peer) BcastGet(key []byte, includeValue bool, timeout time.Duration, who string) (kis []*api.KeyInv, err error) {
+	p("%s top of BcastGet()", peer.loc.ID)
 
 	peers, err := peer.GetPeerList(timeout)
 	if err != nil || peers == nil || len(peers.Members) <= 1 {
@@ -57,6 +60,7 @@ func (peer *Peer) BcastGet(key []byte, includeValue bool, timeout time.Duration,
 	//p("numPeers = %v", numPeers)
 
 	bgr := &api.BcastGetRequest{
+		FromID:         peers.MyID,
 		Key:            key,
 		Who:            who,
 		IncludeValue:   includeValue,

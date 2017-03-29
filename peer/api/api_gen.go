@@ -22,6 +22,11 @@ func (z *BcastGetReply) DecodeMsg(dc *msgp.Reader) (err error) {
 			return
 		}
 		switch msgp.UnsafeString(field) {
+		case "FromID":
+			z.FromID, err = dc.ReadString()
+			if err != nil {
+				return
+			}
 		case "Ki":
 			if dc.IsNil() {
 				err = dc.ReadNil()
@@ -55,9 +60,18 @@ func (z *BcastGetReply) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *BcastGetReply) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 2
+	// map header, size 3
+	// write "FromID"
+	err = en.Append(0x83, 0xa6, 0x46, 0x72, 0x6f, 0x6d, 0x49, 0x44)
+	if err != nil {
+		return err
+	}
+	err = en.WriteString(z.FromID)
+	if err != nil {
+		return
+	}
 	// write "Ki"
-	err = en.Append(0x82, 0xa2, 0x4b, 0x69)
+	err = en.Append(0xa2, 0x4b, 0x69)
 	if err != nil {
 		return err
 	}
@@ -87,9 +101,12 @@ func (z *BcastGetReply) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z *BcastGetReply) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 2
+	// map header, size 3
+	// string "FromID"
+	o = append(o, 0x83, 0xa6, 0x46, 0x72, 0x6f, 0x6d, 0x49, 0x44)
+	o = msgp.AppendString(o, z.FromID)
 	// string "Ki"
-	o = append(o, 0x82, 0xa2, 0x4b, 0x69)
+	o = append(o, 0xa2, 0x4b, 0x69)
 	if z.Ki == nil {
 		o = msgp.AppendNil(o)
 	} else {
@@ -120,6 +137,11 @@ func (z *BcastGetReply) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			return
 		}
 		switch msgp.UnsafeString(field) {
+		case "FromID":
+			z.FromID, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				return
+			}
 		case "Ki":
 			if msgp.IsNil(bts) {
 				bts, err = msgp.ReadNilBytes(bts)
@@ -154,7 +176,7 @@ func (z *BcastGetReply) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *BcastGetReply) Msgsize() (s int) {
-	s = 1 + 3
+	s = 1 + 7 + msgp.StringPrefixSize + len(z.FromID) + 3
 	if z.Ki == nil {
 		s += msgp.NilSize
 	} else {
@@ -180,6 +202,11 @@ func (z *BcastGetRequest) DecodeMsg(dc *msgp.Reader) (err error) {
 			return
 		}
 		switch msgp.UnsafeString(field) {
+		case "FromID":
+			z.FromID, err = dc.ReadString()
+			if err != nil {
+				return
+			}
 		case "Key":
 			z.Key, err = dc.ReadBytes(z.Key)
 			if err != nil {
@@ -222,9 +249,18 @@ func (z *BcastGetRequest) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *BcastGetRequest) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 6
+	// map header, size 7
+	// write "FromID"
+	err = en.Append(0x87, 0xa6, 0x46, 0x72, 0x6f, 0x6d, 0x49, 0x44)
+	if err != nil {
+		return err
+	}
+	err = en.WriteString(z.FromID)
+	if err != nil {
+		return
+	}
 	// write "Key"
-	err = en.Append(0x86, 0xa3, 0x4b, 0x65, 0x79)
+	err = en.Append(0xa3, 0x4b, 0x65, 0x79)
 	if err != nil {
 		return err
 	}
@@ -283,9 +319,12 @@ func (z *BcastGetRequest) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z *BcastGetRequest) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 6
+	// map header, size 7
+	// string "FromID"
+	o = append(o, 0x87, 0xa6, 0x46, 0x72, 0x6f, 0x6d, 0x49, 0x44)
+	o = msgp.AppendString(o, z.FromID)
 	// string "Key"
-	o = append(o, 0x86, 0xa3, 0x4b, 0x65, 0x79)
+	o = append(o, 0xa3, 0x4b, 0x65, 0x79)
 	o = msgp.AppendBytes(o, z.Key)
 	// string "Who"
 	o = append(o, 0xa3, 0x57, 0x68, 0x6f)
@@ -321,6 +360,11 @@ func (z *BcastGetRequest) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			return
 		}
 		switch msgp.UnsafeString(field) {
+		case "FromID":
+			z.FromID, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				return
+			}
 		case "Key":
 			z.Key, bts, err = msgp.ReadBytesBytes(bts, z.Key)
 			if err != nil {
@@ -364,7 +408,7 @@ func (z *BcastGetRequest) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *BcastGetRequest) Msgsize() (s int) {
-	s = 1 + 4 + msgp.BytesPrefixSize + len(z.Key) + 4 + msgp.StringPrefixSize + len(z.Who) + 13 + msgp.BoolSize + 14 + msgp.StringPrefixSize + len(z.ReplyGrpcHost) + 15 + msgp.IntSize + 15 + msgp.IntSize
+	s = 1 + 7 + msgp.StringPrefixSize + len(z.FromID) + 4 + msgp.BytesPrefixSize + len(z.Key) + 4 + msgp.StringPrefixSize + len(z.Who) + 13 + msgp.BoolSize + 14 + msgp.StringPrefixSize + len(z.ReplyGrpcHost) + 15 + msgp.IntSize + 15 + msgp.IntSize
 	return
 }
 
@@ -478,6 +522,11 @@ func (z *BcastSetRequest) DecodeMsg(dc *msgp.Reader) (err error) {
 			return
 		}
 		switch msgp.UnsafeString(field) {
+		case "FromID":
+			z.FromID, err = dc.ReadString()
+			if err != nil {
+				return
+			}
 		case "Ki":
 			if dc.IsNil() {
 				err = dc.ReadNil()
@@ -506,9 +555,18 @@ func (z *BcastSetRequest) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *BcastSetRequest) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 1
+	// map header, size 2
+	// write "FromID"
+	err = en.Append(0x82, 0xa6, 0x46, 0x72, 0x6f, 0x6d, 0x49, 0x44)
+	if err != nil {
+		return err
+	}
+	err = en.WriteString(z.FromID)
+	if err != nil {
+		return
+	}
 	// write "Ki"
-	err = en.Append(0x81, 0xa2, 0x4b, 0x69)
+	err = en.Append(0xa2, 0x4b, 0x69)
 	if err != nil {
 		return err
 	}
@@ -529,9 +587,12 @@ func (z *BcastSetRequest) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z *BcastSetRequest) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 1
+	// map header, size 2
+	// string "FromID"
+	o = append(o, 0x82, 0xa6, 0x46, 0x72, 0x6f, 0x6d, 0x49, 0x44)
+	o = msgp.AppendString(o, z.FromID)
 	// string "Ki"
-	o = append(o, 0x81, 0xa2, 0x4b, 0x69)
+	o = append(o, 0xa2, 0x4b, 0x69)
 	if z.Ki == nil {
 		o = msgp.AppendNil(o)
 	} else {
@@ -559,6 +620,11 @@ func (z *BcastSetRequest) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			return
 		}
 		switch msgp.UnsafeString(field) {
+		case "FromID":
+			z.FromID, bts, err = msgp.ReadStringBytes(bts)
+			if err != nil {
+				return
+			}
 		case "Ki":
 			if msgp.IsNil(bts) {
 				bts, err = msgp.ReadNilBytes(bts)
@@ -588,7 +654,7 @@ func (z *BcastSetRequest) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *BcastSetRequest) Msgsize() (s int) {
-	s = 1 + 3
+	s = 1 + 7 + msgp.StringPrefixSize + len(z.FromID) + 3
 	if z.Ki == nil {
 		s += msgp.NilSize
 	} else {
