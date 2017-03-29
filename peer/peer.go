@@ -20,7 +20,6 @@ import (
 	"github.com/glycerine/hnatsd/swp"
 	"github.com/glycerine/idem"
 
-	"github.com/glycerine/hnatsd/peer/gcli"
 	"github.com/glycerine/hnatsd/peer/gserv"
 
 	"github.com/glycerine/hnatsd/peer/api"
@@ -77,8 +76,11 @@ type Peer struct {
 	saver      *BoltSaver
 
 	GservCfg *gserv.ServerConfig
-	grpcAddr string
-	Whoami   string // as a host
+
+	grpcAddr     string
+	internalPort int
+
+	Whoami string // as a host
 
 	SshClientLoginUsername        string
 	SshClientPrivateKeyPath       string
@@ -329,7 +331,7 @@ func (peer *Peer) setupNatsClient() error {
 		p("debug peer.LocalGet(key='%s') returned ki.Key='%s' and ki.Val='%s'", string(bgr.Key), string(ki.Key), string(ki.Val))
 
 		// use the SendFile() client to return the BigFile
-		err := peer.clientDoGrpcSendFileBcastGetReply(&bgr, &reply)
+		err = peer.clientDoGrpcSendFileBcastGetReply(&bgr, &reply)
 		panicOn(err)
 	})
 	panicOn(err)
@@ -397,7 +399,7 @@ func (peer *Peer) setupNatsClient() error {
 		peer.LeadAndFollowBchan.Bcast(&laf)
 	})
 
-	// queries to the peer - for grpc port info, for example
+	// queries to the peer - for grpc ext+internal ports, for example
 	nc.Subscribe(peer.loc.ID+".>", func(msg *nats.Msg) {
 
 		subSubject := msg.Subject[len(peer.loc.ID)+1:]
@@ -409,7 +411,11 @@ func (peer *Peer) setupNatsClient() error {
 
 		switch subSubject {
 		case "grpc-port-query":
-			err = nc.Publish(msg.Reply, []byte(peer.GetGrpcAddr()))
+			aloc := natsLocConvert(peer.loc)
+			aloc.GrpcPort = peer.GservCfg.ExternalLsnPort
+			aloc.InternalPort = peer.GservCfg.InternalLsnPort
+
+			err = nc.Publish(msg.Reply, []byte(aloc.String()))
 			if err != nil {
 				mylog.Printf("warning: '%s' publish to '%s' got error '%v'",
 					subSubject,
@@ -590,9 +596,8 @@ func list2status(laf *LeadAndFollowList) (cs clusterStatus, myFollowSubj string)
 }
 
 type peerDetail struct {
-	loc          health.AgentLoc
-	subj         string
-	InternalPort int
+	loc  health.AgentLoc
+	subj string
 }
 
 func (d peerDetail) String() string {
@@ -753,4 +758,14 @@ func (peer *Peer) GetGrpcAddr() string {
 	port := peer.grpcAddr
 	peer.mut.Unlock()
 	return port
+}
+
+func natsLocConvert(loc *nats.ServerLoc) *health.AgentLoc {
+	return &health.AgentLoc{
+		ID:       loc.ID,
+		Host:     loc.Host,
+		NatsPort: loc.NatsPort,
+		Rank:     loc.Rank,
+		Pid:      os.Getpid(),
+	}
 }

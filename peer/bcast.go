@@ -23,7 +23,7 @@ func (peer *Peer) BcastSet(ki *api.KeyInv) error {
 		return err
 	}
 	numPeers := len(peers.Members)
-	//p("BcastSet sees numPeers = %v", numPeers)
+	p("BcastSet sees numPeers = %v", numPeers)
 
 	cs, _ := list2status(peers)
 	mylog.Printf("BcastSet: we have clusterStatus: '%s'", &cs)
@@ -79,24 +79,24 @@ func (peer *Peer) BcastGet(key []byte, includeValue bool, timeout time.Duration,
 		select {
 		case <-toCh:
 			return nil, ErrTimedOut
-		case reply := <-peer.GservCfg.ServerGotReply:
+		case reply := <-peer.GservCfg.ServerGotGetReply:
 			p("BcastGet got a reply, on i = %v", i)
-			if bgr.Err != "" {
-				return nil, fmt.Errorf(bgr.Err)
+			if reply.Err != "" {
+				return nil, fmt.Errorf(reply.Err)
 			} else {
-				bgr.Ki.When = bgr.Ki.When.UTC()
-				sorter.Upsert(bgr.Ki)
+				reply.Ki.When = reply.Ki.When.UTC()
+				sorter.Upsert(reply.Ki)
 
 				// save... if it is a BcastSet
 				ki := reply.Ki
 				if len(ki.Val) > 0 {
-					err = s.peer.LocalSet(
+					err = peer.LocalSet(
 						&api.KeyInv{Key: ki.Key, Val: ki.Val, When: ki.When},
 					)
-					p("server sees the last chunk of '%s', writing to bolt key='%s' len: %v bytes gave '%v', and returning now.", nk.Filepath, string(ki.Key), len(ki.Val), err)
 					p("debug! server saw ki.Val='%s'", string(ki.Val))
 					if err != nil {
-						return fmt.Errorf("gserv/server.go SendFile(): s.peer.LocalSet() errored '%v'", err)
+						err = fmt.Errorf("gserv/server.go SendFile(): s.peer.LocalSet() errored '%v'", err)
+						return
 					}
 				}
 
@@ -170,14 +170,12 @@ func (peer *Peer) doGrpcClientSendFileSetRequest(req *api.BcastSetRequest, cs *c
 			ClientKnownHostsPath: peer.SshClientClientKnownHostsPath,
 		}
 
-		replyData, err := reply.MarshalMsg(nil)
-		panicOn(err)
-
 		err = clicfg.ClientSendFile(string(req.Ki.Key), reqBytes, isBcastSet)
 		panicOn(err)
 		p("BcastSet successfully clicfg.ClientSendFile to %s:%v", host, port)
 	}
 
+	return nil
 }
 
 func (peer *Peer) clientDoGrpcSendFileBcastGetReply(bgr *api.BcastGetRequest, reply *api.BcastGetReply) error {
