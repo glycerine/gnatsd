@@ -65,6 +65,7 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 	}
 
 	var finalChecksum []byte
+	const writeFileToDisk = false
 	var fd *os.File
 	var bytesSeen int64
 	var isBcastSet bool
@@ -117,9 +118,12 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 		if !firstChunkSeen {
 			isBcastSet = nk.IsBcastSet
 			if nk.Filepath != "" {
-				fd, err = os.Create(nk.Filepath + fmt.Sprintf("__%v", time.Now()))
-				if err != nil {
-					return err
+				if writeFileToDisk {
+					fd, err = os.Create(nk.Filepath + fmt.Sprintf("__%v", time.Now()))
+					if err != nil {
+						return err
+					}
+					defer fd.Close()
 				}
 			}
 			firstChunkSeen = true
@@ -154,8 +158,15 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 		// INVAR: chunk passes tests, keep it.
 		bytesSeen += int64(len(nk.Data))
 		chunkCount++
-		var nw int
 
+		if writeFileToDisk {
+			err = writeToFd(fd, nk.Data)
+			if err != nil {
+				return err
+			}
+		}
+
+		var nw int
 		nw, err = allChunks.Write(nk.Data)
 		panicOn(err)
 		if nw != len(nk.Data) {
@@ -317,4 +328,19 @@ func intMin(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func writeToFd(fd *os.File, data []byte) error {
+	w := 0
+	n := len(data)
+	for {
+		nw, err := fd.Write(data[w:])
+		if err != nil {
+			return err
+		}
+		w += nw
+		if nw >= n {
+			return nil
+		}
+	}
 }
