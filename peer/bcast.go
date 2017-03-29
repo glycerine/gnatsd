@@ -39,7 +39,7 @@ func (peer *Peer) BcastSet(ki *api.KeyInv) error {
 }
 
 func (peer *Peer) BcastGet(key []byte, includeValue bool, timeout time.Duration, who string) (kis []*api.KeyInv, err error) {
-	p("%s top of BcastGet()", peer.loc.ID)
+	p("%s top of BcastGet(). who='%s'.", peer.loc.ID, who)
 
 	peers, err := peer.GetPeerList(timeout)
 	if err != nil || peers == nil || len(peers.Members) <= 1 {
@@ -71,6 +71,11 @@ func (peer *Peer) BcastGet(key []byte, includeValue bool, timeout time.Duration,
 	mm, err := bgr.MarshalMsg(nil)
 	if err != nil {
 		return nil, err
+	}
+
+	if !includeValue {
+		// expect back from nats
+
 	}
 
 	err = peer.nc.Publish(peer.subjBcastGet, mm)

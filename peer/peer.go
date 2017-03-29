@@ -314,7 +314,7 @@ func (peer *Peer) setupNatsClient() error {
 		// are we filtered down to a specific peer request?
 		if bgr.Who != "" {
 			// yep
-			if bgr.Who == peer.saver.whoami {
+			if bgr.Who == peer.loc.ID {
 				//p("%s sees peer-specific BcastGet request!", bgr.Who)
 			} else {
 				//p("%s sees peer-specific BcastGet request for '%s' which is not us!", peer.saver.whoami, bgr.Who)
@@ -333,11 +333,28 @@ func (peer *Peer) setupNatsClient() error {
 		} else {
 			reply.Ki = ki
 		}
-		p("debug peer.LocalGet(key='%s') returned ki.Key='%s' and ki.Val='%s'", string(bgr.Key), string(ki.Key), string(ki.Val))
+		p("debug peer.LocalGet(key='%s') returned ki.Key='%s' and ki.Val='%s'", string(bgr.Key), string(ki.Key), string(ki.Val[:intMin(100, len(ki.Val))]))
 
-		// use the SendFile() client to return the BigFile
-		err = peer.clientDoGrpcSendFileBcastGetReply(&bgr, &reply)
-		panicOn(err)
+		// Asking for big data or no?
+		// For big data transfer, use gRPC. Can handle unlimited (big) data transfers.
+		// For small meta-data request, use NATS. Will be faster. Small messages only.
+		if bgr.IncludeValue {
+			// gRPC over SSH.
+
+			// use the SendFile() client to return the BigFile
+			err = peer.clientDoGrpcSendFileBcastGetReply(&bgr, &reply)
+			panicOn(err)
+
+		} else {
+			// NATS over TLS.
+
+			mm, err := reply.MarshalMsg(nil)
+			panicOn(err)
+			p("BcastGet handler about to Publish on msg.Reply='%s'", msg.Reply)
+			err = nc.Publish(msg.Reply, mm)
+			panicOn(err)
+		}
+
 	})
 	panicOn(err)
 	getScrip.SetPendingLimits(-1, -1)
