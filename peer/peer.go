@@ -727,6 +727,9 @@ func (peer *Peer) StartBackgroundSshdRecv(myID, myFollowSubj string) {
 		cfg.SshegoSystemMutexPort = port2
 
 		peer.grpcAddr = fmt.Sprintf("%v:%v", peer.GservCfg.Host, peer.GservCfg.ExternalLsnPort)
+
+		peer.BackgroundReceiveBcastSetAndWriteToBolt()
+
 		// will block until server exits:
 		peer.GservCfg.StartGrpcServer(peer.saver, peer.SshdReady, myID)
 	}()

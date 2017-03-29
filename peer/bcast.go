@@ -92,20 +92,6 @@ func (peer *Peer) BcastGet(key []byte, includeValue bool, timeout time.Duration,
 			} else {
 				reply.Ki.When = reply.Ki.When.UTC()
 				sorter.Upsert(reply.Ki)
-
-				// save... if it is a BcastSet
-				ki := reply.Ki
-				if len(ki.Val) > 0 {
-					err = peer.LocalSet(
-						&api.KeyInv{Key: ki.Key, Val: ki.Val, When: ki.When},
-					)
-					p("debug! server saw ki.Val='%s'", string(ki.Val))
-					if err != nil {
-						err = fmt.Errorf("gserv/server.go SendFile(): s.peer.LocalSet() errored '%v'", err)
-						return
-					}
-				}
-
 			}
 		}
 	}
@@ -193,18 +179,12 @@ func (peer *Peer) doGrpcClientSendFileSetRequest(req *api.BcastSetRequest, cs *c
 			ClientKnownHostsPath: peer.SshClientClientKnownHostsPath,
 		}
 
-		go clicfg.ClientSendFile(string(req.Ki.Key), reqBytes, isBcastSet)
+		clicfg.ClientSendFile(string(req.Ki.Key), reqBytes, isBcastSet)
 
-		p("%s in doGrpcClientSendFileSetRequest, about to wait on peer.GservCfg.ServerGotSetRequest chan = %p", peer.loc.ID, peer.GservCfg.ServerGotSetRequest)
-
-		select {
-		case setReq := <-peer.GservCfg.ServerGotSetRequest:
-			p("%s got setReq of len %v on channel peer.GservCfg.ServerGotSetRequest", peer.loc.ID, len(setReq.Ki.Val))
-		case <-peer.Halt.ReqStop.Chan:
-			return ErrShutdown
-		}
-		p("%s BcastSet successfully clicfg.ClientSendFile to %s:%v", peer.loc.ID, host, eport)
+		p("%s in doGrpcClientSendFileSetRequest, after clicfg.ClientSendFile()", peer.loc.ID)
 	}
+
+	//p("%s BcastSet successfully doGrpcClientSendFileSetRequest to %s:%v", peer.loc.ID, host, eport)
 
 	return nil
 }
@@ -228,4 +208,38 @@ func (peer *Peer) clientDoGrpcSendFileBcastGetReply(bgr *api.BcastGetRequest, re
 
 	isBcastSet := false
 	return clicfg.ClientSendFile(string(bgr.Key), replyData, isBcastSet)
+}
+
+func (peer *Peer) BackgroundReceiveBcastSetAndWriteToBolt() {
+	p("%s top of BackgroundReceiveBcastSetAndWriteToBolt", peer.loc.ID)
+	go func() {
+		for {
+			//			if peer.GservCfg == nil || peer.GservCfg.ServerGotSetRequest == nil {
+			//				time.Sleep(time.Second)
+			//				continue
+			//			}
+			select {
+			case setReq := <-peer.GservCfg.ServerGotSetRequest:
+				p("%s got setReq of len %v from %s on channel peer.GservCfg.ServerGotSetRequest", peer.loc.ID, setReq.FromID, len(setReq.Ki.Val))
+
+				// write to bolt
+				ki := setReq.Ki
+				if len(ki.Val) > 0 {
+					err := peer.LocalSet(ki)
+					p("debug! bcast.go wrote ki.Val='%s'", string(ki.Val[:intMin(100, len(ki.Val))]))
+					if err != nil {
+						log.Printf("gserv/server.go SendFile(): s.peer.LocalSet() errored '%v'", err)
+						continue
+					}
+				} else {
+					panic("strange: got setReq with zero payload!")
+				}
+
+			case <-peer.Halt.ReqStop.Chan:
+				p("BackgroundReceiveBcastSetAndWriteToBolt exiting on Halt.ReqStop")
+				peer.Halt.Done.Close()
+				return
+			}
+		}
+	}()
 }
