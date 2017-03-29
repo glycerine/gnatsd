@@ -185,7 +185,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 			// ports will be the only thing different when
 			// running off of the one gnatsd that has the
 			// same rank and ID for all clients.
-			cv.So(sloc.NatsPort, cv.ShouldEqual, ms[0].myLoc.NatsPort)
+			cv.So(sloc.NatsClientPort, cv.ShouldEqual, ms[0].myLoc.NatsClientPort)
 		}
 
 		for i := 0; i < av; i++ {
@@ -200,7 +200,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 		for j := 1; j < n; j++ {
 			h := ms[j].elec.copyLeadHistory()
 			av := h.Avail()
-			//p("ms[j=%v].myLoc.NatsPort = %v has history av = %v", j, ms[j].myLoc.NatsPort, av)
+			//p("ms[j=%v].myLoc.NatsClientPort = %v has history av = %v", j, ms[j].myLoc.NatsClientPort, av)
 			cv.So(ms[j].myLoc.ID, cv.ShouldNotEqual, "")
 			cv.So(av, cv.ShouldBeGreaterThan, 12)
 			//p("av: available history len = %v", av)
@@ -210,7 +210,7 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 			for i := 0; i < av; i++ {
 				sloc := h.A[h.Kth(i)].(*AgentLoc)
 				_ = sloc
-				//fmt.Printf("history print i = %v. sloc.ID=%v / sloc.Rank=%v, port=%v\n", i, sloc.ID, sloc.Rank, sloc.NatsPort)
+				//fmt.Printf("history print i = %v. sloc.ID=%v / sloc.Rank=%v, port=%v\n", i, sloc.ID, sloc.Rank, sloc.NatsClientPort)
 			}
 			// checks second:
 
@@ -219,12 +219,12 @@ func Test102ConvergenceToOneLowRankLeaderAndLiveness(t *testing.T) {
 			// start scanning from 10,...
 			for i := 10; i < av; i++ {
 				sloc := h.A[h.Kth(i)].(*AgentLoc)
-				//fmt.Printf("j=%v, history check ID at i = %v. sloc.NatsPort=%v/rank %v vs.  ms[0].myLoc.NatsPort=%v/rank %v\n", j, i, sloc.NatsPort, sloc.Rank, ms[0].myLoc.NatsPort, ms[0].myLoc.Rank)
+				//fmt.Printf("j=%v, history check ID at i = %v. sloc.NatsClientPort=%v/rank %v vs.  ms[0].myLoc.NatsClientPort=%v/rank %v\n", j, i, sloc.NatsClientPort, sloc.Rank, ms[0].myLoc.NatsClientPort, ms[0].myLoc.Rank)
 
 				// ports will be the only thing different when
 				// running off of the one gnatsd that has the
 				// same rank and ID for all clients.
-				cv.So(sloc.NatsPort, cv.ShouldEqual, ms[0].myLoc.NatsPort)
+				cv.So(sloc.NatsClientPort, cv.ShouldEqual, ms[0].myLoc.NatsClientPort)
 			}
 
 			for i := 10; i < av; i++ {
@@ -318,7 +318,7 @@ func Test103TiedRanksUseIdAndDoNotAlternate(t *testing.T) {
 			for i := 0; i < av; i++ {
 				sloc := h.A[h.Kth(i)].(*AgentLoc)
 				_ = sloc
-				//fmt.Printf("server j=%v, history print i = %v. / sloc.NatsPort=%v, winner.NatsPort=%v\n", j, i, sloc.NatsPort, winner.NatsPort)
+				//fmt.Printf("server j=%v, history print i = %v. / sloc.NatsClientPort=%v, winner.NatsClientPort=%v\n", j, i, sloc.NatsClientPort, winner.NatsClientPort)
 			}
 		}
 		for j := 0; j < n; j++ {
@@ -331,8 +331,8 @@ func Test103TiedRanksUseIdAndDoNotAlternate(t *testing.T) {
 			// checks second:
 			for i := 0; i < av; i++ {
 				sloc := h.A[h.Kth(i)].(*AgentLoc)
-				//fmt.Printf("server j=%v, history check ID at i = %v. sloc.NatsPort=%v,  winner.NatsPort=%v\n", j, i, sloc.NatsPort, winner.NatsPort)
-				cv.So(sloc.NatsPort, cv.ShouldEqual, winner.NatsPort)
+				//fmt.Printf("server j=%v, history check ID at i = %v. sloc.NatsClientPort=%v,  winner.NatsClientPort=%v\n", j, i, sloc.NatsClientPort, winner.NatsClientPort)
+				cv.So(sloc.NatsClientPort, cv.ShouldEqual, winner.NatsClientPort)
 			}
 
 		}
@@ -461,13 +461,13 @@ func Test104ReceiveOwnSends(t *testing.T) {
 
 		nc.Subscribe(m.subjAllCall, func(msg *nats.Msg) {
 			close(gotAllCall)
-			p("test104, port %v, at 999 allcall received '%s'", m.myLoc.NatsPort, string(msg.Data))
+			p("test104, port %v, at 999 allcall received '%s'", m.myLoc.NatsClientPort, string(msg.Data))
 			loc, err := nc.ServerLocation()
 			panicOn(err)
 			hp, err := json.Marshal(loc)
 			panicOn(err)
 
-			p("test104, port %v, at 222 in allcall handler: replying to allcall with our loc: '%s'", m.myLoc.NatsPort, loc)
+			p("test104, port %v, at 222 in allcall handler: replying to allcall with our loc: '%s'", m.myLoc.NatsClientPort, loc)
 			pong(nc, msg.Reply, hp)
 			close(repliedInAllCall)
 		})
@@ -475,11 +475,11 @@ func Test104ReceiveOwnSends(t *testing.T) {
 		now := time.Now().UTC()
 		// send on subjAllCall
 		sl := AgentLoc{
-			ID:           "abc",
-			Host:         "here",
-			NatsPort:     99,
-			Rank:         -100,
-			LeaseExpires: now.Add(time.Hour),
+			ID:             "abc",
+			Host:           "here",
+			NatsClientPort: 99,
+			Rank:           -100,
+			LeaseExpires:   now.Add(time.Hour),
 		}
 		won, _ := m.elec.setLeader(sl, now)
 		if !won {
