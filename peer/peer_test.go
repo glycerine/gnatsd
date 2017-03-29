@@ -133,7 +133,7 @@ func Test102LocalSet(t *testing.T) {
 		panicOn(err)
 
 		k, err := p0.LocalGet(key, true)
-		p("k = %#v", k)
+		//p("k = %#v", k)
 		panicOn(err)
 		cv.So(string(k.Key), cv.ShouldResemble, string(key))
 		cv.So(k.Key, cv.ShouldResemble, key)
@@ -203,17 +203,17 @@ func testSetupThree() (p0, p1, p2 *Peer, peers *LeadAndFollowList) {
 	// 1st time sets u.rsaPath, whill will be re-used here-after.
 	creds0, err := u.addUserToSshd(p0.GservCfg.SshegoCfg)
 	panicOn(err)
-	p("creds0=%#v", creds0)
+	//p("creds0=%#v", creds0)
 
 	<-p1.SshdReady
 	creds1, err := u.addUserToSshd(p1.GservCfg.SshegoCfg)
 	panicOn(err)
-	p("creds1=%#v", creds1)
+	//p("creds1=%#v", creds1)
 
 	<-p2.SshdReady
 	creds2, err := u.addUserToSshd(p2.GservCfg.SshegoCfg)
 	panicOn(err)
-	p("creds2=%#v", creds2)
+	//p("creds2=%#v", creds2)
 
 	p0.SshClientLoginUsername = u.mylogin
 	p0.SshClientPrivateKeyPath = u.rsaPath
