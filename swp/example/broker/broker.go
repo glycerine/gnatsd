@@ -30,7 +30,8 @@ func main() {
 
 	fmt.Printf("starting nats://%v:%v", host, nport)
 
-	gnats := swp.StartGnatsd(host, nport)
+	gnats, err := swp.StartGnatsd(host, nport)
+	panicOn(err)
 	fmt.Printf("\nnats://%v:%v\n", host, port)
 	fmt.Printf("export BROKER_HOST=%v\n", host)
 	fmt.Printf("export BROKER_PORT=%v\n", port)

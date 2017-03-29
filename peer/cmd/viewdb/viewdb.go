@@ -11,6 +11,7 @@ import (
 
 	"github.com/boltdb/bolt"
 	"github.com/glycerine/hnatsd/peer"
+	"github.com/glycerine/hnatsd/peer/api"
 )
 
 func main() {
@@ -57,7 +58,7 @@ func (cfg *ViewBoltConfig) Dump(db *bolt.DB, w io.Writer) error {
 				fmt.Fprintf(w, "* 'meta' bucket:\n")
 				j := 0
 				buck.ForEach(func(k, v []byte) error {
-					var meta peer.KeyInv
+					var meta api.KeyInv
 					_, err := meta.UnmarshalMsg(v)
 					if err != nil {
 						return err
