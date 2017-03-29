@@ -45,6 +45,9 @@ message BigFileChunk {
     // Be sure to set IsLastChunk to true
     // if this is the last chunk.
     bool      IsLastChunk = 8;
+
+    // IsBcastSetRequest? (else by default it is a BcastGetReply)
+    bool      IsBcastSet = 9;
 }
 
 message BigFileAck {

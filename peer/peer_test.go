@@ -350,64 +350,6 @@ func Test104BcastSet(t *testing.T) {
 		defer p2.Stop()
 		defer cleanupTestUserDatabases()
 
-		/*
-			nPeerPort0, lsn0 := getAvailPort()
-			nPeerPort1, lsn1 := getAvailPort()
-			nPeerPort2, lsn2 := getAvailPort()
-			nPeerPort3, lsn3 := getAvailPort()
-			nPeerPort4, lsn4 := getAvailPort()
-			nPeerPort5, lsn5 := getAvailPort()
-
-			// don't close until now. Now we have non-overlapping ports.
-			lsn0.Close()
-			lsn1.Close()
-			lsn2.Close()
-			lsn3.Close()
-			lsn4.Close()
-			lsn5.Close()
-
-			cluster0 := fmt.Sprintf("-cluster=nats://localhost:%v", nPeerPort2)
-			cluster1 := fmt.Sprintf("-cluster=nats://localhost:%v", nPeerPort3)
-			cluster2 := fmt.Sprintf("-cluster=nats://localhost:%v", nPeerPort4)
-			routes1 := fmt.Sprintf("-routes=nats://localhost:%v", nPeerPort2)
-
-			// want peer0 to be lead, so we give it lower rank.
-			peer0cfg := strings.Join([]string{"-rank=0", "-health", "-p", fmt.Sprintf("%v", nPeerPort0), cluster0}, " ")
-
-			peer1cfg := strings.Join([]string{"-rank=3", "-health", "-p", fmt.Sprintf("%v", nPeerPort1), cluster1, routes1}, " ")
-
-			peer2cfg := strings.Join([]string{"-rank=6", "-health", "-p", fmt.Sprintf("%v", nPeerPort5), cluster2, routes1}, " ")
-
-			p0, err := NewPeer(peer0cfg, "p0")
-			panicOn(err)
-			p1, err := NewPeer(peer1cfg, "p1")
-			panicOn(err)
-			p2, err := NewPeer(peer2cfg, "p2")
-			panicOn(err)
-
-			// start em up
-			err = p0.Start()
-			panicOn(err)
-			err = p1.Start()
-			panicOn(err)
-			err = p2.Start()
-			panicOn(err)
-
-			defer p0.Stop()
-			defer p1.Stop()
-			defer p2.Stop()
-
-			// let peers come up and start talking
-			peers, err := p0.WaitForPeerCount(3, 120*time.Second)
-			p("peers = %#v", peers)
-			if err != nil {
-				panic(fmt.Sprintf("could not setup all 3 peers?!?: err = '%v'. ", err))
-			}
-			if len(peers.Members) != 3 {
-				panic(fmt.Sprintf("could not setup all 3 peers??? count=%v. ", len(peers.Members)))
-			}
-		*/
-
 		t3 := time.Now().UTC()
 		t2 := t3.Add(-time.Minute)
 		t1 := t2.Add(-time.Minute)

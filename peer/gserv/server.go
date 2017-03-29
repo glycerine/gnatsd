@@ -53,6 +53,7 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 	var finalChecksum []byte
 	var fd *os.File
 	var bytesSeen int64
+	var isBcastSet bool
 
 	defer func() {
 		if fd != nil {
@@ -104,6 +105,7 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 
 		// INVAR: we have a chunk
 		if !firstChunkSeen {
+			isBcastSet = nk.IsBcastSet
 			if nk.Filepath != "" {
 				fd, err = os.Create(nk.Filepath + fmt.Sprintf("__%v", time.Now()))
 				if err != nil {
@@ -153,30 +155,36 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 		if nk.IsLastChunk {
 			kiBytes := allChunks.Bytes()
 
-			var reply api.BcastGetReply
-			_, err = reply.UnmarshalMsg(kiBytes)
-			if err != nil {
-				return fmt.Errorf("gserv/server.go SendFile(): reply.UnmarshalMsg() errored '%v'", err)
-			}
-
-			ki := reply.Ki
-			if len(ki.Val) > 0 {
-				err = s.peer.LocalSet(
-					&api.KeyInv{Key: ki.Key, Val: ki.Val, When: ki.When},
-				)
-				p("server sees the last chunk of '%s', writing to bolt key='%s' len: %v bytes gave '%v', and returning now.", nk.Filepath, string(ki.Key), len(ki.Val), err)
-				p("debug! server saw ki.Val='%s'", string(ki.Val))
+			if isBcastSet {
+				// is a BcastSet request
+				var req api.BcastSetRequest
+				_, err = req.UnmarshalMsg(kiBytes)
 				if err != nil {
-					return fmt.Errorf("gserv/server.go SendFile(): s.peer.LocalSet() errored '%v'", err)
+					return fmt.Errorf("gserv/server.go SendFile(): req.UnmarshalMsg() errored '%v'", err)
+				}
+
+				// notify peer by sending on cfg.ServerGotSetRequest
+				select {
+				case s.cfg.ServerGotSetRequest <- &req:
+					p("gserv server.go  sent BcastSetRequest on channel s.cfg.ServerGotSetRequest")
+				case <-s.cfg.Halt.ReqStop.Chan:
+				}
+
+			} else {
+				// is a BcastGet reply
+				var reply api.BcastGetReply
+				_, err = reply.UnmarshalMsg(kiBytes)
+				if err != nil {
+					return fmt.Errorf("gserv/server.go SendFile(): reply.UnmarshalMsg() errored '%v'", err)
+				}
+
+				// notify peer by sending on cfg.ServerGotGetReply
+				select {
+				case s.cfg.ServerGotGetReply <- &reply:
+					p("gserv server.go sent BcastGetReply on channel s.cfg.ServerGotReply")
+				case <-s.cfg.Halt.ReqStop.Chan:
 				}
 			}
-			// notify peer by sending on cfg.ServerGotReply
-			select {
-			case s.cfg.ServerGotReply <- &reply:
-				p("gserv server.go sent reply on s.cfg.ServerGotReply; reply='%s'/'%#v'", reply, reply)
-			case <-s.cfg.Halt.ReqStop.Chan:
-			}
-
 			return err
 		}
 

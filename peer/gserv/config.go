@@ -26,16 +26,19 @@ type ServerConfig struct {
 
 	SshegoCfg *tun.SshegoConfig
 
-	ServerGotReply chan *api.BcastGetReply
-	Halt           *idem.Halter
+	ServerGotGetReply   chan *api.BcastGetReply
+	ServerGotSetRequest chan *api.BcastSetRequest
+
+	Halt *idem.Halter
 
 	GrpcServer *grpc.Server
 }
 
 func NewServerConfig() *ServerConfig {
 	return &ServerConfig{
-		ServerGotReply: make(chan *api.BcastGetReply),
-		Halt:           idem.NewHalter(),
+		ServerGotGetReply:   make(chan *api.BcastGetReply),
+		ServerGotSetRequest: make(chan *api.BcastSetRequest),
+		Halt:                idem.NewHalter(),
 	}
 }
 

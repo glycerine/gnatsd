@@ -329,24 +329,7 @@ func (peer *Peer) setupNatsClient() error {
 		p("debug peer.LocalGet(key='%s') returned ki.Key='%s' and ki.Val='%s'", string(bgr.Key), string(ki.Key), string(ki.Val))
 
 		// use the SendFile() client to return the BigFile
-
-		clicfg := &gcli.ClientConfig{
-			AllowNewServer:          peer.SshClientAllowsNewSshdServer,
-			TestAllowOneshotConnect: peer.TestAllowOneshotConnect,
-			ServerHost:              bgr.ReplyGrpcHost,
-			ServerPort:              bgr.ReplyGrpcXPort,
-			ServerInternalHost:      "127.0.0.1",
-			ServerInternalPort:      bgr.ReplyGrpcIPort,
-
-			Username:             peer.SshClientLoginUsername,
-			PrivateKeyPath:       peer.SshClientPrivateKeyPath,
-			ClientKnownHostsPath: peer.SshClientClientKnownHostsPath,
-		}
-
-		replyData, err := reply.MarshalMsg(nil)
-		panicOn(err)
-
-		err = clicfg.ClientSendFile(string(bgr.Key), replyData)
+		err := peer.clientDoGrpcSendFileBcastGetReply(&bgr, &reply)
 		panicOn(err)
 	})
 	panicOn(err)
@@ -607,8 +590,9 @@ func list2status(laf *LeadAndFollowList) (cs clusterStatus, myFollowSubj string)
 }
 
 type peerDetail struct {
-	loc  health.AgentLoc
-	subj string
+	loc          health.AgentLoc
+	subj         string
+	InternalPort int
 }
 
 func (d peerDetail) String() string {

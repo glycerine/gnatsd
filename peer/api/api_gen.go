@@ -494,21 +494,6 @@ func (z *BcastSetRequest) DecodeMsg(dc *msgp.Reader) (err error) {
 					return
 				}
 			}
-		case "ReplyGrpcHost":
-			z.ReplyGrpcHost, err = dc.ReadString()
-			if err != nil {
-				return
-			}
-		case "ReplyGrpcXPort":
-			z.ReplyGrpcXPort, err = dc.ReadInt()
-			if err != nil {
-				return
-			}
-		case "ReplyGrpcIPort":
-			z.ReplyGrpcIPort, err = dc.ReadInt()
-			if err != nil {
-				return
-			}
 		default:
 			err = dc.Skip()
 			if err != nil {
@@ -521,9 +506,9 @@ func (z *BcastSetRequest) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *BcastSetRequest) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 4
+	// map header, size 1
 	// write "Ki"
-	err = en.Append(0x84, 0xa2, 0x4b, 0x69)
+	err = en.Append(0x81, 0xa2, 0x4b, 0x69)
 	if err != nil {
 		return err
 	}
@@ -538,42 +523,15 @@ func (z *BcastSetRequest) EncodeMsg(en *msgp.Writer) (err error) {
 			return
 		}
 	}
-	// write "ReplyGrpcHost"
-	err = en.Append(0xad, 0x52, 0x65, 0x70, 0x6c, 0x79, 0x47, 0x72, 0x70, 0x63, 0x48, 0x6f, 0x73, 0x74)
-	if err != nil {
-		return err
-	}
-	err = en.WriteString(z.ReplyGrpcHost)
-	if err != nil {
-		return
-	}
-	// write "ReplyGrpcXPort"
-	err = en.Append(0xae, 0x52, 0x65, 0x70, 0x6c, 0x79, 0x47, 0x72, 0x70, 0x63, 0x58, 0x50, 0x6f, 0x72, 0x74)
-	if err != nil {
-		return err
-	}
-	err = en.WriteInt(z.ReplyGrpcXPort)
-	if err != nil {
-		return
-	}
-	// write "ReplyGrpcIPort"
-	err = en.Append(0xae, 0x52, 0x65, 0x70, 0x6c, 0x79, 0x47, 0x72, 0x70, 0x63, 0x49, 0x50, 0x6f, 0x72, 0x74)
-	if err != nil {
-		return err
-	}
-	err = en.WriteInt(z.ReplyGrpcIPort)
-	if err != nil {
-		return
-	}
 	return
 }
 
 // MarshalMsg implements msgp.Marshaler
 func (z *BcastSetRequest) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 4
+	// map header, size 1
 	// string "Ki"
-	o = append(o, 0x84, 0xa2, 0x4b, 0x69)
+	o = append(o, 0x81, 0xa2, 0x4b, 0x69)
 	if z.Ki == nil {
 		o = msgp.AppendNil(o)
 	} else {
@@ -582,15 +540,6 @@ func (z *BcastSetRequest) MarshalMsg(b []byte) (o []byte, err error) {
 			return
 		}
 	}
-	// string "ReplyGrpcHost"
-	o = append(o, 0xad, 0x52, 0x65, 0x70, 0x6c, 0x79, 0x47, 0x72, 0x70, 0x63, 0x48, 0x6f, 0x73, 0x74)
-	o = msgp.AppendString(o, z.ReplyGrpcHost)
-	// string "ReplyGrpcXPort"
-	o = append(o, 0xae, 0x52, 0x65, 0x70, 0x6c, 0x79, 0x47, 0x72, 0x70, 0x63, 0x58, 0x50, 0x6f, 0x72, 0x74)
-	o = msgp.AppendInt(o, z.ReplyGrpcXPort)
-	// string "ReplyGrpcIPort"
-	o = append(o, 0xae, 0x52, 0x65, 0x70, 0x6c, 0x79, 0x47, 0x72, 0x70, 0x63, 0x49, 0x50, 0x6f, 0x72, 0x74)
-	o = msgp.AppendInt(o, z.ReplyGrpcIPort)
 	return
 }
 
@@ -626,21 +575,6 @@ func (z *BcastSetRequest) UnmarshalMsg(bts []byte) (o []byte, err error) {
 					return
 				}
 			}
-		case "ReplyGrpcHost":
-			z.ReplyGrpcHost, bts, err = msgp.ReadStringBytes(bts)
-			if err != nil {
-				return
-			}
-		case "ReplyGrpcXPort":
-			z.ReplyGrpcXPort, bts, err = msgp.ReadIntBytes(bts)
-			if err != nil {
-				return
-			}
-		case "ReplyGrpcIPort":
-			z.ReplyGrpcIPort, bts, err = msgp.ReadIntBytes(bts)
-			if err != nil {
-				return
-			}
 		default:
 			bts, err = msgp.Skip(bts)
 			if err != nil {
@@ -660,7 +594,6 @@ func (z *BcastSetRequest) Msgsize() (s int) {
 	} else {
 		s += z.Ki.Msgsize()
 	}
-	s += 14 + msgp.StringPrefixSize + len(z.ReplyGrpcHost) + 15 + msgp.IntSize + 15 + msgp.IntSize
 	return
 }
 

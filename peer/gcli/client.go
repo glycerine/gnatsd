@@ -37,7 +37,7 @@ func (c *client) startNewFile() {
 	c.nextChunk = 0
 }
 
-func (c *client) runSendFile(path string, data []byte, maxChunkSize int) error {
+func (c *client) runSendFile(path string, data []byte, maxChunkSize int, isBcastSet bool) error {
 	p("client runSendFile(path='%s') starting", path)
 
 	c.startNewFile()
@@ -59,6 +59,7 @@ func (c *client) runSendFile(path string, data []byte, maxChunkSize int) error {
 		nextByte += sendLen
 
 		var nk pb.BigFileChunk
+		nk.IsBcastSet = isBcastSet
 		nk.Filepath = path
 		nk.SizeInBytes = int64(sendLen)
 		nk.SendTime = uint64(time.Now().UnixNano())
@@ -137,7 +138,7 @@ func SequentialPayload(n int64) []byte {
 	return by
 }
 
-func (cfg *ClientConfig) ClientSendFile(path string, data []byte) error {
+func (cfg *ClientConfig) ClientSendFile(path string, data []byte, isBcastSet bool) error {
 
 	var opts []grpc.DialOption
 	if cfg.UseTLS {
@@ -160,7 +161,7 @@ func (cfg *ClientConfig) ClientSendFile(path string, data []byte) error {
 	chunkSz := 1 << 20
 
 	t0 := time.Now()
-	err = c.runSendFile(path, data, chunkSz)
+	err = c.runSendFile(path, data, chunkSz, isBcastSet)
 	t1 := time.Now()
 	if err != nil {
 		return err
