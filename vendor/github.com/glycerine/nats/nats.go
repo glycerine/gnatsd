@@ -2711,6 +2711,8 @@ type ServerLoc struct {
 	// let the operator prioritize
 	// leadership for certain hosts.
 	Rank int `json:"rank"`
+
+	Pid int `json:"pid"`
 }
 
 func (s *ServerLoc) String() string {

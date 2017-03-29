@@ -65,7 +65,7 @@ type Peer struct {
 	subjBcastGet    string
 	subjBcastSet    string
 
-	loc *nats.ServerLoc
+	loc health.AgentLoc
 	nc  *nats.Conn
 
 	plog       server.Logger
@@ -295,7 +295,8 @@ func (peer *Peer) setupNatsClient() error {
 			break
 		}
 	}
-	peer.loc = loc
+	// first assignment to peer.loc is here.
+	peer.loc = *(natsLocConvert(loc))
 
 	peer.subjMembership = health.SysMemberPrefix + "list"
 	peer.subjMemberLost = health.SysMemberPrefix + "lost"
@@ -391,14 +392,24 @@ func (peer *Peer) setupNatsClient() error {
 
 	// reporting
 	nc.Subscribe(peer.subjMembership, func(msg *nats.Msg) {
-		mylog.Printf("peer receved subjMembership: "+
+		mylog.Printf("peer received subjMembership: "+
 			"Received on [%s]: '%s'",
 			msg.Subject,
 			string(msg.Data))
 
 		var laf LeadAndFollowList
 		json.Unmarshal(msg.Data, &laf)
+		peer.mut.Lock()
 		laf.MyID = peer.loc.ID
+
+		// update our peer.loc too, so it is current/accurate.
+		for _, v := range laf.Members {
+			if v.ID == peer.loc.ID {
+				peer.loc = v
+				break
+			}
+		}
+		peer.mut.Unlock()
 
 		peer.LeadAndFollowBchan.Bcast(&laf)
 	})
@@ -411,16 +422,24 @@ func (peer *Peer) setupNatsClient() error {
 
 		subSubject := msg.Subject[len(peer.loc.ID)+1:]
 
-		mylog.Printf("peer '%s' receved on subSubject %s: '%s'",
-			peer.loc.ID,
+		// local and grab the info we need to share
+		peer.mut.Lock()
+		aloc := peer.loc
+		externalPort := peer.GservCfg.ExternalLsnPort
+		internalPort := peer.GservCfg.InternalLsnPort
+		peer.mut.Unlock()
+
+		mylog.Printf("peer '%s' received on subSubject %s: '%s', where I have peer.loc='%s'",
+			aloc.ID,
 			subSubject,
-			string(msg.Data))
+			string(msg.Data),
+			&aloc,
+		)
 
 		switch subSubject {
 		case "grpc-port-query":
-			aloc := natsLocConvert(peer.loc)
-			aloc.GrpcPort = peer.GservCfg.ExternalLsnPort
-			aloc.InternalPort = peer.GservCfg.InternalLsnPort
+			aloc.ExternalPort = externalPort
+			aloc.InternalPort = internalPort
 
 			err = nc.Publish(msg.Reply, []byte(aloc.String()))
 			if err != nil {
@@ -638,6 +657,7 @@ func intMin(a, b int) int {
 	}
 	return b
 }
+
 func intMax(a, b int) int {
 	if a > b {
 		return a
@@ -685,7 +705,7 @@ func (peer *Peer) StartBackgroundSshdRecv(myID, myFollowSubj string) {
 		lsn1.Close()
 		lsn2.Close()
 
-		peer.GservCfg = gserv.NewServerConfig()
+		peer.GservCfg = gserv.NewServerConfig(myID)
 		peer.GservCfg.Host = peer.serverOpts.Host
 		peer.GservCfg.ExternalLsnPort = port0
 		peer.GservCfg.InternalLsnPort = port1
@@ -708,7 +728,7 @@ func (peer *Peer) StartBackgroundSshdRecv(myID, myFollowSubj string) {
 
 		peer.grpcAddr = fmt.Sprintf("%v:%v", peer.GservCfg.Host, peer.GservCfg.ExternalLsnPort)
 		// will block until server exits:
-		peer.GservCfg.StartGrpcServer(peer.saver, peer.SshdReady)
+		peer.GservCfg.StartGrpcServer(peer.saver, peer.SshdReady, myID)
 	}()
 }
 
@@ -776,7 +796,7 @@ func natsLocConvert(loc *nats.ServerLoc) *health.AgentLoc {
 		Host:     loc.Host,
 		NatsPort: loc.NatsPort,
 		Rank:     loc.Rank,
-		Pid:      os.Getpid(),
+		Pid:      loc.Pid,
 	}
 }
 
@@ -811,6 +831,7 @@ func (peer *Peer) StartPeriodicClusterAgentLocQueries() {
 					// for this peer.
 					peer.mut.Lock()
 					peer.lastSeenInternalPortAloc[mem.ID] = aloc
+					p("setting peer.lastSeenInternalPortAloc[mem.ID='%s'] = aloc = %#v", mem.ID, aloc)
 					peer.mut.Unlock()
 				}
 			case <-peer.Halt.ReqStop.Chan:

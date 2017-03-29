@@ -76,6 +76,7 @@ func (peer *Peer) BcastGet(key []byte, includeValue bool, timeout time.Duration,
 	toCh := time.After(timeout)
 
 	sorter := NewInventory()
+	p("%s about to wait for reply on chan %p", peer.loc.ID, peer.GservCfg.ServerGotGetReply)
 	for i := 0; i < numPeers; i++ {
 		select {
 		case <-toCh:
@@ -146,6 +147,8 @@ const RequestChanLen = 8
 var ErrTimedOut = fmt.Errorf("timed out")
 
 func (peer *Peer) doGrpcClientSendFileSetRequest(req *api.BcastSetRequest, cs *clusterStatus) error {
+	p("%s top of BCAST SET doGrpcClientSendFileSetRequest()", peer.loc.ID)
+
 	reqBytes, err := req.MarshalMsg(nil)
 	if err != nil {
 		return err
@@ -153,7 +156,9 @@ func (peer *Peer) doGrpcClientSendFileSetRequest(req *api.BcastSetRequest, cs *c
 
 	isBcastSet := true
 
-	for _, follower := range cs.follow {
+	n := len(cs.follow)
+	for k, follower := range cs.follow {
+		p("%s BCAST SET doGrpcClientSendFileSetRequest(): on follower %v of %v (follower.loc='%s')", peer.loc.ID, k, n, follower.loc.ID)
 
 		// need full location with Interal + Grpc ports
 		peer.mut.Lock()
@@ -168,14 +173,14 @@ func (peer *Peer) doGrpcClientSendFileSetRequest(req *api.BcastSetRequest, cs *c
 		}
 
 		host := fullLoc.Host
-		port := fullLoc.GrpcPort
+		eport := fullLoc.ExternalPort
 		iport := fullLoc.InternalPort
 
 		clicfg := &gcli.ClientConfig{
 			AllowNewServer:          peer.SshClientAllowsNewSshdServer,
 			TestAllowOneshotConnect: peer.TestAllowOneshotConnect,
 			ServerHost:              host,
-			ServerPort:              port,
+			ServerPort:              eport,
 			ServerInternalHost:      "127.0.0.1",
 			ServerInternalPort:      iport,
 
@@ -184,9 +189,14 @@ func (peer *Peer) doGrpcClientSendFileSetRequest(req *api.BcastSetRequest, cs *c
 			ClientKnownHostsPath: peer.SshClientClientKnownHostsPath,
 		}
 
-		err = clicfg.ClientSendFile(string(req.Ki.Key), reqBytes, isBcastSet)
-		panicOn(err)
-		p("BcastSet successfully clicfg.ClientSendFile to %s:%v", host, port)
+		go clicfg.ClientSendFile(string(req.Ki.Key), reqBytes, isBcastSet)
+		select {
+		case setReq := <-peer.GservCfg.ServerGotSetRequest:
+			p("%s got setReq of len %v on channel peer.GservCfg.ServerGotSetRequest", peer.loc.ID, len(setReq.Ki.Val))
+		case <-peer.Halt.ReqStop.Chan:
+			return ErrShutdown
+		}
+		p("BcastSet successfully clicfg.ClientSendFile to %s:%v", host, eport)
 	}
 
 	return nil

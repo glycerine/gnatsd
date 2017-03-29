@@ -16,7 +16,7 @@ type AgentLoc struct {
 	Host     string `json:"host"`
 	NatsPort int    `json:"natsPort"`
 
-	GrpcPort     int `json:"grpcPort"`
+	ExternalPort int `json:"externalPort"`
 	InternalPort int `json:"internalPort"`
 
 	// LeaseExpires is zero for any

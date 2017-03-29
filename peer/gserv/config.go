@@ -12,6 +12,7 @@ import (
 )
 
 type ServerConfig struct {
+	MyID string
 	Host string // ip address
 
 	// by default we use SSH
@@ -34,8 +35,9 @@ type ServerConfig struct {
 	GrpcServer *grpc.Server
 }
 
-func NewServerConfig() *ServerConfig {
+func NewServerConfig(myID string) *ServerConfig {
 	return &ServerConfig{
+		MyID:                myID,
 		ServerGotGetReply:   make(chan *api.BcastGetReply),
 		ServerGotSetRequest: make(chan *api.BcastSetRequest),
 		Halt:                idem.NewHalter(),

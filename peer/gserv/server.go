@@ -25,14 +25,14 @@ import (
 )
 
 type PeerServerClass struct {
-	peer api.LocalGetSet
-	cfg  *ServerConfig
+	lgs api.LocalGetSet
+	cfg *ServerConfig
 }
 
-func NewPeerServerClass(peer api.LocalGetSet, cfg *ServerConfig) *PeerServerClass {
+func NewPeerServerClass(lgs api.LocalGetSet, cfg *ServerConfig) *PeerServerClass {
 	return &PeerServerClass{
-		peer: peer,
-		cfg:  cfg,
+		lgs: lgs,
+		cfg: cfg,
 	}
 }
 
@@ -40,7 +40,7 @@ func NewPeerServerClass(peer api.LocalGetSet, cfg *ServerConfig) *PeerServerClas
 //  because the client called SendFile() on the other end.
 //
 func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
-	p("peer.Server SendFile starting!")
+	p("%s peer.Server SendFile starting!", s.cfg.MyID)
 	var chunkCount int64
 	path := ""
 	var hasher hash.Hash
@@ -62,9 +62,9 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 		finalChecksum = []byte(hasher.Sum(nil))
 		endTime := time.Now()
 
-		p("this server.SendFile() call got %v chunks, byteCount=%v. with "+
+		p("%s this server.SendFile() call got %v chunks, byteCount=%v. with "+
 			"final checksum '%x'. defer running/is returning with err='%v'",
-			chunkCount, bytesSeen, finalChecksum, err)
+			s.cfg.MyID, chunkCount, bytesSeen, finalChecksum, err)
 		errStr := ""
 		if err != nil {
 			errStr = err.Error()
@@ -163,6 +163,8 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 					return fmt.Errorf("gserv/server.go SendFile(): req.UnmarshalMsg() errored '%v'", err)
 				}
 
+				p("%s this server.SendFile() with BcastSet, got request to set key '%s' with data of len %v. debug Val:'%s'. about to wait on chan %p", s.cfg.MyID, req.Ki.Key, len(req.Ki.Val), string(req.Ki.Val[:intMin(30, len(req.Ki.Val))]), s.cfg.ServerGotSetRequest)
+
 				// notify peer by sending on cfg.ServerGotSetRequest
 				select {
 				case s.cfg.ServerGotSetRequest <- &req:
@@ -177,6 +179,8 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 				if err != nil {
 					return fmt.Errorf("gserv/server.go SendFile(): reply.UnmarshalMsg() errored '%v'", err)
 				}
+
+				p("%s this server.SendFile() with BcastGet, got request to get key '%s' with data of len %v. debug Val:'%s'. about to send on chan %p", s.cfg.MyID, reply.Ki.Key, len(reply.Ki.Val), string(reply.Ki.Val[:intMin(30, len(reply.Ki.Val))]), s.cfg.ServerGotGetReply)
 
 				// notify peer by sending on cfg.ServerGotGetReply
 				select {
@@ -197,7 +201,8 @@ const ProgramName = "gprcServer"
 func MainExample() {
 
 	myflags := flag.NewFlagSet(ProgramName, flag.ExitOnError)
-	cfg := NewServerConfig()
+	myID := "123"
+	cfg := NewServerConfig(myID)
 	cfg.DefineFlags(myflags)
 
 	sshegoCfg := setupSshFlags(myflags)
@@ -227,7 +232,11 @@ func (cfg *ServerConfig) Stop() {
 	}
 }
 
-func (cfg *ServerConfig) StartGrpcServer(peer api.LocalGetSet, sshdReady chan bool) {
+func (cfg *ServerConfig) StartGrpcServer(
+	peer api.LocalGetSet,
+	sshdReady chan bool,
+	myID string,
+) {
 
 	var gRpcBindPort int
 	var gRpcHost string
@@ -243,7 +252,7 @@ func (cfg *ServerConfig) StartGrpcServer(peer api.LocalGetSet, sshdReady chan bo
 		gRpcBindPort = cfg.InternalLsnPort
 		gRpcHost = "127.0.0.1" // local only, behind the SSHD
 
-		p("external SSHd listening on %v:%v, internal gRPC service listening on 127.0.0.1:%v", cfg.Host, cfg.ExternalLsnPort, cfg.InternalLsnPort)
+		p("%s external SSHd listening on %v:%v, internal gRPC service listening on 127.0.0.1:%v", myID, cfg.Host, cfg.ExternalLsnPort, cfg.InternalLsnPort)
 
 	}
 
@@ -281,4 +290,11 @@ func blake2bOfBytes(by []byte) []byte {
 	panicOn(err)
 	h.Write(by)
 	return []byte(h.Sum(nil))
+}
+
+func intMin(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
