@@ -402,6 +402,7 @@ func cleanupTestUserDatabases() {
 	os.Remove("p2.sshcli.known.hosts")
 }
 
+/*
 func Test106PeerGrpcAndInternalPortDiscovery(t *testing.T) {
 
 	cv.Convey("StartPeriodicClusterAgentLocQueries() should result in our discovering the Internal and Grpc ports for each peer", t, func() {
@@ -416,3 +417,4 @@ func Test106PeerGrpcAndInternalPortDiscovery(t *testing.T) {
 		time.Sleep(10 * time.Minute)
 	})
 }
+*/

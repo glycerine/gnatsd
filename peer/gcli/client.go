@@ -38,7 +38,7 @@ func (c *client) startNewFile() {
 }
 
 func (c *client) runSendFile(path string, data []byte, maxChunkSize int, isBcastSet bool) error {
-	p("client runSendFile(path='%s') starting", path)
+	//p("client runSendFile(path='%s') starting", path)
 
 	c.startNewFile()
 	stream, err := c.peerClient.SendFile(context.Background())
@@ -52,7 +52,7 @@ func (c *client) runSendFile(path string, data []byte, maxChunkSize int, isBcast
 	}
 	nextByte := 0
 	lastChunk := numChunk - 1
-	p("'%s' client sees %v chunks of size ~ %v bytes", path, numChunk, intMin(n, maxChunkSize))
+	//p("'%s' client sees %v chunks of size ~ %v bytes", path, numChunk, intMin(n, maxChunkSize))
 	for i := 0; i < numChunk; i++ {
 		sendLen := intMin(maxChunkSize, n-(i*maxChunkSize))
 		chunk := data[nextByte:(nextByte + sendLen)]
@@ -75,7 +75,7 @@ func (c *client) runSendFile(path string, data []byte, maxChunkSize int, isBcast
 		nk.IsLastChunk = (i == lastChunk)
 
 		//		if nk.ChunkNumber%100 == 0 {
-		p("client, on chunk %v of '%s', checksum='%x', and cumul='%x'", nk.ChunkNumber, nk.Filepath, nk.Blake2B, nk.Blake2BCumulative)
+		//p("client, on chunk %v of '%s', checksum='%x', and cumul='%x'", nk.ChunkNumber, nk.Filepath, nk.Blake2B, nk.Blake2BCumulative)
 		//		}
 
 		if err := stream.Send(&nk); err != nil {
@@ -168,7 +168,7 @@ func (cfg *ClientConfig) ClientSendFile(path string, data []byte, isBcastSet boo
 	}
 	mb := float64(len(data)) / float64(1<<20)
 	elap := t1.Sub(t0)
-	p("c: elap time to send %v MB was %v => %.03f MB/sec", mb, elap, mb/(float64(elap)/1e9))
+	//p("c: elap time to send %v MB was %v => %.03f MB/sec", mb, elap, mb/(float64(elap)/1e9))
 	return nil
 }
 

@@ -40,7 +40,7 @@ func NewPeerServerClass(lgs api.LocalGetSet, cfg *ServerConfig) *PeerServerClass
 //  because the client called SendFile() on the other end.
 //
 func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
-	p("%s peer.Server SendFile starting!", s.cfg.MyID)
+	//p("%s peer.Server SendFile starting!", s.cfg.MyID)
 	var chunkCount int64
 	path := ""
 	var hasher hash.Hash
@@ -62,9 +62,7 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 		finalChecksum = []byte(hasher.Sum(nil))
 		endTime := time.Now()
 
-		p("%s this server.SendFile() call got %v chunks, byteCount=%v. with "+
-			"final checksum '%x'. defer running/is returning with err='%v'",
-			s.cfg.MyID, chunkCount, bytesSeen, finalChecksum, err)
+		//p("%s this server.SendFile() call got %v chunks, byteCount=%v. with final checksum '%x'. defer running/is returning with err='%v'", s.cfg.MyID, chunkCount, bytesSeen, finalChecksum, err)
 		errStr := ""
 		if err != nil {
 			errStr = err.Error()
@@ -93,9 +91,7 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 				// we are assuming that this never happens!
 				panic("we need to save this last chunk too!")
 			}
-			p("server doing stream.Recv(); sees err == "+
-				"io.EOF. nk=%p. bytesSeen=%v. chunkCount=%v.",
-				nk, bytesSeen, chunkCount)
+			//p("server doing stream.Recv(); sees err == io.EOF. nk=%p. bytesSeen=%v. chunkCount=%v.", nk, bytesSeen, chunkCount)
 
 			return nil
 		}
@@ -120,11 +116,11 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 		if 0 != bytes.Compare(cumul, nk.Blake2BCumulative) {
 			return fmt.Errorf("cumulative checksums failed at chunk %v of '%s'. Observed: '%x', expected: '%x'.", nk.ChunkNumber, nk.Filepath, cumul, nk.Blake2BCumulative)
 		} else {
-			p("cumulative checksum on nk.ChunkNumber=%v looks good; cumul='%x'.  nk.IsLastChunk=%v", nk.ChunkNumber, nk.Blake2BCumulative, nk.IsLastChunk)
+			//p("cumulative checksum on nk.ChunkNumber=%v looks good; cumul='%x'.  nk.IsLastChunk=%v", nk.ChunkNumber, nk.Blake2BCumulative, nk.IsLastChunk)
 		}
 		if path == "" {
 			path = nk.Filepath
-			p("peer.Server SendFile sees new file '%s'", path)
+			//p("peer.Server SendFile sees new file '%s'", path)
 		}
 		if path != "" && path != nk.Filepath {
 			panic(fmt.Errorf("confusing between two different streams! '%s' vs '%s'", path, nk.Filepath))
@@ -163,12 +159,12 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 					return fmt.Errorf("gserv/server.go SendFile(): req.UnmarshalMsg() errored '%v'", err)
 				}
 
-				p("%s this server.SendFile() with BcastSet, got request from '%s' to set key '%s' with data of len %v. debug Val:'%s'. about to wait on chan %p", s.cfg.MyID, req.FromID, req.Ki.Key, len(req.Ki.Val), string(req.Ki.Val[:intMin(100, len(req.Ki.Val))]), s.cfg.ServerGotSetRequest)
+				//p("%s this server.SendFile() with BcastSet, got request from '%s' to set key '%s' with data of len %v. debug Val:'%s'. about to wait on chan %p", s.cfg.MyID, req.FromID, req.Ki.Key, len(req.Ki.Val), string(req.Ki.Val[:intMin(100, len(req.Ki.Val))]), s.cfg.ServerGotSetRequest)
 
 				// notify peer by sending on cfg.ServerGotSetRequest
 				select {
 				case s.cfg.ServerGotSetRequest <- &req:
-					p("gserv server.go  sent BcastSetRequest on channel s.cfg.ServerGotSetRequest")
+					//p("gserv server.go  sent BcastSetRequest on channel s.cfg.ServerGotSetRequest")
 				case <-s.cfg.Halt.ReqStop.Chan:
 				}
 
@@ -180,12 +176,12 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 					return fmt.Errorf("gserv/server.go SendFile(): reply.UnmarshalMsg() errored '%v'", err)
 				}
 
-				p("%s this server.SendFile() with BcastGet, got request from '%s' to get key '%s' with data of len %v. debug Val:'%s'. about to send on chan %p", s.cfg.MyID, reply.FromID, reply.Ki.Key, len(reply.Ki.Val), string(reply.Ki.Val[:intMin(100, len(reply.Ki.Val))]), s.cfg.ServerGotGetReply)
+				//p("%s this server.SendFile() with BcastGet, got request from '%s' to get key '%s' with data of len %v. debug Val:'%s'. about to send on chan %p", s.cfg.MyID, reply.FromID, reply.Ki.Key, len(reply.Ki.Val), string(reply.Ki.Val[:intMin(100, len(reply.Ki.Val))]), s.cfg.ServerGotGetReply)
 
 				// notify peer by sending on cfg.ServerGotGetReply
 				select {
 				case s.cfg.ServerGotGetReply <- &reply:
-					p("gserv server.go sent BcastGetReply on channel s.cfg.ServerGotReply")
+					//p("gserv server.go sent BcastGetReply on channel s.cfg.ServerGotReply")
 				case <-s.cfg.Halt.ReqStop.Chan:
 				}
 			}
@@ -245,14 +241,14 @@ func (cfg *ServerConfig) StartGrpcServer(
 		gRpcBindPort = cfg.ExternalLsnPort
 		gRpcHost = cfg.Host
 
-		p("gRPC with TLS listening on %v:%v", gRpcHost, gRpcBindPort)
+		//p("gRPC with TLS listening on %v:%v", gRpcHost, gRpcBindPort)
 
 	} else {
 		// SSH will take the external, gRPC will take the internal.
 		gRpcBindPort = cfg.InternalLsnPort
 		gRpcHost = "127.0.0.1" // local only, behind the SSHD
 
-		p("%s external SSHd listening on %v:%v, internal gRPC service listening on 127.0.0.1:%v", myID, cfg.Host, cfg.ExternalLsnPort, cfg.InternalLsnPort)
+		//p("%s external SSHd listening on %v:%v, internal gRPC service listening on 127.0.0.1:%v", myID, cfg.Host, cfg.ExternalLsnPort, cfg.InternalLsnPort)
 
 	}
 

@@ -12,7 +12,7 @@ import (
 
 func (peer *Peer) ClientInitiateBcastGet(key []byte, includeValue bool, timeout time.Duration, who string) (kis []*api.KeyInv, err error) {
 
-	p("%s top of ClientInitiateBcastGet(). who='%s'.", peer.loc.ID, who)
+	//p("%s top of ClientInitiateBcastGet(). who='%s'.", peer.loc.ID, who)
 
 	peers, err := peer.GetPeerList(timeout)
 	if err != nil || peers == nil || len(peers.Members) <= 1 || who == peer.loc.ID {
@@ -30,7 +30,7 @@ func (peer *Peer) ClientInitiateBcastGet(key []byte, includeValue bool, timeout 
 		// request to restrict to just one peer.
 		numPeers = 1
 	}
-	p("numPeers = %v", numPeers)
+	//p("numPeers = %v", numPeers)
 
 	// actually make the request over NATS
 	bgr := &api.BcastGetRequest{
@@ -102,7 +102,7 @@ func (peer *Peer) ClientInitiateBcastGet(key []byte, includeValue bool, timeout 
 			case <-toCh:
 				return nil, ErrTimedOut
 			case reply := <-ch:
-				p("BcastGet got a reply, on i = %v. len(reply.Data)=%v", i, len(reply.Data))
+				//p("BcastGet got a reply, on i = %v. len(reply.Data)=%v", i, len(reply.Data))
 				if len(reply.Data) == 0 {
 					panic("reply with no data")
 				}
@@ -111,7 +111,7 @@ func (peer *Peer) ClientInitiateBcastGet(key []byte, includeValue bool, timeout 
 				if err != nil {
 					return nil, err
 				}
-				p("bgReply = %#v", bgReply)
+				//p("bgReply = %#v", bgReply)
 				if bgReply.Err != "" {
 					return nil, fmt.Errorf(bgReply.Err)
 				} else {
@@ -122,7 +122,7 @@ func (peer *Peer) ClientInitiateBcastGet(key []byte, includeValue bool, timeout 
 		}
 	} // end else NATS response
 
-	p("done with collection loop, we have %v replies", sorter.Len())
+	//p("done with collection loop, we have %v replies", sorter.Len())
 	// sorter sorts them by key, then time, then who.
 	for it := sorter.Min(); !it.Limit(); it = it.Next() {
 		kis = append(kis, it.Item().(*api.KeyInv))
@@ -145,7 +145,7 @@ func (peer *Peer) ServerHandleBcastGet(msg *nats.Msg) error {
 	who := bgr.Who
 	includeValue := bgr.IncludeValue
 
-	p("%s top of ServerHandleBcastGet(). who='%s'.", peer.loc.ID, who)
+	//p("%s top of ServerHandleBcastGet(). who='%s'.", peer.loc.ID, who)
 
 	// it may well be that peer.loc.ID != peer.saver.whoami
 
@@ -153,14 +153,14 @@ func (peer *Peer) ServerHandleBcastGet(msg *nats.Msg) error {
 	if who != "" {
 		// yep
 		if who == peer.loc.ID || who == peer.saver.whoami {
-			p("%s sees peer-specific BcastGet request! matched either peer.loc.ID='%s' or peer.saver.whoami='%s'", who, peer.loc.ID, peer.saver.whoami)
+			//p("%s sees peer-specific BcastGet request! matched either peer.loc.ID='%s' or peer.saver.whoami='%s'", who, peer.loc.ID, peer.saver.whoami)
 
 		} else {
-			p("%s / ID:%s sees peer-specific BcastGet request for '%s' which is not us!", peer.saver.whoami, peer.loc.ID, who)
+			//p("%s / ID:%s sees peer-specific BcastGet request for '%s' which is not us!", peer.saver.whoami, peer.loc.ID, who)
 			return nil
 		}
 	} else {
-		p("Who was not set...")
+		//p("Who was not set...")
 	}
 
 	// assemble our response/reply
@@ -173,7 +173,7 @@ func (peer *Peer) ServerHandleBcastGet(msg *nats.Msg) error {
 	} else {
 		reply.Ki = ki
 	}
-	p("debug peer.LocalGet(key='%s') returned ki.Key='%s' and ki.Val='%s'", string(key), string(ki.Key), string(ki.Val[:intMin(100, len(ki.Val))]))
+	//p("debug peer.LocalGet(key='%s') returned ki.Key='%s' and ki.Val='%s'", string(key), string(ki.Key), string(ki.Val[:intMin(100, len(ki.Val))]))
 
 	// Asking for big data or no?
 	// For big data transfer, use gRPC. Can handle unlimited size.
@@ -225,7 +225,7 @@ func (peer *Peer) GetLatest(key []byte, includeValue bool) (ki *api.KeyInv, err 
 }
 
 func (peer *Peer) BcastSet(ki *api.KeyInv) error {
-	p("%s top of BcastSet", peer.loc.ID)
+	//p("%s top of BcastSet", peer.loc.ID)
 
 	timeout := 120 * time.Second
 	peers, err := peer.GetPeerList(timeout)
@@ -239,8 +239,8 @@ func (peer *Peer) BcastSet(ki *api.KeyInv) error {
 	if err != nil {
 		return err
 	}
-	numPeers := len(peers.Members)
-	p("BcastSet sees numPeers = %v", numPeers)
+	//numPeers := len(peers.Members)
+	//p("BcastSet sees numPeers = %v", numPeers)
 
 	cs, _ := list2status(peers)
 	mylog.Printf("BcastSet: we have clusterStatus: '%s'", &cs)
@@ -259,7 +259,7 @@ const RequestChanLen = 8
 var ErrTimedOut = fmt.Errorf("timed out")
 
 func (peer *Peer) doGrpcClientSendFileSetRequest(req *api.BcastSetRequest, cs *clusterStatus) error {
-	p("%s top of BCAST SET doGrpcClientSendFileSetRequest()", peer.loc.ID)
+	//p("%s top of BCAST SET doGrpcClientSendFileSetRequest()", peer.loc.ID)
 
 	reqBytes, err := req.MarshalMsg(nil)
 	if err != nil {
@@ -268,9 +268,8 @@ func (peer *Peer) doGrpcClientSendFileSetRequest(req *api.BcastSetRequest, cs *c
 
 	isBcastSet := true
 
-	n := len(cs.follow)
-	for k, follower := range cs.follow {
-		p("%s BCAST SET doGrpcClientSendFileSetRequest(): on follower %v of %v (follower.loc='%s')", peer.loc.ID, k, n, follower.loc.ID)
+	for _, follower := range cs.follow {
+		//p("%s BCAST SET doGrpcClientSendFileSetRequest(): on follower %v of %v (follower.loc='%s')", peer.loc.ID, k, len(cs.follow), follower.loc.ID)
 
 		// need full location with Interal + Grpc ports
 		peer.mut.Lock()
@@ -281,7 +280,7 @@ func (peer *Peer) doGrpcClientSendFileSetRequest(req *api.BcastSetRequest, cs *c
 				follower.loc.ID)
 			continue
 		} else {
-			p("fullLoc=%#v", fullLoc)
+			//p("fullLoc=%#v", fullLoc)
 		}
 
 		host := fullLoc.Host
@@ -303,7 +302,7 @@ func (peer *Peer) doGrpcClientSendFileSetRequest(req *api.BcastSetRequest, cs *c
 
 		clicfg.ClientSendFile(string(req.Ki.Key), reqBytes, isBcastSet)
 
-		p("%s in doGrpcClientSendFileSetRequest, after clicfg.ClientSendFile()", peer.loc.ID)
+		//p("%s in doGrpcClientSendFileSetRequest, after clicfg.ClientSendFile()", peer.loc.ID)
 	}
 
 	//p("%s BcastSet successfully doGrpcClientSendFileSetRequest to %s:%v", peer.loc.ID, host, eport)
@@ -333,7 +332,7 @@ func (peer *Peer) clientDoGrpcSendFileBcastGetReply(bgr *api.BcastGetRequest, re
 }
 
 func (peer *Peer) BackgroundReceiveBcastSetAndWriteToBolt() {
-	p("%s top of BackgroundReceiveBcastSetAndWriteToBolt", peer.loc.ID)
+	//p("%s top of BackgroundReceiveBcastSetAndWriteToBolt", peer.loc.ID)
 	go func() {
 		for {
 			//			if peer.GservCfg == nil || peer.GservCfg.ServerGotSetRequest == nil {
@@ -342,13 +341,13 @@ func (peer *Peer) BackgroundReceiveBcastSetAndWriteToBolt() {
 			//			}
 			select {
 			case setReq := <-peer.GservCfg.ServerGotSetRequest:
-				p("%s got setReq of len %v from %s on channel peer.GservCfg.ServerGotSetRequest", peer.loc.ID, setReq.FromID, len(setReq.Ki.Val))
+				//p("%s got setReq of len %v from %s on channel peer.GservCfg.ServerGotSetRequest", peer.loc.ID, setReq.FromID, len(setReq.Ki.Val))
 
 				// write to bolt
 				ki := setReq.Ki
 				if len(ki.Val) > 0 {
 					err := peer.LocalSet(ki)
-					p("debug! bcast.go wrote ki.Val='%s'", string(ki.Val[:intMin(100, len(ki.Val))]))
+					//p("debug! bcast.go wrote ki.Val='%s'", string(ki.Val[:intMin(100, len(ki.Val))]))
 					if err != nil {
 						log.Printf("gserv/server.go SendFile(): s.peer.LocalSet() errored '%v'", err)
 						continue
@@ -358,7 +357,7 @@ func (peer *Peer) BackgroundReceiveBcastSetAndWriteToBolt() {
 				}
 
 			case <-peer.Halt.ReqStop.Chan:
-				p("BackgroundReceiveBcastSetAndWriteToBolt exiting on Halt.ReqStop")
+				//p("BackgroundReceiveBcastSetAndWriteToBolt exiting on Halt.ReqStop")
 				peer.Halt.Done.Close()
 				return
 			}

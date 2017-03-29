@@ -216,12 +216,12 @@ func (peer *Peer) Start() error {
 // Stop shutsdown the embedded gnatsd
 // instance.
 func (peer *Peer) Stop() {
-	p("%s peer.Stop() invoked, shutting down...", peer.loc.ID)
+	//p("%s peer.Stop() invoked, shutting down...", peer.loc.ID)
 	if peer != nil {
 		sessF := peer.GetFollowSess()
 		if sessF != nil {
 			peer.SetFollowSess(nil)
-			p("%s peer.Stop() is invoking sessF.Close() and Stop()", peer.loc.ID)
+			//p("%s peer.Stop() is invoking sessF.Close() and Stop()", peer.loc.ID)
 			// unblock Session.Read() from sessF.RecvFile()
 			sessF.Close()
 			sessF.Stop()
@@ -805,7 +805,7 @@ func (peer *Peer) StartPeriodicClusterAgentLocQueries() {
 					// for this peer.
 					peer.mut.Lock()
 					peer.lastSeenInternalPortAloc[mem.ID] = aloc
-					p("setting peer.lastSeenInternalPortAloc[mem.ID='%s'] = aloc = %#v", mem.ID, aloc)
+					//p("setting peer.lastSeenInternalPortAloc[mem.ID='%s'] = aloc = %#v", mem.ID, aloc)
 					peer.mut.Unlock()
 				}
 			case <-peer.Halt.ReqStop.Chan:
