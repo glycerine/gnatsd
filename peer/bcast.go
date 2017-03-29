@@ -102,12 +102,16 @@ func (peer *Peer) ClientInitiateBcastGet(key []byte, includeValue bool, timeout 
 			case <-toCh:
 				return nil, ErrTimedOut
 			case reply := <-ch:
-				//p("BcastGet got a reply, on i = %v", i)
+				p("BcastGet got a reply, on i = %v. len(reply.Data)=%v", i, len(reply.Data))
+				if len(reply.Data) == 0 {
+					panic("reply with no data")
+				}
 				var bgReply api.BcastGetReply
 				_, err := bgReply.UnmarshalMsg(reply.Data)
 				if err != nil {
 					return nil, err
 				}
+				p("bgReply = %#v", bgReply)
 				if bgReply.Err != "" {
 					return nil, fmt.Errorf(bgReply.Err)
 				} else {
@@ -143,9 +147,7 @@ func (peer *Peer) ServerHandleBcastGet(msg *nats.Msg) error {
 
 	p("%s top of ServerHandleBcastGet(). who='%s'.", peer.loc.ID, who)
 
-	if peer.loc.ID != peer.saver.whoami {
-		panic("assumption that peer.loc.ID == peer.saver.whoami violated")
-	}
+	// it may well be that peer.loc.ID != peer.saver.whoami
 
 	// are we filtered down to a specific peer request?
 	if who != "" {
@@ -186,7 +188,7 @@ func (peer *Peer) ServerHandleBcastGet(msg *nats.Msg) error {
 	} else {
 		// NATS response
 
-		mm, err := bgr.MarshalMsg(nil)
+		mm, err := reply.MarshalMsg(nil)
 		panicOn(err)
 		err = peer.nc.Publish(msg.Reply, mm)
 		panicOn(err)
