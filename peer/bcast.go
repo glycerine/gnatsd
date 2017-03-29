@@ -2,6 +2,7 @@ package peer
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/glycerine/hnatsd/peer/api"
@@ -153,9 +154,22 @@ func (peer *Peer) doGrpcClientSendFileSetRequest(req *api.BcastSetRequest, cs *c
 	isBcastSet := true
 
 	for _, follower := range cs.follow {
-		host := follower.loc.Host
-		port := follower.loc.GrpcPort
-		iport := follower.loc.InternalPort
+
+		// need full location with Interal + Grpc ports
+		peer.mut.Lock()
+		fullLoc, ok := peer.lastSeenInternalPortAloc[follower.loc.ID]
+		peer.mut.Unlock()
+		if !ok {
+			log.Printf("no full location available for follower.loc.ID='%s'",
+				follower.loc.ID)
+			continue
+		} else {
+			p("fullLoc=%#v", fullLoc)
+		}
+
+		host := fullLoc.Host
+		port := fullLoc.GrpcPort
+		iport := fullLoc.InternalPort
 
 		clicfg := &gcli.ClientConfig{
 			AllowNewServer:          peer.SshClientAllowsNewSshdServer,

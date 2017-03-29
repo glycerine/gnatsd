@@ -89,6 +89,9 @@ type Peer struct {
 	SshdReady                    chan bool
 	SshClientAllowsNewSshdServer bool
 	TestAllowOneshotConnect      bool
+
+	// lock mut before reading
+	lastSeenInternalPortAloc map[string]health.AgentLoc
 }
 
 type leadFlag struct {
@@ -147,14 +150,15 @@ func NewPeer(args, whoami string) (*Peer, error) {
 	}
 
 	r := &Peer{
-		cmdflags:           argv,
-		Halt:               idem.NewHalter(),
-		LeadAndFollowBchan: bchan.New(2),
-		MemberGainedBchan:  bchan.New(2),
-		MemberLostBchan:    bchan.New(2),
-		saver:              saver,
-		Whoami:             whoami,
-		SshdReady:          make(chan bool),
+		cmdflags:                 argv,
+		Halt:                     idem.NewHalter(),
+		LeadAndFollowBchan:       bchan.New(2),
+		MemberGainedBchan:        bchan.New(2),
+		MemberLostBchan:          bchan.New(2),
+		saver:                    saver,
+		Whoami:                   whoami,
+		SshdReady:                make(chan bool),
+		lastSeenInternalPortAloc: make(map[string]health.AgentLoc),
 	}
 	serv, opts, err := hnatsdMain(argv)
 	if err != nil {
@@ -399,7 +403,10 @@ func (peer *Peer) setupNatsClient() error {
 		peer.LeadAndFollowBchan.Bcast(&laf)
 	})
 
-	// queries to the peer - for grpc ext+internal ports, for example
+	// request everyone's grpc and internal ports
+	peer.StartPeriodicClusterAgentLocQueries()
+
+	// queries to the peer list - for grpc ext+internal ports
 	nc.Subscribe(peer.loc.ID+".>", func(msg *nats.Msg) {
 
 		subSubject := msg.Subject[len(peer.loc.ID)+1:]
@@ -421,6 +428,8 @@ func (peer *Peer) setupNatsClient() error {
 					subSubject,
 					msg.Reply, err)
 			}
+		default:
+			panic(fmt.Sprintf("unknown subSubject '%s'", subSubject))
 		}
 	})
 
@@ -601,6 +610,7 @@ type peerDetail struct {
 }
 
 func (d peerDetail) String() string {
+	//return fmt.Sprintf(`%s`, &(d.loc)) // display in JSON format
 	//return fmt.Sprintf(`peerDetail={subj:"%s", loc:%s}`, d.subj, &(d.loc))
 	return fmt.Sprintf(`peerDetail={subj:"%s"}`, d.subj)
 }
@@ -768,4 +778,44 @@ func natsLocConvert(loc *nats.ServerLoc) *health.AgentLoc {
 		Rank:     loc.Rank,
 		Pid:      os.Getpid(),
 	}
+}
+
+func (peer *Peer) StartPeriodicClusterAgentLocQueries() {
+	go func() {
+		toDur := time.Second * 50
+
+		for {
+			// every 10 seconds
+			select {
+			case <-peer.Halt.ReqStop.Chan:
+				return
+			case <-time.After(10 * time.Second):
+			}
+
+			select {
+			case list := <-peer.LeadAndFollowBchan.Ch:
+				peer.LeadAndFollowBchan.BcastAck()
+				laf := list.(*LeadAndFollowList)
+				for _, mem := range laf.Members {
+					reqsubj := mem.ID + ".grpc-port-query"
+					msg, err := peer.nc.Request(reqsubj, nil, toDur)
+					if err != nil || msg == nil {
+						log.Printf("warning: request for '%s' failed: %v", reqsubj, err)
+						continue
+					}
+					var aloc health.AgentLoc
+					err = json.Unmarshal(msg.Data, &aloc)
+					panicOn(err)
+
+					// now we have aloc.GrpcPort and aloc.InternalPort
+					// for this peer.
+					peer.mut.Lock()
+					peer.lastSeenInternalPortAloc[mem.ID] = aloc
+					peer.mut.Unlock()
+				}
+			case <-peer.Halt.ReqStop.Chan:
+				return
+			}
+		}
+	}()
 }
