@@ -58,11 +58,11 @@ type Membership struct {
 }
 
 func (m *Membership) trace(f string, arg ...interface{}) {
-	m.Cfg.Log.Tracef(fmt.Sprintf("my.NatsPort:%v. ", m.myLoc.NatsPort)+f, arg...)
+	m.Cfg.Log.Tracef(fmt.Sprintf("my.NatsPort:%v. ", m.myLoc.NatsClientPort)+f, arg...)
 }
 
 func (m *Membership) dlog(f string, arg ...interface{}) {
-	m.Cfg.Log.Debugf(fmt.Sprintf("my.NatsPort:%v. ", m.myLoc.NatsPort)+f, arg...)
+	m.Cfg.Log.Debugf(fmt.Sprintf("my.NatsClientPort:%v. ", m.myLoc.NatsClientPort)+f, arg...)
 }
 
 func (m *Membership) getMyLocWithAnyLease() AgentLoc {
@@ -437,7 +437,7 @@ func (m *Membership) start() {
 						"port %v host %v pid %v lease expires in %s",
 						curLead.ID,
 						curLead.Rank,
-						curLead.NatsPort,
+						curLead.NatsClientPort,
 						curLead.Host,
 						curLead.Pid,
 						curLead.LeaseExpires.Sub(now))
@@ -453,7 +453,7 @@ func (m *Membership) start() {
 								"port %v. lead is unknown.",
 								m.myLoc.ID,
 								m.myLoc.Rank,
-								m.myLoc.NatsPort)
+								m.myLoc.NatsClientPort)
 
 						} else {
 							m.dlog("health-agent: "+
@@ -463,12 +463,12 @@ func (m *Membership) start() {
 								m.myLoc.ID,
 								m.myLoc.Rank,
 								m.myLoc.Host,
-								m.myLoc.NatsPort,
+								m.myLoc.NatsClientPort,
 								m.myLoc.Pid,
 								curLead.ID,
 								curLead.Rank,
 								curLead.Host,
-								curLead.NatsPort,
+								curLead.NatsClientPort,
 								curLead.Pid,
 								left)
 
@@ -733,8 +733,8 @@ func AgentLocLessThan(i, j *AgentLoc) bool {
 	if i.Host != j.Host {
 		return lessThanString(i.Host, j.Host)
 	}
-	if i.NatsPort != j.NatsPort {
-		return i.NatsPort < j.NatsPort
+	if i.NatsClientPort != j.NatsClientPort {
+		return i.NatsClientPort < j.NatsClientPort
 	}
 	if i.Pid != j.Pid {
 		return i.Pid < j.Pid
@@ -808,7 +808,7 @@ func (m *Membership) setupNatsClient() error {
 		"rank %v",
 		m.myLoc.ID,
 		m.myLoc.Host,
-		m.myLoc.NatsPort,
+		m.myLoc.NatsClientPort,
 		m.myLoc.Rank)
 
 	m.subjAllCall = SysMemberPrefix + "allcall"
@@ -909,7 +909,7 @@ func (m *Membership) locDifferent(b *nats.ServerLoc) bool {
 	if b.Host != m.myLoc.Host {
 		return true
 	}
-	if b.NatsPort != m.myLoc.NatsPort {
+	if b.NatsPort != m.myLoc.NatsClientPort {
 		return true
 	}
 	return false
@@ -920,7 +920,7 @@ func (m *Membership) setLoc(b *nats.ServerLoc) {
 	m.myLoc.ID = b.ID
 	m.myLoc.Rank = b.Rank
 	m.myLoc.Host = b.Host
-	m.myLoc.NatsPort = b.NatsPort
+	m.myLoc.NatsClientPort = b.NatsPort
 	m.myLoc.Pid = os.Getpid()
 	m.mu.Unlock()
 	m.elec.setMyLoc(&m.myLoc)

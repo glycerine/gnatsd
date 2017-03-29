@@ -413,8 +413,8 @@ func (peer *Peer) setupNatsClient() error {
 		*/
 		switch subSubject {
 		case "grpc-port-query":
-			aloc.ExternalPort = externalPort
-			aloc.InternalPort = internalPort
+			aloc.Grpc.ExternalPort = externalPort
+			aloc.Grpc.InternalPort = internalPort
 
 			err = nc.Publish(msg.Reply, []byte(aloc.String()))
 			if err != nil {
@@ -432,7 +432,7 @@ func (peer *Peer) setupNatsClient() error {
 
 func agentLoc2RecvCpSubj(a health.AgentLoc) string {
 	return fmt.Sprintf("recv-chkpt;id:%v;host:%v;port:%v;rank:%v;pid:%v",
-		a.ID, a.Host, a.NatsPort, a.Rank, a.Pid)
+		a.ID, a.Host, a.NatsClientPort, a.Rank, a.Pid)
 }
 
 var ErrShutdown = fmt.Errorf("shutting down")
@@ -708,11 +708,11 @@ func (peer *Peer) GetGrpcAddr() string {
 
 func natsLocConvert(loc *nats.ServerLoc) *health.AgentLoc {
 	return &health.AgentLoc{
-		ID:       loc.ID,
-		Host:     loc.Host,
-		NatsPort: loc.NatsPort,
-		Rank:     loc.Rank,
-		Pid:      loc.Pid,
+		ID:             loc.ID,
+		Host:           loc.Host,
+		NatsClientPort: loc.NatsPort,
+		Rank:           loc.Rank,
+		Pid:            loc.Pid,
 	}
 }
 

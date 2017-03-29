@@ -284,8 +284,8 @@ func (peer *Peer) doGrpcClientSendFileSetRequest(req *api.BcastSetRequest, cs *c
 		}
 
 		host := fullLoc.Host
-		eport := fullLoc.ExternalPort
-		iport := fullLoc.InternalPort
+		eport := fullLoc.Grpc.ExternalPort
+		iport := fullLoc.Grpc.InternalPort
 
 		clicfg := &gcli.ClientConfig{
 			AllowNewServer:          peer.SshClientAllowsNewSshdServer,

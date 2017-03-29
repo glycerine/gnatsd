@@ -8,16 +8,27 @@ import (
 	"github.com/glycerine/nats"
 )
 
+// ExtInt conveys the external/internal
+// port pairs. Sshd secures external
+// ports, and forwards authenticated
+// connections to localhost:internal port.
+//
+type ExtInt struct {
+	ExternalPort int `json:"externalPort"`
+	InternalPort int `json:"internalPort"`
+}
+
 // AgentLoc conveys to interested parties
 // the Id and location of one gnatsd
 // server in the cluster.
 type AgentLoc struct {
-	ID       string `json:"serverId"`
-	Host     string `json:"host"`
-	NatsPort int    `json:"natsPort"`
+	ID             string `json:"serverId"`
+	Host           string `json:"host"`
+	NatsClientPort int    `json:"natsClientPort"`
 
-	ExternalPort int `json:"externalPort"`
-	InternalPort int `json:"internalPort"`
+	Grpc        ExtInt `json:"grpc"`
+	NatsCluster ExtInt `json:"natsCluster"`
+	NatsRoutes  ExtInt `json:"natsRoutes"`
 
 	// LeaseExpires is zero for any
 	// non-leader. For the leader,
@@ -77,10 +88,10 @@ func slocEqualIgnoreLease(a, b *AgentLoc) bool {
 // with contents filled from loc.
 func natsLocConvert(loc *nats.ServerLoc) *AgentLoc {
 	return &AgentLoc{
-		ID:       loc.ID,
-		Host:     loc.Host,
-		NatsPort: loc.NatsPort,
-		Rank:     loc.Rank,
-		Pid:      os.Getpid(),
+		ID:             loc.ID,
+		Host:           loc.Host,
+		NatsClientPort: loc.NatsPort,
+		Rank:           loc.Rank,
+		Pid:            os.Getpid(),
 	}
 }
