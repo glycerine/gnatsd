@@ -295,7 +295,7 @@ func (cfg *ServerConfig) StartGrpcServer(
 	var opts []grpc.ServerOption
 
 	if cfg.SkipEncryption {
-		p("cfg.SkipEncryption is true")
+		//p("cfg.SkipEncryption is true")
 		close(sshdReady)
 	} else {
 		if cfg.UseTLS {

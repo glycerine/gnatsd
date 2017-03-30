@@ -630,7 +630,7 @@ func (peer *Peer) StartBackgroundSshdRecv(myID, myFollowSubj string) {
 			TestAllowOneshotConnect: peer.TestAllowOneshotConnect,
 		}
 
-		p("%s StartBackgroundSshdRecv: peer.GservCfg.SkipEncryption = %v", peer.loc.ID, peer.GservCfg.SkipEncryption)
+		//p("%s StartBackgroundSshdRecv: peer.GservCfg.SkipEncryption = %v", peer.loc.ID, peer.GservCfg.SkipEncryption)
 
 		// fill default SshegoCfg
 		cfg := peer.GservCfg.SshegoCfg
