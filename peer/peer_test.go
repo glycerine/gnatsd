@@ -16,7 +16,7 @@ func Test101PeerToPeerKeyValueTransfer(t *testing.T) {
 
 	cv.Convey("Peers get and set key/value pairs between themselves. Where BcastSet() will broadcast the change to all peers, and LocalGet will locally query for the latest observed value for the key. GetLatest() will survey all peers and return the most recent value.", t, func() {
 
-		p0, p1, p2, _ := testSetupThree()
+		p0, p1, p2, _ := testSetupThree(nil)
 		defer p0.Stop()
 		defer p1.Stop()
 		defer p2.Stop()
@@ -143,7 +143,7 @@ func Test102LocalSet(t *testing.T) {
 	})
 }
 
-func testSetupThree() (p0, p1, p2 *Peer, peers *LeadAndFollowList) {
+func testSetupThree(callmePreStart func(peer *Peer)) (p0, p1, p2 *Peer, peers *LeadAndFollowList) {
 	cleanupTestUserDatabases()
 
 	u := newTestSshUser()
@@ -190,6 +190,12 @@ func testSetupThree() (p0, p1, p2 *Peer, peers *LeadAndFollowList) {
 	p1.TestAllowOneshotConnect = true
 	p2.TestAllowOneshotConnect = true
 
+	if callmePreStart != nil {
+		callmePreStart(p0)
+		callmePreStart(p1)
+		callmePreStart(p2)
+	}
+
 	// start em up
 	err = p0.Start()
 	panicOn(err)
@@ -198,38 +204,40 @@ func testSetupThree() (p0, p1, p2 *Peer, peers *LeadAndFollowList) {
 	err = p2.Start()
 	panicOn(err)
 
-	// add account to all peers, once their sshd is ready
-	<-p0.SshdReady
-	// 1st time sets u.rsaPath, whill will be re-used here-after.
-	creds0, err := u.addUserToSshd(p0.GservCfg.SshegoCfg)
-	_ = creds0
-	panicOn(err)
-	//p("creds0=%#v", creds0)
+	if !p0.SkipEncryption {
+		// add account to all peers, once their sshd is ready
+		<-p0.SshdReady
+		// 1st time sets u.rsaPath, whill will be re-used here-after.
+		creds0, err := u.addUserToSshd(p0.GservCfg.SshegoCfg)
+		_ = creds0
+		panicOn(err)
+		//p("creds0=%#v", creds0)
 
-	<-p1.SshdReady
-	creds1, err := u.addUserToSshd(p1.GservCfg.SshegoCfg)
-	_ = creds1
-	panicOn(err)
-	//p("creds1=%#v", creds1)
+		<-p1.SshdReady
+		creds1, err := u.addUserToSshd(p1.GservCfg.SshegoCfg)
+		_ = creds1
+		panicOn(err)
+		//p("creds1=%#v", creds1)
 
-	<-p2.SshdReady
-	creds2, err := u.addUserToSshd(p2.GservCfg.SshegoCfg)
-	_ = creds2
+		<-p2.SshdReady
+		creds2, err := u.addUserToSshd(p2.GservCfg.SshegoCfg)
+		_ = creds2
 
-	panicOn(err)
-	//p("creds2=%#v", creds2)
+		panicOn(err)
+		//p("creds2=%#v", creds2)
 
-	p0.SshClientLoginUsername = u.mylogin
-	p0.SshClientPrivateKeyPath = u.rsaPath
-	p0.SshClientClientKnownHostsPath = "p0.sshcli.known.hosts"
+		p0.SshClientLoginUsername = u.mylogin
+		p0.SshClientPrivateKeyPath = u.rsaPath
+		p0.SshClientClientKnownHostsPath = "p0.sshcli.known.hosts"
 
-	p1.SshClientLoginUsername = u.mylogin
-	p1.SshClientPrivateKeyPath = u.rsaPath
-	p1.SshClientClientKnownHostsPath = "p1.sshcli.known.hosts"
+		p1.SshClientLoginUsername = u.mylogin
+		p1.SshClientPrivateKeyPath = u.rsaPath
+		p1.SshClientClientKnownHostsPath = "p1.sshcli.known.hosts"
 
-	p2.SshClientLoginUsername = u.mylogin
-	p2.SshClientPrivateKeyPath = u.rsaPath
-	p2.SshClientClientKnownHostsPath = "p2.sshcli.known.hosts"
+		p2.SshClientLoginUsername = u.mylogin
+		p2.SshClientPrivateKeyPath = u.rsaPath
+		p2.SshClientClientKnownHostsPath = "p2.sshcli.known.hosts"
+	}
 
 	// let peers come up and start talking
 	peers, err = p0.WaitForPeerCount(3, 120*time.Second)
@@ -245,7 +253,7 @@ func Test103BcastGet(t *testing.T) {
 
 	cv.Convey("Given three peers p0, p1, and p2, BcastGet should return KeyInv from both", t, func() {
 
-		p0, p1, p2, _ := testSetupThree()
+		p0, p1, p2, _ := testSetupThree(nil)
 		defer p0.Stop()
 		defer p1.Stop()
 		defer p2.Stop()
@@ -298,7 +306,7 @@ func Test104BcastSet(t *testing.T) {
 
 	cv.Convey("Given three peers p0, p1, and p2, BcastSet should set the broadcast value on on all peers", t, func() {
 
-		p0, p1, p2, _ := testSetupThree()
+		p0, p1, p2, _ := testSetupThree(nil)
 		defer p0.Stop()
 		defer p1.Stop()
 		defer p2.Stop()
@@ -355,7 +363,46 @@ func Test105GetLatest(t *testing.T) {
 
 	cv.Convey("Given three peers p0, p1, and p2, GetLatest should retreive the data with the most recent timestamp", t, func() {
 
-		p0, p1, p2, _ := testSetupThree()
+		p0, p1, p2, _ := testSetupThree(nil)
+		defer p0.Stop()
+		defer p1.Stop()
+		defer p2.Stop()
+		defer cleanupTestUserDatabases()
+
+		t3 := time.Now().UTC()
+		t2 := t3.Add(-time.Minute)
+		t1 := t2.Add(-time.Minute)
+		t0 := t1.Add(-time.Minute)
+
+		data0 := []byte(fmt.Sprintf("dataset 0 at %v", t0))
+		data1 := []byte(fmt.Sprintf("dataset 1 at %v plus blah", t1))
+		data2 := []byte(fmt.Sprintf("dataset 2 at %v plush blahblah", t2))
+
+		key := []byte("chk")
+
+		err := p0.LocalSet(&api.KeyInv{Key: key, Val: data0, When: t0})
+		panicOn(err)
+		err = p1.LocalSet(&api.KeyInv{Key: key, Val: data1, When: t1})
+		panicOn(err)
+		err = p2.LocalSet(&api.KeyInv{Key: key, Val: data2, When: t2})
+		panicOn(err)
+
+		ki0, err := p0.GetLatest(key, true)
+
+		cv.So(ki0.Key, cv.ShouldResemble, key)
+		cv.So(ki0.When, cv.ShouldResemble, t2)
+		cv.So(ki0.Size, cv.ShouldEqual, len(data2))
+		cv.So(ki0.Val, cv.ShouldResemble, data2)
+	})
+}
+
+func Test107GetLatestSkipEncryption(t *testing.T) {
+
+	cv.Convey("Given three peers p0, p1, and p2, GetLatest should retreive the data with the most recent timestamp, even when no encyprtion is used (when running on a VPN that already provides encryption).", t, func() {
+
+		p0, p1, p2, _ := testSetupThree(func(peer *Peer) {
+			peer.SkipEncryption = true
+		})
 		defer p0.Stop()
 		defer p1.Stop()
 		defer p2.Stop()
@@ -412,7 +459,7 @@ func Test106PeerGrpcAndInternalPortDiscovery(t *testing.T) {
 	cv.Convey("StartPeriodicClusterAgentLocQueries() should result in our discovering the Internal and Grpc ports for each peer", t, func() {
 
 		// peer.StartPeriodicClusterAgentLocQueries()
-		p0, p1, p2, _ := testSetupThree()
+		p0, p1, p2, _ := testSetupThree(nil)
 		defer p0.Stop()
 		defer p1.Stop()
 		defer p2.Stop()

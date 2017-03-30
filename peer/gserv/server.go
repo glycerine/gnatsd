@@ -54,7 +54,7 @@ func (s *PeerServerClass) IncrementGotFileCount() {
 //  because the client called SendFile() on the other end.
 //
 func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
-	//p("%s peer.Server SendFile starting!", s.cfg.MyID)
+	p("%s peer.Server SendFile starting!", s.cfg.MyID)
 	var chunkCount int64
 	path := ""
 	var hasher hash.Hash
@@ -267,7 +267,12 @@ func (cfg *ServerConfig) StartGrpcServer(
 
 	var gRpcBindPort int
 	var gRpcHost string
-	if cfg.UseTLS {
+	if cfg.SkipEncryption {
+		// no encryption, only for VPN that already provides it.
+		gRpcBindPort = cfg.ExternalLsnPort
+		gRpcHost = cfg.Host
+
+	} else if cfg.UseTLS {
 		// use TLS
 		gRpcBindPort = cfg.ExternalLsnPort
 		gRpcHost = cfg.Host
@@ -282,7 +287,6 @@ func (cfg *ServerConfig) StartGrpcServer(
 		//p("%s external SSHd listening on %v:%v, internal gRPC service listening on 127.0.0.1:%v", myID, cfg.Host, cfg.ExternalLsnPort, cfg.InternalLsnPort)
 
 	}
-
 	lis, err := net.Listen("tcp", fmt.Sprintf("%v:%d", gRpcHost, gRpcBindPort))
 	if err != nil {
 		grpclog.Fatalf("failed to listen: %v", err)
@@ -290,19 +294,24 @@ func (cfg *ServerConfig) StartGrpcServer(
 
 	var opts []grpc.ServerOption
 
-	if cfg.UseTLS {
-		// use TLS
-		creds, err := credentials.NewServerTLSFromFile(cfg.CertPath, cfg.KeyPath)
-		if err != nil {
-			grpclog.Fatalf("Failed to generate credentials %v", err)
-		}
-		opts = []grpc.ServerOption{grpc.Creds(creds)}
-	} else {
-		// use SSH
-		err = serverSshMain(cfg.SshegoCfg, cfg.Host,
-			cfg.ExternalLsnPort, cfg.InternalLsnPort)
-		panicOn(err)
+	if cfg.SkipEncryption {
+		p("cfg.SkipEncryption is true")
 		close(sshdReady)
+	} else {
+		if cfg.UseTLS {
+			// use TLS
+			creds, err := credentials.NewServerTLSFromFile(cfg.CertPath, cfg.KeyPath)
+			if err != nil {
+				grpclog.Fatalf("Failed to generate credentials %v", err)
+			}
+			opts = []grpc.ServerOption{grpc.Creds(creds)}
+		} else {
+			// use SSH
+			err = serverSshMain(cfg.SshegoCfg, cfg.Host,
+				cfg.ExternalLsnPort, cfg.InternalLsnPort)
+			panicOn(err)
+			close(sshdReady)
+		}
 	}
 
 	cfg.mut.Lock()

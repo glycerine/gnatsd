@@ -8,6 +8,10 @@ import (
 
 type ClientConfig struct {
 	UseTLS                  bool
+
+	// For when your VPN already provides encryption.	
+	SkipEncryption bool // turn off both SSH and TLS. 
+	
 	AllowNewServer          bool // only give once to prevent MITM.
 	TestAllowOneshotConnect bool
 	CertPath                string
@@ -28,6 +32,7 @@ type ClientConfig struct {
 func (c *ClientConfig) DefineFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&c.AllowNewServer, "new", false, "allow new server host key to be recognized and stored in known-hosts")
 	fs.BoolVar(&c.UseTLS, "tls", false, "Use TLS for security (default is SSH)")
+	fs.BoolVar(&c.SkipEncryption, "skip-encryption", false, "Skip both TLS and SSH; for running on an already encrypted VPN.")
 	fs.StringVar(&c.CertPath, "cert_file", "testdata/server1.pem", "The TLS cert file")
 	fs.StringVar(&c.KeyPath, "key_file", "testdata/server1.key", "The TLS key file")
 	fs.StringVar(&c.ServerHost, "host", "127.0.0.1", "host IP address or name to connect to")

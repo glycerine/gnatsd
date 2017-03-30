@@ -61,7 +61,7 @@ func (peer *Peer) ClientInitiateBcastGet(key []byte, includeValue bool, timeout 
 		toCh := time.After(timeout)
 
 		for i := 0; i < numPeers; i++ {
-			select {
+			select { // 107 hung here
 			case <-toCh:
 				return nil, ErrTimedOut
 
@@ -298,6 +298,7 @@ func (peer *Peer) doGrpcClientSendFileSetRequest(req *api.BcastSetRequest, cs *c
 			Username:             peer.SshClientLoginUsername,
 			PrivateKeyPath:       peer.SshClientPrivateKeyPath,
 			ClientKnownHostsPath: peer.SshClientClientKnownHostsPath,
+			SkipEncryption:       peer.SkipEncryption,
 		}
 
 		clicfg.ClientSendFile(string(req.Ki.Key), reqBytes, isBcastSet)
@@ -322,6 +323,7 @@ func (peer *Peer) clientDoGrpcSendFileBcastGetReply(bgr *api.BcastGetRequest, re
 		Username:             peer.SshClientLoginUsername,
 		PrivateKeyPath:       peer.SshClientPrivateKeyPath,
 		ClientKnownHostsPath: peer.SshClientClientKnownHostsPath,
+		SkipEncryption:       peer.SkipEncryption,
 	}
 
 	replyData, err := reply.MarshalMsg(nil)

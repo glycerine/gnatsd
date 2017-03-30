@@ -141,10 +141,14 @@ func SequentialPayload(n int64) []byte {
 func (cfg *ClientConfig) ClientSendFile(path string, data []byte, isBcastSet bool) error {
 
 	var opts []grpc.DialOption
-	if cfg.UseTLS {
-		cfg.setupTLS(&opts)
+	if cfg.SkipEncryption {
+		opts = append(opts, grpc.WithInsecure())
 	} else {
-		cfg.setupSSH(&opts)
+		if cfg.UseTLS {
+			cfg.setupTLS(&opts)
+		} else {
+			cfg.setupSSH(&opts)
+		}
 	}
 
 	serverAddr := fmt.Sprintf("%v:%v", cfg.ServerHost, cfg.ServerPort)

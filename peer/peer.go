@@ -91,6 +91,8 @@ type Peer struct {
 
 	// lock mut before reading
 	lastSeenInternalPortAloc map[string]health.AgentLoc
+
+	SkipEncryption bool
 }
 
 type leadFlag struct {
@@ -316,8 +318,8 @@ func (peer *Peer) setupNatsClient() error {
 	setScrip, err := nc.Subscribe(peer.subjBcastSet, func(msg *nats.Msg) {
 		var bsr api.BcastSetRequest
 		bsr.UnmarshalMsg(msg.Data)
-		mylog.Printf("peer recevied subjBcastSet for key '%s'",
-			string(bsr.Ki.Key))
+		mylog.Printf("peer received subjBcastSet(fromID='%s') for key '%s'",
+			string(bsr.Ki.Key), bsr.FromID)
 
 		var reply api.BcastSetReply
 
@@ -594,8 +596,8 @@ func intMax(a, b int) int {
 //
 func (peer *Peer) StartBackgroundSshdRecv(myID, myFollowSubj string) {
 	mylog.Printf("beginning StartBackgroundSshdRecv(myID='%s', "+
-		"myFollowSubj='%s').",
-		myID, myFollowSubj)
+		"myFollowSubj='%s'). peer.SkipEncryption=%v",
+		myID, myFollowSubj, peer.SkipEncryption)
 
 	go func() {
 		defer func() {
@@ -619,6 +621,7 @@ func (peer *Peer) StartBackgroundSshdRecv(myID, myFollowSubj string) {
 		lsn2.Close()
 
 		peer.GservCfg = gserv.NewServerConfig(myID)
+		peer.GservCfg.SkipEncryption = peer.SkipEncryption
 		peer.GservCfg.Host = peer.serverOpts.Host
 		peer.GservCfg.ExternalLsnPort = port0
 		peer.GservCfg.InternalLsnPort = port1
@@ -626,6 +629,8 @@ func (peer *Peer) StartBackgroundSshdRecv(myID, myFollowSubj string) {
 			Username:                peer.serverOpts.Username,
 			TestAllowOneshotConnect: peer.TestAllowOneshotConnect,
 		}
+
+		p("%s StartBackgroundSshdRecv: peer.GservCfg.SkipEncryption = %v", peer.loc.ID, peer.GservCfg.SkipEncryption)
 
 		// fill default SshegoCfg
 		cfg := peer.GservCfg.SshegoCfg
