@@ -16,11 +16,11 @@ func Test101PeerToPeerKeyValueTransfer(t *testing.T) {
 
 	cv.Convey("Peers get and set key/value pairs between themselves. Where BcastSet() will broadcast the change to all peers, and LocalGet will locally query for the latest observed value for the key. GetLatest() will survey all peers and return the most recent value.", t, func() {
 
-		p0, p1, p2, _ := testSetupThree(nil)
+		p0, p1, p2, _ := UtilTestSetupThree(nil)
 		defer p0.Stop()
 		defer p1.Stop()
 		defer p2.Stop()
-		defer cleanupTestUserDatabases()
+		defer UtilCleanupTestUserDatabases()
 
 		t3 := time.Now().UTC()
 		t2 := t3.Add(-time.Minute)
@@ -143,8 +143,8 @@ func Test102LocalSet(t *testing.T) {
 	})
 }
 
-func testSetupThree(callmePreStart func(peer *Peer)) (p0, p1, p2 *Peer, peers *LeadAndFollowList) {
-	cleanupTestUserDatabases()
+func UtilTestSetupThree(callmePreStart func(peer *Peer)) (p0, p1, p2 *Peer, peers *LeadAndFollowList) {
+	UtilCleanupTestUserDatabases()
 
 	u := newTestSshUser()
 
@@ -253,11 +253,11 @@ func Test103BcastGet(t *testing.T) {
 
 	cv.Convey("Given three peers p0, p1, and p2, BcastGet should return KeyInv from both", t, func() {
 
-		p0, p1, p2, _ := testSetupThree(nil)
+		p0, p1, p2, _ := UtilTestSetupThree(nil)
 		defer p0.Stop()
 		defer p1.Stop()
 		defer p2.Stop()
-		defer cleanupTestUserDatabases()
+		defer UtilCleanupTestUserDatabases()
 
 		t3 := time.Now().UTC()
 		t2 := t3.Add(-time.Minute)
@@ -306,11 +306,11 @@ func Test104BcastSet(t *testing.T) {
 
 	cv.Convey("Given three peers p0, p1, and p2, BcastSet should set the broadcast value on on all peers", t, func() {
 
-		p0, p1, p2, _ := testSetupThree(nil)
+		p0, p1, p2, _ := UtilTestSetupThree(nil)
 		defer p0.Stop()
 		defer p1.Stop()
 		defer p2.Stop()
-		defer cleanupTestUserDatabases()
+		defer UtilCleanupTestUserDatabases()
 
 		t3 := time.Now().UTC()
 		t2 := t3.Add(-time.Minute)
@@ -363,11 +363,11 @@ func Test105GetLatest(t *testing.T) {
 
 	cv.Convey("Given three peers p0, p1, and p2, GetLatest should retreive the data with the most recent timestamp", t, func() {
 
-		p0, p1, p2, _ := testSetupThree(nil)
+		p0, p1, p2, _ := UtilTestSetupThree(nil)
 		defer p0.Stop()
 		defer p1.Stop()
 		defer p2.Stop()
-		defer cleanupTestUserDatabases()
+		defer UtilCleanupTestUserDatabases()
 
 		t3 := time.Now().UTC()
 		t2 := t3.Add(-time.Minute)
@@ -400,13 +400,13 @@ func Test107GetLatestSkipEncryption(t *testing.T) {
 
 	cv.Convey("Given three peers p0, p1, and p2, GetLatest should retreive the data with the most recent timestamp, even when no encyprtion is used (when running on a VPN that already provides encryption).", t, func() {
 
-		p0, p1, p2, _ := testSetupThree(func(peer *Peer) {
+		p0, p1, p2, _ := UtilTestSetupThree(func(peer *Peer) {
 			peer.SkipEncryption = true
 		})
 		defer p0.Stop()
 		defer p1.Stop()
 		defer p2.Stop()
-		defer cleanupTestUserDatabases()
+		defer UtilCleanupTestUserDatabases()
 
 		t3 := time.Now().UTC()
 		t2 := t3.Add(-time.Minute)
@@ -435,7 +435,7 @@ func Test107GetLatestSkipEncryption(t *testing.T) {
 	})
 }
 
-func cleanupTestUserDatabases() {
+func UtilCleanupTestUserDatabases() {
 	os.RemoveAll(".p0")
 	os.RemoveAll(".p0.hostkey")
 	os.RemoveAll(".p0.hostkey.pub")
@@ -459,11 +459,11 @@ func Test106PeerGrpcAndInternalPortDiscovery(t *testing.T) {
 	cv.Convey("StartPeriodicClusterAgentLocQueries() should result in our discovering the Internal and Grpc ports for each peer", t, func() {
 
 		// peer.StartPeriodicClusterAgentLocQueries()
-		p0, p1, p2, _ := testSetupThree(nil)
+		p0, p1, p2, _ := UtilTestSetupThree(nil)
 		defer p0.Stop()
 		defer p1.Stop()
 		defer p2.Stop()
-		defer cleanupTestUserDatabases()
+		defer UtilCleanupTestUserDatabases()
 
 		time.Sleep(10 * time.Minute)
 	})

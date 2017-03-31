@@ -14,11 +14,11 @@ func Test203BcastGetBigFile(t *testing.T) {
 
 	cv.Convey("Given three peers p0, p1, and p2, BcastGet should return KeyInv from both", t, func() {
 
-		p0, p1, p2, _ := testSetupThree(nil)
+		p0, p1, p2, _ := UtilTestSetupThree(nil)
 		defer p0.Stop()
 		defer p1.Stop()
 		defer p2.Stop()
-		defer cleanupTestUserDatabases()
+		defer UtilCleanupTestUserDatabases()
 
 		t3 := time.Now().UTC()
 		t2 := t3.Add(-time.Minute)
