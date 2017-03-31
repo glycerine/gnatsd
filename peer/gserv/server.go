@@ -59,7 +59,7 @@ func (s *PeerServerClass) IncrementGotFileCount() {
 //  because the client called SendFile() on the other end.
 //
 func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
-	utclog.Printf("%s peer.Server SendFile starting!", s.cfg.MyID)
+	utclog.Printf("%s peer.Server SendFile (for receiving a file) starting!", s.cfg.MyID)
 	var chunkCount int64
 	path := ""
 	var hasher hash.Hash
@@ -179,6 +179,7 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 		}
 
 		if nk.IsLastChunk {
+
 			kiBytes := allChunks.Bytes()
 
 			if isBcastSet {
@@ -189,7 +190,7 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 					return fmt.Errorf("gserv/server.go SendFile(): req.UnmarshalMsg() errored '%v'", err)
 				}
 
-				//p("%s this server.SendFile() with BcastSet, got request from '%s' to set key '%s' with data of len %v. debug Val:'%s'. about to wait on chan %p", s.cfg.MyID, req.FromID, req.Ki.Key, len(req.Ki.Val), string(req.Ki.Val[:intMin(100, len(req.Ki.Val))]), s.cfg.ServerGotSetRequest)
+				utclog.Printf("%s sees last chunk of file with nk.OriginalStartSendTime='%v'. Received from a BcastSet() call [isBcastSet=%v]. Got request from '%s' to set key '%s' with data of len %v. checksum='%x'.", s.cfg.MyID, isBcastSet, nk.OriginalStartSendTime, req.FromID, req.Ki.Key, len(req.Ki.Val), nk.Blake2BCumulative)
 
 				s.IncrementGotFileCount()
 
@@ -208,7 +209,7 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 					return fmt.Errorf("gserv/server.go SendFile(): reply.UnmarshalMsg() errored '%v'", err)
 				}
 
-				//p("%s this server.SendFile() with BcastGet, got request from '%s' to get key '%s' with data of len %v. debug Val:'%s'. about to send on chan %p", s.cfg.MyID, reply.FromID, reply.Ki.Key, len(reply.Ki.Val), string(reply.Ki.Val[:intMin(100, len(reply.Ki.Val))]), s.cfg.ServerGotGetReply)
+				utclog.Printf("%s sees last chunk of file with nk.OriginalStartSendTime='%v'. Received from a BcastGet() call [isBcastSet=%v]. got request from '%s' to set key '%s' with data of len %v. checksum='%x'.", s.cfg.MyID, isBcastSet, nk.OriginalStartSendTime, reply.FromID, reply.Ki.Key, len(reply.Ki.Val), nk.Blake2BCumulative)
 
 				// notify peer by sending on cfg.ServerGotGetReply
 				select {

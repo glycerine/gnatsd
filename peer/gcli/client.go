@@ -44,8 +44,11 @@ func (c *client) startNewFile() {
 	c.nextChunk = 0
 }
 
-func (c *client) runSendFile(path string, data []byte, maxChunkSize int, isBcastSet bool) error {
+func (c *client) runSendFile(path string, data []byte, maxChunkSize int, isBcastSet bool, myID string) error {
 	//p("client runSendFile(path='%s') starting", path)
+
+	startOfRunSendFile := time.Now().UTC()
+	startOfRunSendFileNanoUint64 := uint64(startOfRunSendFile.UnixNano())
 
 	c.startNewFile()
 	stream, err := c.peerClient.SendFile(context.Background())
@@ -70,6 +73,7 @@ func (c *client) runSendFile(path string, data []byte, maxChunkSize int, isBcast
 		nk.Filepath = path
 		nk.SizeInBytes = int64(sendLen)
 		nk.SendTime = uint64(time.Now().UnixNano())
+		nk.OriginalStartSendTime = startOfRunSendFileNanoUint64
 
 		// checksums
 		c.hasher.Write(chunk)
@@ -107,7 +111,7 @@ func (c *client) runSendFile(path string, data []byte, maxChunkSize int, isBcast
 	}
 
 	compared := bytes.Compare(reply.WholeFileBlake2B, []byte(c.hasher.Sum(nil)))
-	utclog.Printf("Reply saw checksum: '%x' match: %v; size sent = %v, size received = %v", reply.WholeFileBlake2B, compared == 0, len(data), reply.SizeInBytes)
+	utclog.Printf("%s client.runSendFile got from stream.CloseAndRecv() a Reply with checksum: '%x'; checksum matches the sent data: %v; size sent = %v, size received = %v. startOfRunSendFile='%v'.", myID, reply.WholeFileBlake2B, compared == 0, len(data), reply.SizeInBytes, startOfRunSendFile)
 
 	if int64(len(data)) != reply.SizeInBytes {
 		panic("size mismatch")
@@ -172,13 +176,14 @@ func (cfg *ClientConfig) ClientSendFile(path string, data []byte, isBcastSet boo
 	chunkSz := 1 << 20
 
 	t0 := time.Now()
-	err = c.runSendFile(path, data, chunkSz, isBcastSet)
+	err = c.runSendFile(path, data, chunkSz, isBcastSet, myID)
 	t1 := time.Now()
+	elap := t1.Sub(t0)
 	if err != nil {
+		utclog.Printf("%s ClientSendFile: c.runSendFile sees error '%v' after elap %v", myID, err, elap)
 		return err
 	}
 	mb := float64(len(data)) / float64(1<<20)
-	elap := t1.Sub(t0)
 	_ = mb
 	_ = elap
 	utclog.Printf("%s ClientSendFile: elap time to runSendFile(path='%s', len(data)=%v) on %v MB was %v => %.03f MB/sec", myID, path, len(data), mb, elap, mb/(float64(elap)/1e9))

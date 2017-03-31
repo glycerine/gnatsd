@@ -14,6 +14,7 @@ message BigFileChunk {
     // when did this chunk get put
     // on the wire?
     fixed64   SendTime    = 3;
+    fixed64   OriginalStartSendTime    = 10;
 
     // Blake2B checksum of Data.
     bytes     Blake2B     = 4;
