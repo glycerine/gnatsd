@@ -101,21 +101,6 @@ type leadFlag struct {
 	mut    sync.Mutex
 }
 
-func (lf *leadFlag) SetIsLead(val bool, cs clusterStatus) {
-	lf.mut.Lock()
-	lf.amLead = val
-	lf.cs = cs
-	lf.mut.Unlock()
-}
-
-func (lf *leadFlag) IsLead() (bool, clusterStatus) {
-	lf.mut.Lock()
-	val := lf.amLead
-	cs := lf.cs
-	lf.mut.Unlock()
-	return val, cs
-}
-
 func has(haystack []string, needle string) bool {
 	for i := range haystack {
 		if haystack[i] == needle {
@@ -520,7 +505,6 @@ func (peer *Peer) LeadTransferCheckpoint(key, chkptData []byte, when time.Time) 
 
 	mylog.Printf("MyID:'%v' I AM LEAD. I have %v follows.",
 		laf.MyID, len(cs.follow))
-	peer.LeadStatus.SetIsLead(true, cs)
 
 	// Since we are lead, we send this checkpoint out.
 	// BcastSet does the LocalSet for us.
