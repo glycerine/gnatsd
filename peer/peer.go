@@ -489,7 +489,7 @@ func (peer *Peer) LeadTransferCheckpoint(chkptData []byte) error {
 	return nil
 }
 
-func (peer *Peer) amFollow() bool {
+func (peer *Peer) AmFollow() bool {
 	select {
 	case list := <-peer.LeadAndFollowBchan.Ch:
 		peer.LeadAndFollowBchan.BcastAck()
