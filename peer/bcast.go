@@ -138,7 +138,7 @@ func (peer *Peer) ServerHandleBcastGet(msg *nats.Msg) error {
 
 	var bgr api.BcastGetRequest
 	bgr.UnmarshalMsg(msg.Data)
-	mylog.Printf("%s peer recevied subjBcastGet for key '%s'",
+	utclog.Printf("%s peer recevied subjBcastGet for key '%s'",
 		peer.saver.whoami, string(bgr.Key))
 
 	key := bgr.Key
@@ -169,7 +169,7 @@ func (peer *Peer) ServerHandleBcastGet(msg *nats.Msg) error {
 
 	ki, err := peer.LocalGet(key, includeValue)
 	if err != nil {
-		mylog.Printf("peer.LocalGet('%s' returned error '%v'", string(key), err)
+		utclog.Printf("peer.LocalGet('%s' returned error '%v'", string(key), err)
 		reply.Err = err.Error()
 	} else {
 		reply.Ki = ki
@@ -245,7 +245,7 @@ func (peer *Peer) BcastSet(ki *api.KeyInv) error {
 	//p("BcastSet sees numPeers = %v", numPeers)
 
 	cs, _ := list2status(peers)
-	//mylog.Printf("BcastSet: we have clusterStatus: '%s'", &cs)
+	//utclog.Printf("BcastSet: we have clusterStatus: '%s'", &cs)
 
 	req := &api.BcastSetRequest{
 		Ki:     ki,

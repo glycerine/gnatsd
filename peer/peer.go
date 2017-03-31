@@ -25,10 +25,10 @@ import (
 	tun "github.com/glycerine/sshego"
 )
 
-var mylog *log.Logger
+var utclog *log.Logger
 
 func init() {
-	mylog = log.New(os.Stderr, "", log.LUTC|log.LstdFlags|log.Lmicroseconds)
+	utclog = log.New(os.Stderr, "", log.LUTC|log.LstdFlags|log.Lmicroseconds)
 }
 
 type LeadAndFollowList struct {
@@ -179,7 +179,7 @@ func (peer *Peer) Start() error {
 	//p("%v peer.Start() done with peer.setupNatsClient() err='%v'", peer.loc.ID, err)
 
 	if err != nil {
-		mylog.Printf("warning: not starting background peer goroutine, as we got err from setupNatsCli: '%v'", err)
+		utclog.Printf("warning: not starting background peer goroutine, as we got err from setupNatsCli: '%v'", err)
 		return err
 	}
 
@@ -192,7 +192,7 @@ func (peer *Peer) Start() error {
 		laf := list.(*LeadAndFollowList)
 
 		cs, myFollowSubj := list2status(laf)
-		mylog.Printf("peer.Start(): we have clusterStatus: '%s'", &cs)
+		utclog.Printf("peer.Start(): we have clusterStatus: '%s'", &cs)
 
 		peer.StartBackgroundSshdRecv(laf.MyID, myFollowSubj)
 	}
@@ -303,14 +303,14 @@ func (peer *Peer) setupNatsClient() error {
 	setScrip, err := nc.Subscribe(peer.subjBcastSet, func(msg *nats.Msg) {
 		var bsr api.BcastSetRequest
 		bsr.UnmarshalMsg(msg.Data)
-		mylog.Printf("peer received subjBcastSet(fromID='%s') for key '%s'",
+		utclog.Printf("peer received subjBcastSet(fromID='%s') for key '%s'",
 			string(bsr.Ki.Key), bsr.FromID)
 
 		var reply api.BcastSetReply
 
 		err := peer.LocalSet(bsr.Ki)
 		if err != nil {
-			mylog.Printf("peer.LocalSet(key='%s') returned error '%v'", string(bsr.Ki.Key), err)
+			utclog.Printf("peer.LocalSet(key='%s') returned error '%v'", string(bsr.Ki.Key), err)
 			reply.Err = err.Error()
 		}
 		mm, err := reply.MarshalMsg(nil)
@@ -323,7 +323,7 @@ func (peer *Peer) setupNatsClient() error {
 
 	// reporting
 	nc.Subscribe(peer.subjMemberLost, func(msg *nats.Msg) {
-		mylog.Printf("peer recevied subjMemberLost: "+
+		utclog.Printf("peer recevied subjMemberLost: "+
 			"Received on [%s]: '%s'",
 			msg.Subject,
 			string(msg.Data))
@@ -337,7 +337,7 @@ func (peer *Peer) setupNatsClient() error {
 
 	// reporting
 	nc.Subscribe(peer.subjMemberAdded, func(msg *nats.Msg) {
-		mylog.Printf("peer recevied subjMemberAdded: Received on [%s]: '%s'",
+		utclog.Printf("peer recevied subjMemberAdded: Received on [%s]: '%s'",
 			msg.Subject, string(msg.Data))
 
 		var laf LeadAndFollowList
@@ -353,7 +353,7 @@ func (peer *Peer) setupNatsClient() error {
 	// reporting
 	// problem: reporting every 5msec, not good
 	nc.Subscribe(peer.subjMembership, func(msg *nats.Msg) {
-		/*mylog.Printf("peer received subjMembership: "+
+		/*utclog.Printf("peer received subjMembership: "+
 		"Received on [%s]: '%s'",
 		msg.Subject,
 		string(msg.Data))
@@ -391,7 +391,7 @@ func (peer *Peer) setupNatsClient() error {
 		peer.mut.Unlock()
 
 		/* reporting every 10msec problem:
-		mylog.Printf("peer '%s' received on subSubject %s: '%s', where I have peer.loc='%s'",
+		utclog.Printf("peer '%s' received on subSubject %s: '%s', where I have peer.loc='%s'",
 			aloc.ID,
 			subSubject,
 			string(msg.Data),
@@ -405,7 +405,7 @@ func (peer *Peer) setupNatsClient() error {
 
 			err = nc.Publish(msg.Reply, []byte(aloc.String()))
 			if err != nil {
-				mylog.Printf("warning: '%s' publish to '%s' got error '%v'",
+				utclog.Printf("warning: '%s' publish to '%s' got error '%v'",
 					subSubject,
 					msg.Reply, err)
 			}
@@ -457,12 +457,12 @@ type Saver interface {
 // recent state from any previous lead.
 //
 func (peer *Peer) LeadTransferCheckpoint(key, chkptData []byte, when time.Time) error {
-	//p("top of LeadTransferCheckpoint")
+	utclog.Printf("top of LeadTransferCheckpoint")
 	var list interface{}
 	select {
 	case <-peer.Halt.ReqStop.Chan:
 		// shutting down.
-		mylog.Printf("shutting down on request from peer.Halt.ReqStop.Chan")
+		utclog.Printf("shutting down on request from peer.Halt.ReqStop.Chan")
 		return ErrShutdown
 
 	case list = <-peer.LeadAndFollowBchan.Ch:
@@ -472,27 +472,32 @@ func (peer *Peer) LeadTransferCheckpoint(key, chkptData []byte, when time.Time) 
 	laf := list.(*LeadAndFollowList)
 
 	cs, _ := list2status(laf)
-	mylog.Printf("LeadTransferCheckpoint(): we have clusterStatus: '%s'", &cs)
+	utclog.Printf("LeadTransferCheckpoint(): we have clusterStatus: '%s'", &cs)
 
 	if len(chkptData) == 0 {
 		// the first time, we get the latest from
 		// the cluster. Whether follow or lead
 		// it doesn't matter.
+		utclog.Printf("LeadTransferCheckpoint sees len chkptData of zero, doing GetLatest on key '%s'", string(key))
+
 		ki, err := peer.GetLatest(key, true)
 		if err != nil {
 			return err
 		}
 
+		utclog.Printf("LeadTransferCheckpoint got back from GetLatest ki.Key='%s'; ki.When='%s'; ki.Blake2b='%x'. len(ki.Val)=%v. ki.Who='%s'", string(ki.Key), ki.When, ki.Blake2b, len(ki.Val), ki.Who)
+
 		// checkpoint it... unless it was from ourselves!
 		if ki.Who != peer.loc.ID {
 			// checkpoint it
 
-			mylog.Printf("ki.Who='%s' != peer.loc.ID='%s', doing LocalSet(ki.Key='%s')", ki.Who, peer.loc.ID, string(ki.Key))
-
+			utclog.Printf("ki.Who='%s' != peer.loc.ID='%s', doing LocalSet(ki.Key='%s'. checksum='%x')", ki.Who, peer.loc.ID, string(ki.Key), ki.Blake2b)
 			err = peer.LocalSet(ki)
 			if err != nil {
 				return err
 			}
+		} else {
+			utclog.Printf("ki.Who='%s' == peer.loc.ID='%s', so skipping LocalSet().doing LocalSet(ki.Key='%s'. checksum='%x')", ki.Who, peer.loc.ID, string(ki.Key), ki.Blake2b)
 		}
 		return nil
 	}
@@ -503,7 +508,7 @@ func (peer *Peer) LeadTransferCheckpoint(key, chkptData []byte, when time.Time) 
 		return ErrAmFollower
 	}
 
-	mylog.Printf("MyID:'%v' I AM LEAD. I have %v follows.",
+	utclog.Printf("MyID:'%v' I AM LEAD. I have %v follows.",
 		laf.MyID, len(cs.follow))
 
 	// Since we are lead, we send this checkpoint out.
@@ -617,7 +622,7 @@ func intMax(a, b int) int {
 // save it to disk (this dedups if we get multiples of the same).
 //
 func (peer *Peer) StartBackgroundSshdRecv(myID, myFollowSubj string) {
-	mylog.Printf("beginning StartBackgroundSshdRecv(myID='%s', "+
+	utclog.Printf("beginning StartBackgroundSshdRecv(myID='%s', "+
 		"myFollowSubj='%s'). peer.SkipEncryption=%v",
 		myID, myFollowSubj, peer.SkipEncryption)
 
@@ -625,7 +630,7 @@ func (peer *Peer) StartBackgroundSshdRecv(myID, myFollowSubj string) {
 		defer func() {
 			peer.Halt.ReqStop.Close()
 			peer.Halt.Done.Close()
-			mylog.Printf("StartBackgroundSshdRecv(myID='%s', "+
+			utclog.Printf("StartBackgroundSshdRecv(myID='%s', "+
 				"myFollowSubj='%s') has shutdown.",
 				myID, myFollowSubj)
 		}()
