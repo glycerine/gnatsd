@@ -1,0 +1,22 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+	ignorecase = true
+	precomposeunicode = true
+[remote "origin"]
+	url = https://github.com/grpc/grpc-go
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "master"]
+	remote = origin
+	merge = refs/heads/master
+[remote "apol"]
+	url = https://github.com/apolcyn/grpc-go
+	fetch = +refs/heads/*:refs/remotes/apol/*
+[remote "glyc"]
+	url = https://github.com/glycerine/grpc-go
+	fetch = +refs/heads/*:refs/remotes/glyc/*
+[user]
+email = "j.e.aten@gmail.com"
+name="Jason E. Aten"

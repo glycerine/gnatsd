@@ -1,0 +1,47 @@
+syntax = "proto3";
+package streambigfile;
+
+message BigFileChunk {
+	string  Filepath    = 1;
+	int64   SizeInBytes = 2;
+	fixed64 SendTime    = 3;
+	bytes   Blake2b     = 4;
+    bytes	Data        = 5;
+
+    // It is not strictly
+    // necessary to chop the
+    // Data into chunks, but
+    // may be convenient to
+    // avoid excessive memory
+    // use.
+    // 
+    // Fields Data and Blake2b represent
+    // just this chunk.
+    //
+    // ChunkCountMinus1 is the
+    // count of chunks, minus 1.
+    //
+    // For example, a value of 0
+    // in the ChunkCountMinus1
+    // field means that there is
+    // only one chunk.
+    //
+    // ChunkNumber will be 0 as
+    // well in this case.
+    //
+    int64   ChunkCountMinus1 = 6;
+    int64   ChunkNumber      = 7;
+}
+
+message BigFileAck {
+	string  Filepath    = 1;
+	int64   SizeInBytes = 2;
+	fixed64 RecvTime    = 3;
+	bytes   WholeFileBlake2b     = 4;
+}
+
+service Peer {
+
+  rpc SendFile(stream BigFileChunk) returns (BigFileAck) {}
+
+}

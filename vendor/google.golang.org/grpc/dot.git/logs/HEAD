@@ -1,0 +1,15 @@
+0000000000000000000000000000000000000000 2a6bf6142e96942e4fb9c0dfb157ee5d3cecafaa Jason E. Aten <jaten@saucelabs.com> 1486514672 -0600	clone: from https://github.com/grpc/grpc-go
+2a6bf6142e96942e4fb9c0dfb157ee5d3cecafaa d0c32ee6a441117d49856d6120ca9552af413ee0 Jason E. Aten <jaten@saucelabs.com> 1487484452 -0600	pull --ff-only: Fast-forward
+d0c32ee6a441117d49856d6120ca9552af413ee0 14a6be430b5164b888c95ac962129546c85831e7 Jason E. Aten <jaten@saucelabs.com> 1490601438 -0500	pull --ff-only: Fast-forward
+14a6be430b5164b888c95ac962129546c85831e7 9720953c46fbe52715000ded6adaa299207127b5 Jason E. Aten <jaten@saucelabs.com> 1490918041 -0500	checkout: moving from master to glyc/master
+9720953c46fbe52715000ded6adaa299207127b5 9720953c46fbe52715000ded6adaa299207127b5 Jason E. Aten <jaten@saucelabs.com> 1490918089 -0500	checkout: moving from 9720953c46fbe52715000ded6adaa299207127b5 to glycmaster
+9720953c46fbe52715000ded6adaa299207127b5 e42107011e289ffe40269db40a9d7900b578d37f Jason E. Aten <j.e.aten@gmail.com> 1490918157 -0500	commit: drop down to *32 initial{Conn}WindowSize
+e42107011e289ffe40269db40a9d7900b578d37f 9720953c46fbe52715000ded6adaa299207127b5 Jason E. Aten <j.e.aten@gmail.com> 1490918170 -0500	checkout: moving from glycmaster to glyc/master
+9720953c46fbe52715000ded6adaa299207127b5 e42107011e289ffe40269db40a9d7900b578d37f Jason E. Aten <j.e.aten@gmail.com> 1490918177 -0500	checkout: moving from 9720953c46fbe52715000ded6adaa299207127b5 to glycmaster
+e42107011e289ffe40269db40a9d7900b578d37f e42107011e289ffe40269db40a9d7900b578d37f Jason E. Aten <j.e.aten@gmail.com> 1490918205 -0500	checkout: moving from glycmaster to glyc/master
+e42107011e289ffe40269db40a9d7900b578d37f e42107011e289ffe40269db40a9d7900b578d37f Jason E. Aten <j.e.aten@gmail.com> 1490918388 -0500	checkout: moving from glyc/master to glyc/master
+e42107011e289ffe40269db40a9d7900b578d37f e42107011e289ffe40269db40a9d7900b578d37f Jason E. Aten <j.e.aten@gmail.com> 1490918401 -0500	checkout: moving from glyc/master to master
+e42107011e289ffe40269db40a9d7900b578d37f 7fc29d0caa400efc53212b222356f99efe87d7d5 Jason E. Aten <j.e.aten@gmail.com> 1490918432 -0500	rebase: checkout origin/master
+7fc29d0caa400efc53212b222356f99efe87d7d5 4d403c1e605a3b892f39d421fa812dc7d3da92e4 Jason E. Aten <j.e.aten@gmail.com> 1490918432 -0500	rebase: increase initialWindowSize and initialConnWindowSize by 2048.
+4d403c1e605a3b892f39d421fa812dc7d3da92e4 3cefdc3128f2ea2ef2475e7f8697ec1d98865999 Jason E. Aten <j.e.aten@gmail.com> 1490918432 -0500	rebase: drop down to *32 initial{Conn}WindowSize
+3cefdc3128f2ea2ef2475e7f8697ec1d98865999 3cefdc3128f2ea2ef2475e7f8697ec1d98865999 Jason E. Aten <j.e.aten@gmail.com> 1490918432 -0500	rebase finished: returning to refs/heads/master

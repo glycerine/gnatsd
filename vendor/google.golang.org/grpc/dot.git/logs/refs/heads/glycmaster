@@ -1,0 +1,2 @@
+0000000000000000000000000000000000000000 9720953c46fbe52715000ded6adaa299207127b5 Jason E. Aten <jaten@saucelabs.com> 1490918089 -0500	branch: Created from HEAD
+9720953c46fbe52715000ded6adaa299207127b5 e42107011e289ffe40269db40a9d7900b578d37f Jason E. Aten <j.e.aten@gmail.com> 1490918157 -0500	commit: drop down to *32 initial{Conn}WindowSize
