@@ -303,7 +303,7 @@ func (peer *Peer) doGrpcClientSendFileSetRequest(req *api.BcastSetRequest, cs *c
 			SkipEncryption:       peer.SkipEncryption,
 		}
 
-		clicfg.ClientSendFile(string(req.Ki.Key), reqBytes, isBcastSet)
+		clicfg.ClientSendFile(string(req.Ki.Key), reqBytes, isBcastSet, peer.loc.ID)
 
 		//p("%s in doGrpcClientSendFileSetRequest, after clicfg.ClientSendFile()", peer.loc.ID)
 	}
@@ -332,7 +332,7 @@ func (peer *Peer) clientDoGrpcSendFileBcastGetReply(bgr *api.BcastGetRequest, re
 	panicOn(err)
 
 	isBcastSet := false
-	return clicfg.ClientSendFile(string(bgr.Key), replyData, isBcastSet)
+	return clicfg.ClientSendFile(string(bgr.Key), replyData, isBcastSet, peer.loc.ID)
 }
 
 func (peer *Peer) BackgroundReceiveBcastSetAndWriteToBolt() {

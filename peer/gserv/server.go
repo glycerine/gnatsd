@@ -19,12 +19,17 @@ import (
 	"github.com/glycerine/blake2b" // vendor https://github.com/dchest/blake2b"
 
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/grpclog"
 
 	"github.com/glycerine/bchan"
 	"github.com/glycerine/hnatsd/peer/api"
 	pb "github.com/glycerine/hnatsd/peer/streambigfile"
 )
+
+var utclog *log.Logger
+
+func init() {
+	utclog = log.New(os.Stderr, "", log.LUTC|log.LstdFlags|log.Lmicroseconds)
+}
 
 type PeerServerClass struct {
 	lgs                api.LocalGetSet
@@ -54,7 +59,7 @@ func (s *PeerServerClass) IncrementGotFileCount() {
 //  because the client called SendFile() on the other end.
 //
 func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
-	p("%s peer.Server SendFile starting!", s.cfg.MyID)
+	utclog.Printf("%s peer.Server SendFile starting!", s.cfg.MyID)
 	var chunkCount int64
 	path := ""
 	var hasher hash.Hash
@@ -77,7 +82,7 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 		finalChecksum = []byte(hasher.Sum(nil))
 		endTime := time.Now()
 
-		//p("%s this server.SendFile() call got %v chunks, byteCount=%v. with final checksum '%x'. defer running/is returning with err='%v'", s.cfg.MyID, chunkCount, bytesSeen, finalChecksum, err)
+		utclog.Printf("%s this server.SendFile() call got %v chunks, byteCount=%v. with final checksum '%x'. defer running/is returning with err='%v'", s.cfg.MyID, chunkCount, bytesSeen, finalChecksum, err)
 		errStr := ""
 		if err != nil {
 			errStr = err.Error()
@@ -91,7 +96,7 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 			Err:              errStr,
 		})
 		if sacErr != nil {
-			log.Printf("warning: sacErr='%s' in gserv server.go PeerServerClass.SendFile() attempt to stream.SendAndClose().", sacErr)
+			utclog.Printf("warning: sacErr='%s' in gserv server.go PeerServerClass.SendFile() attempt to stream.SendAndClose().", sacErr)
 		}
 	}()
 
@@ -235,7 +240,7 @@ func MainExample() {
 	if cfg.CpuProfilePath != "" {
 		f, err := os.Create(cfg.CpuProfilePath)
 		if err != nil {
-			log.Fatal(err)
+			utclog.Fatal(err)
 		}
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
@@ -243,7 +248,7 @@ func MainExample() {
 
 	err = cfg.ValidateConfig()
 	if err != nil {
-		log.Fatalf("%s command line flag error: '%s'", ProgramName, err)
+		utclog.Fatalf("%s command line flag error: '%s'", ProgramName, err)
 	}
 	cfg.SshegoCfg = sshegoCfg
 	//	cfg.StartGrpcServer()
@@ -289,7 +294,7 @@ func (cfg *ServerConfig) StartGrpcServer(
 	}
 	lis, err := net.Listen("tcp", fmt.Sprintf("%v:%d", gRpcHost, gRpcBindPort))
 	if err != nil {
-		grpclog.Fatalf("failed to listen: %v", err)
+		utclog.Fatalf("failed to listen: %v", err)
 	}
 
 	var opts []grpc.ServerOption
@@ -302,7 +307,7 @@ func (cfg *ServerConfig) StartGrpcServer(
 			// use TLS
 			creds, err := credentials.NewServerTLSFromFile(cfg.CertPath, cfg.KeyPath)
 			if err != nil {
-				grpclog.Fatalf("Failed to generate credentials %v", err)
+				utclog.Fatalf("Failed to generate credentials %v", err)
 			}
 			opts = []grpc.ServerOption{grpc.Creds(creds)}
 		} else {

@@ -6,6 +6,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"log"
+	"os"
 	"time"
 
 	"github.com/glycerine/blake2b" // vendor https://github.com/dchest/blake2b"
@@ -13,9 +15,14 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/grpclog"
 	"hash"
 )
+
+var utclog *log.Logger
+
+func init() {
+	utclog = log.New(os.Stderr, "", log.LUTC|log.LstdFlags|log.Lmicroseconds)
+}
 
 type client struct {
 	hasher     hash.Hash
@@ -43,7 +50,7 @@ func (c *client) runSendFile(path string, data []byte, maxChunkSize int, isBcast
 	c.startNewFile()
 	stream, err := c.peerClient.SendFile(context.Background())
 	if err != nil {
-		grpclog.Fatalf("%v.SendFile(_) = _, %v", c.peerClient, err)
+		utclog.Fatalf("%v.SendFile(_) = _, %v", c.peerClient, err)
 	}
 	n := len(data)
 	numChunk := n / maxChunkSize
@@ -89,18 +96,18 @@ func (c *client) runSendFile(path string, data []byte, maxChunkSize int, isBcast
 				}
 			}
 			panic(err)
-			//grpclog.Fatalf("%v.Send() = %v", stream, err)
+			//utclog.Fatalf("%v.Send() = %v", stream, err)
 		}
 	}
 	reply, err := stream.CloseAndRecv()
 	if err != nil {
 		// EOF ??
-		grpclog.Printf("%v.CloseAndRecv() got error %v, want %v. reply=%v", stream, err, nil, reply)
+		utclog.Printf("%v.CloseAndRecv() got error %v, want %v. reply=%v", stream, err, nil, reply)
 		return err
 	}
 
 	compared := bytes.Compare(reply.WholeFileBlake2B, []byte(c.hasher.Sum(nil)))
-	grpclog.Printf("Reply saw checksum: '%x' match: %v; size sent = %v, size received = %v", reply.WholeFileBlake2B, compared == 0, len(data), reply.SizeInBytes)
+	utclog.Printf("Reply saw checksum: '%x' match: %v; size sent = %v, size received = %v", reply.WholeFileBlake2B, compared == 0, len(data), reply.SizeInBytes)
 
 	if int64(len(data)) != reply.SizeInBytes {
 		panic("size mismatch")
@@ -138,7 +145,7 @@ func SequentialPayload(n int64) []byte {
 	return by
 }
 
-func (cfg *ClientConfig) ClientSendFile(path string, data []byte, isBcastSet bool) error {
+func (cfg *ClientConfig) ClientSendFile(path string, data []byte, isBcastSet bool, myID string) error {
 
 	var opts []grpc.DialOption
 	if cfg.SkipEncryption {
@@ -174,7 +181,7 @@ func (cfg *ClientConfig) ClientSendFile(path string, data []byte, isBcastSet boo
 	elap := t1.Sub(t0)
 	_ = mb
 	_ = elap
-	//p("c: elap time to send %v MB was %v => %.03f MB/sec", mb, elap, mb/(float64(elap)/1e9))
+	utclog.Printf("%s ClientSendFile: elap time to runSendFile(path='%s', len(data)=%v) on %v MB was %v => %.03f MB/sec", myID, path, len(data), mb, elap, mb/(float64(elap)/1e9))
 	return nil
 }
 
@@ -188,7 +195,7 @@ func (cfg *ClientConfig) setupTLS(opts *[]grpc.DialOption) {
 		var err error
 		creds, err = credentials.NewClientTLSFromFile(cfg.CertPath, sn)
 		if err != nil {
-			grpclog.Fatalf("Failed to create TLS credentials %v", err)
+			utclog.Fatalf("Failed to create TLS credentials %v", err)
 		}
 	} else {
 		creds = credentials.NewClientTLSFromCert(nil, sn)
