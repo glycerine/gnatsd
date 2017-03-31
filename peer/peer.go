@@ -501,6 +501,9 @@ func (peer *Peer) LeadTransferCheckpoint(key, chkptData []byte, when time.Time) 
 		// checkpoint it... unless it was from ourselves!
 		if ki.Who != peer.loc.ID {
 			// checkpoint it
+
+			mylog.Printf("ki.Who='%s' != peer.loc.ID='%s', doing LocalSet(ki.Key='%s')", ki.Who, peer.loc.ID, string(ki.Key))
+
 			err = peer.LocalSet(ki)
 			if err != nil {
 				return err
