@@ -190,7 +190,7 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 					return fmt.Errorf("gserv/server.go SendFile(): req.UnmarshalMsg() errored '%v'", err)
 				}
 
-				utclog.Printf("%s sees last chunk of file with nk.OriginalStartSendTime='%v'. Received from a BcastSet() call [isBcastSet=%v]. Got request from '%s' to set key '%s' with data of len %v. checksum='%x'.", s.cfg.MyID, nk.OriginalStartSendTime, isBcastSet, req.FromID, req.Ki.Key, len(req.Ki.Val), nk.Blake2BCumulative)
+				utclog.Printf("%s sees last chunk of file with nk.OriginalStartSendTime='%v'. Received from a BcastSet() call [isBcastSet=%v]. Got request from '%s' to set key '%s' with data of len %v. checksum='%x'.", s.cfg.MyID, time.Unix(0, int64(nk.OriginalStartSendTime)), isBcastSet, req.FromID, req.Ki.Key, len(req.Ki.Val), nk.Blake2BCumulative)
 
 				s.IncrementGotFileCount()
 
@@ -209,7 +209,7 @@ func (s *PeerServerClass) SendFile(stream pb.Peer_SendFileServer) (err error) {
 					return fmt.Errorf("gserv/server.go SendFile(): reply.UnmarshalMsg() errored '%v'", err)
 				}
 
-				utclog.Printf("%s sees last chunk of file with nk.OriginalStartSendTime='%v'. Received from a BcastGet() call [isBcastSet=%v]. got request from '%s' to set key '%s' with data of len %v. checksum='%x'.", s.cfg.MyID, nk.OriginalStartSendTime, isBcastSet, reply.FromID, reply.Ki.Key, len(reply.Ki.Val), nk.Blake2BCumulative)
+				utclog.Printf("%s sees last chunk of file with nk.OriginalStartSendTime='%v'. Received from a BcastGet() call [isBcastSet=%v]. got request from '%s' to set key '%s' with data of len %v. checksum='%x'.", s.cfg.MyID, time.Unix(0, int64(nk.OriginalStartSendTime)), isBcastSet, reply.FromID, reply.Ki.Key, len(reply.Ki.Val), nk.Blake2BCumulative)
 
 				// notify peer by sending on cfg.ServerGotGetReply
 				select {
