@@ -368,11 +368,11 @@ func (peer *Peer) setupNatsClient() error {
 	// reporting
 	// problem: reporting every 5msec, not good
 	nc.Subscribe(peer.subjMembership, func(msg *nats.Msg) {
-		mylog.Printf("peer received subjMembership: "+
-			"Received on [%s]: '%s'",
-			msg.Subject,
-			string(msg.Data))
-
+		/*mylog.Printf("peer received subjMembership: "+
+		"Received on [%s]: '%s'",
+		msg.Subject,
+		string(msg.Data))
+		*/
 		var laf LeadAndFollowList
 		json.Unmarshal(msg.Data, &laf)
 		peer.mut.Lock()

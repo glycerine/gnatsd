@@ -245,7 +245,7 @@ func (peer *Peer) BcastSet(ki *api.KeyInv) error {
 	//p("BcastSet sees numPeers = %v", numPeers)
 
 	cs, _ := list2status(peers)
-	mylog.Printf("BcastSet: we have clusterStatus: '%s'", &cs)
+	//mylog.Printf("BcastSet: we have clusterStatus: '%s'", &cs)
 
 	req := &api.BcastSetRequest{
 		Ki:     ki,
