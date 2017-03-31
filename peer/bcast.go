@@ -165,6 +165,7 @@ func (peer *Peer) ServerHandleBcastGet(msg *nats.Msg) error {
 
 	// assemble our response/reply
 	var reply api.BcastGetReply
+	reply.FromID = peer.loc.ID
 
 	ki, err := peer.LocalGet(key, includeValue)
 	if err != nil {
@@ -172,6 +173,7 @@ func (peer *Peer) ServerHandleBcastGet(msg *nats.Msg) error {
 		reply.Err = err.Error()
 	} else {
 		reply.Ki = ki
+		reply.Ki.Who = reply.FromID // tell recipient who this read came from.
 	}
 	//p("debug peer.LocalGet(key='%s') returned ki.Key='%s' and ki.Val='%s'", string(key), string(ki.Key), string(ki.Val[:intMin(100, len(ki.Val))]))
 

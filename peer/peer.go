@@ -451,42 +451,77 @@ type Saver interface {
 	WriteKv(key, val []byte, timestamp time.Time) error
 }
 
-// LeadTransferCheckpoint is called when we've just generated
-// a checkpoint and need to propagate it out to our followers.
-func (peer *Peer) LeadTransferCheckpoint(chkptData []byte) error {
+// LeadTransferCheckpoint is the raison d'etre of
+// the peer libary. This function is called
+// called when we've just generated
+// a checkpoint and need to propagate
+// it out to our followers. It is safe to be
+// called by followers, but that should
+// be avoided since the background peer
+// will already be checkpointing when
+// it receives data from the lead.
+//
+// The first time the lead calls this,
+// it should be with chkptData == nil.
+// This will signal to a new lead
+// that it should get
+// the most recent checkpoint from
+// the cluster (including
+// ourselves) so that new leads taking
+// over don't ignore the very
+// recent state from any previous lead.
+//
+func (peer *Peer) LeadTransferCheckpoint(key, chkptData []byte, when time.Time) error {
 	//p("top of LeadTransferCheckpoint")
+	var list interface{}
 	select {
-	case list := <-peer.LeadAndFollowBchan.Ch:
-		peer.LeadAndFollowBchan.BcastAck()
-		laf := list.(*LeadAndFollowList)
-
-		cs, _ := list2status(laf)
-		mylog.Printf("LeadTransferCheckpoint(): we have clusterStatus: '%s'", &cs)
-
-		if laf.MyID != laf.LeadID {
-			// follower, don't transmit checkpoints, should not really even
-			// be here... but might be a delay in recognizing that.
-			return ErrAmFollower
-		}
-
-		mylog.Printf("MyID:'%v' I AM LEAD. I have %v follows.", laf.MyID, len(cs.follow))
-		peer.LeadStatus.SetIsLead(true, cs)
-
-		if len(cs.follow) == 0 {
-			return ErrNoFollowers
-		}
-
-		// if we are lead:
-		//   if we are newly lead, at startup:
-		//      1) poll and recover state from latest checkpoint
-		// 2) send checkpoints to followers every so often
-
 	case <-peer.Halt.ReqStop.Chan:
 		// shutting down.
 		mylog.Printf("shutting down on request from peer.Halt.ReqStop.Chan")
 		return ErrShutdown
+
+	case list = <-peer.LeadAndFollowBchan.Ch:
+		peer.LeadAndFollowBchan.BcastAck()
 	}
-	return nil
+
+	laf := list.(*LeadAndFollowList)
+
+	cs, _ := list2status(laf)
+	mylog.Printf("LeadTransferCheckpoint(): we have clusterStatus: '%s'", &cs)
+
+	if len(chkptData) == 0 {
+		// the first time, we get the latest from
+		// the cluster. Whether follow or lead
+		// it doesn't matter.
+		ki, err := peer.GetLatest(key, true)
+		if err != nil {
+			return err
+		}
+
+		// checkpoint it... unless it was from ourselves!
+		if ki.Who != peer.loc.ID {
+			// checkpoint it
+			err = peer.LocalSet(ki)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	if laf.MyID != laf.LeadID {
+		// follower, don't transmit checkpoints, should not really even
+		// be here... but might be a delay in recognizing that.
+		return ErrAmFollower
+	}
+
+	mylog.Printf("MyID:'%v' I AM LEAD. I have %v follows.",
+		laf.MyID, len(cs.follow))
+	peer.LeadStatus.SetIsLead(true, cs)
+
+	// Since we are lead, we send this checkpoint out.
+	// BcastSet does the LocalSet for us.
+	return peer.BcastSet(&api.KeyInv{Key: key, Val: chkptData, When: when})
 }
 
 func (peer *Peer) AmFollow() bool {
