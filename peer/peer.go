@@ -179,9 +179,10 @@ func (peer *Peer) GetGrpcPorts() (xport, iport int) {
 		peer.GservCfg.InternalLsnPort
 }
 
-func (peer *Peer) SetGrpcPorts(xport, iport int) {
+func (peer *Peer) SetGrpcPorts(xport, iport int, host string) {
 	peer.GservCfg.ExternalLsnPort = xport
 	peer.GservCfg.InternalLsnPort = iport
+	peer.GservCfg.Host = host
 }
 
 // Start launches an embedded
@@ -686,7 +687,9 @@ func (peer *Peer) StartBackgroundCheckpointdRecv(myID, myFollowSubj string) {
 
 		// set up the GservCfg
 		peer.GservCfg.MyID = myID
-		peer.GservCfg.Host = peer.serverOpts.Host
+		if peer.GservCfg.Host == "" {
+			peer.GservCfg.Host = peer.serverOpts.Host
+		}
 		peer.GservCfg.SkipEncryption = peer.SkipEncryption
 		peer.GservCfg.SshegoCfg = &tun.SshegoConfig{
 			Username:                peer.serverOpts.Username,
