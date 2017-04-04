@@ -122,6 +122,10 @@ func has(haystack []string, needle string) bool {
 // to form a cluster, the -routes of subsequent nodes
 // need to point at one of the -cluster of an earlier started node.
 //
+// After NewPeer() and before calling Start(), the
+// Peer.SetGrpcPorts() method should be called to establish
+// which port(s) to listen on.
+//
 func NewPeer(args, whoami string) (*Peer, error) {
 
 	saver, err := NewBoltSaver(whoami+".boltdb", whoami)
@@ -145,6 +149,10 @@ func NewPeer(args, whoami string) (*Peer, error) {
 		Whoami:                   whoami,
 		SshdReady:                make(chan bool),
 		lastSeenInternalPortAloc: make(map[string]health.AgentLoc),
+
+		// MyID will be fixed in StartBackgroundSshdRecv(),
+		// so empty string suffices for now:
+		GservCfg: gserv.NewServerConfig(""),
 	}
 	serv, opts, err := hnatsdMain(argv)
 	if err != nil {
@@ -164,6 +172,16 @@ func NewPeer(args, whoami string) (*Peer, error) {
 	r.plog = logger.NewStdLogger(micros, debug, trace, colors, pid, log.LUTC)
 
 	return r, nil
+}
+
+func (peer *Peer) GetGrpcPorts() (xport, iport int) {
+	return peer.GservCfg.ExternalLsnPort,
+		peer.GservCfg.InternalLsnPort
+}
+
+func (peer *Peer) SetGrpcPorts(xport, iport int) {
+	peer.GservCfg.ExternalLsnPort = xport
+	peer.GservCfg.InternalLsnPort = iport
 }
 
 // Start launches an embedded
@@ -621,10 +639,36 @@ func intMax(a, b int) int {
 // (recognized by a more recent timestamp), then
 // save it to disk (this dedups if we get multiples of the same).
 //
+// The host address bound will be taken from peer.serverOpts.Host
+// which corresponds to the --addr in the nats options.
+//
+// After NewPeer() and before calling this routine, the
+// Peer.SetGrpcPorts() method should be called to establish
+// which port(s) to listen on.
+//
 func (peer *Peer) StartBackgroundSshdRecv(myID, myFollowSubj string) {
 	utclog.Printf("beginning StartBackgroundSshdRecv(myID='%s', "+
 		"myFollowSubj='%s'). peer.SkipEncryption=%v",
 		myID, myFollowSubj, peer.SkipEncryption)
+
+	if peer.GservCfg.ExternalLsnPort == 0 {
+		portx, lsnx := getAvailPort()
+		lsnx.Close()
+		peer.GservCfg.ExternalLsnPort = portx
+		utclog.Printf("warning: detected peer.GservCfg.ExternalLsnPort == 0. You should call peer.SetGrpcPrts() before invoking StartBackgroundSsdhRecv. We picked a random port, %v, for grpc external listen", portx)
+	}
+
+	if peer.GservCfg.InternalLsnPort == 0 {
+		if !peer.SkipEncryption {
+			// really only need internal port for SSH...
+			// but for TLS it won't hurt to have
+			// an unused internal port set.
+			porti, lsni := getAvailPort()
+			lsni.Close()
+			peer.GservCfg.InternalLsnPort = porti
+			utclog.Printf("warning: detected peer.GservCfg.InternalLsnPort == 0. You should call peer.SetGrpcPrts() before invoking StartBackgroundSsdhRecv. We picked a random port, %v, for grpc internal listen", porti)
+		}
+	}
 
 	go func() {
 		defer func() {
@@ -640,24 +684,14 @@ func (peer *Peer) StartBackgroundSshdRecv(myID, myFollowSubj string) {
 		// of a checkpoint file; and serves
 		// files upon demand.
 
-		port0, lsn0 := getAvailPort()
-		port1, lsn1 := getAvailPort()
-		port2, lsn2 := getAvailPort()
-		lsn0.Close()
-		lsn1.Close()
-		lsn2.Close()
-
-		peer.GservCfg = gserv.NewServerConfig(myID)
-		peer.GservCfg.SkipEncryption = peer.SkipEncryption
+		// set up the GservCfg
+		peer.GservCfg.MyID = myID
 		peer.GservCfg.Host = peer.serverOpts.Host
-		peer.GservCfg.ExternalLsnPort = port0
-		peer.GservCfg.InternalLsnPort = port1
+		peer.GservCfg.SkipEncryption = peer.SkipEncryption
 		peer.GservCfg.SshegoCfg = &tun.SshegoConfig{
 			Username:                peer.serverOpts.Username,
 			TestAllowOneshotConnect: peer.TestAllowOneshotConnect,
 		}
-
-		//p("%s StartBackgroundSshdRecv: peer.GservCfg.SkipEncryption = %v", peer.loc.ID, peer.GservCfg.SkipEncryption)
 
 		// fill default SshegoCfg
 		cfg := peer.GservCfg.SshegoCfg
@@ -669,6 +703,9 @@ func (peer *Peer) StartBackgroundSshdRecv(myID, myFollowSubj string) {
 
 		// make these unique for each peer by adding Whoami
 		cfg.EmbeddedSSHdHostDbPath += ("." + peer.Whoami)
+
+		port2, lsn2 := getAvailPort()
+		lsn2.Close()
 		cfg.SshegoSystemMutexPort = port2
 
 		peer.grpcAddr = fmt.Sprintf("%v:%v", peer.GservCfg.Host, peer.GservCfg.ExternalLsnPort)
