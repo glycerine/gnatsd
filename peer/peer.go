@@ -212,7 +212,7 @@ func (peer *Peer) Start() error {
 		cs, myFollowSubj := list2status(laf)
 		utclog.Printf("peer.Start(): we have clusterStatus: '%s'", &cs)
 
-		peer.StartBackgroundSshdRecv(laf.MyID, myFollowSubj)
+		peer.StartBackgroundCheckpointdRecv(laf.MyID, myFollowSubj)
 	}
 	return nil
 }
@@ -506,7 +506,7 @@ func (peer *Peer) LeadTransferCheckpoint(key, chkptData []byte, when time.Time) 
 		utclog.Printf("LeadTransferCheckpoint got back from GetLatest ki.Key='%s'; ki.When='%s'; ki.Blake2b='%x'. len(ki.Val)=%v. ki.Who='%s'", string(ki.Key), ki.When, ki.Blake2b, len(ki.Val), ki.Who)
 
 		// checkpoint it... unless it was from ourselves!
-		if ki.Who != peer.loc.ID {
+		if ki.Who != peer.loc.ID && ki.Who != peer.GservCfg.SshegoCfg.EmbeddedSSHdHostDbPath {
 			// checkpoint it
 
 			utclog.Printf("ki.Who='%s' != peer.loc.ID='%s', doing LocalSet(ki.Key='%s'. checksum='%x')", ki.Who, peer.loc.ID, string(ki.Key), ki.Blake2b)
@@ -515,7 +515,7 @@ func (peer *Peer) LeadTransferCheckpoint(key, chkptData []byte, when time.Time) 
 				return err
 			}
 		} else {
-			utclog.Printf("ki.Who='%s' == peer.loc.ID='%s', so skipping LocalSet().doing LocalSet(ki.Key='%s'. checksum='%x')", ki.Who, peer.loc.ID, string(ki.Key), ki.Blake2b)
+			utclog.Printf("ki.Who='%s' == peer.loc.ID='%s' or peer.GservCfg.SshegoCfg.EmbeddedSSHdHostDbPath='%s', so skipping LocalSet().doing LocalSet(ki.Key='%s'. checksum='%x')", ki.Who, peer.loc.ID, peer.GservCfg.SshegoCfg.EmbeddedSSHdHostDbPath, string(ki.Key), ki.Blake2b)
 		}
 		return nil
 	}
@@ -631,7 +631,7 @@ func intMax(a, b int) int {
 // session in Listen for checkpoints.
 // ==================================
 
-// StartBackroundSshdRecv will keep a peer
+// StartBackroundCheckpointdRecv will keep a peer
 // running in the background and
 // always accepting and writing checkpoints (as
 // long as we are not lead when they are received).
@@ -646,8 +646,8 @@ func intMax(a, b int) int {
 // Peer.SetGrpcPorts() method should be called to establish
 // which port(s) to listen on.
 //
-func (peer *Peer) StartBackgroundSshdRecv(myID, myFollowSubj string) {
-	utclog.Printf("beginning StartBackgroundSshdRecv(myID='%s', "+
+func (peer *Peer) StartBackgroundCheckpointdRecv(myID, myFollowSubj string) {
+	utclog.Printf("beginning StartBackgroundCheckpointdRecv(myID='%s', "+
 		"myFollowSubj='%s'). peer.SkipEncryption=%v",
 		myID, myFollowSubj, peer.SkipEncryption)
 
@@ -674,7 +674,7 @@ func (peer *Peer) StartBackgroundSshdRecv(myID, myFollowSubj string) {
 		defer func() {
 			peer.Halt.ReqStop.Close()
 			peer.Halt.Done.Close()
-			utclog.Printf("StartBackgroundSshdRecv(myID='%s', "+
+			utclog.Printf("StartBackgroundCheckpointdRecv(myID='%s', "+
 				"myFollowSubj='%s') has shutdown.",
 				myID, myFollowSubj)
 		}()
@@ -692,6 +692,8 @@ func (peer *Peer) StartBackgroundSshdRecv(myID, myFollowSubj string) {
 			Username:                peer.serverOpts.Username,
 			TestAllowOneshotConnect: peer.TestAllowOneshotConnect,
 		}
+
+		//p("%s StartBackgroundCheckpointdRecv: peer.GservCfg.SkipEncryption = %v", peer.loc.ID, peer.GservCfg.SkipEncryption)
 
 		// fill default SshegoCfg
 		cfg := peer.GservCfg.SshegoCfg
