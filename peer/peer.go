@@ -830,7 +830,7 @@ func (peer *Peer) StartPeriodicClusterAgentLocQueries() {
 					// for this peer.
 					peer.mut.Lock()
 					peer.lastSeenInternalPortAloc[mem.ID] = aloc
-					//p("setting peer.lastSeenInternalPortAloc[mem.ID='%s'] = aloc = %#v", mem.ID, aloc)
+					utclog.Printf("setting peer.lastSeenInternalPortAloc[mem.ID='%s'] = aloc = %#v", mem.ID, aloc)
 					peer.mut.Unlock()
 				}
 			case <-peer.Halt.ReqStop.Chan:

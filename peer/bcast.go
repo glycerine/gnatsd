@@ -306,9 +306,9 @@ func (peer *Peer) doGrpcClientSendFileSetRequest(req *api.BcastSetRequest, cs *c
 		clicfg.ClientSendFile(string(req.Ki.Key), reqBytes, isBcastSet, peer.loc.ID)
 
 		//p("%s in doGrpcClientSendFileSetRequest, after clicfg.ClientSendFile()", peer.loc.ID)
-	}
 
-	//p("%s BcastSet successfully doGrpcClientSendFileSetRequest to %s:%v", peer.loc.ID, host, eport)
+		utclog.Printf("%s BcastSet successfully doGrpcClientSendFileSetRequest to external host:port = %v:%v. from fullLoc.Grpc='%#v'", peer.loc.ID, ehost, eport, fullLoc.Grpc)
+	}
 
 	return nil
 }
