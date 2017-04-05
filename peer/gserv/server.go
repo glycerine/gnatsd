@@ -276,12 +276,12 @@ func (cfg *ServerConfig) StartGrpcServer(
 	if cfg.SkipEncryption {
 		// no encryption, only for VPN that already provides it.
 		gRpcBindPort = cfg.ExternalLsnPort
-		gRpcHost = cfg.Host
+		gRpcHost = cfg.ExternalHost
 
 	} else if cfg.UseTLS {
 		// use TLS
 		gRpcBindPort = cfg.ExternalLsnPort
-		gRpcHost = cfg.Host
+		gRpcHost = cfg.ExternalHost
 
 		//p("gRPC with TLS listening on %v:%v", gRpcHost, gRpcBindPort)
 
@@ -313,7 +313,7 @@ func (cfg *ServerConfig) StartGrpcServer(
 			opts = []grpc.ServerOption{grpc.Creds(creds)}
 		} else {
 			// use SSH
-			err = serverSshMain(cfg.SshegoCfg, cfg.Host,
+			err = serverSshMain(cfg.SshegoCfg, cfg.ExternalHost,
 				cfg.ExternalLsnPort, cfg.InternalLsnPort)
 			panicOn(err)
 			close(sshdReady)

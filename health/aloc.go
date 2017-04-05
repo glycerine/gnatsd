@@ -8,14 +8,19 @@ import (
 	"github.com/glycerine/nats"
 )
 
+type HostPort struct {
+	Host string `json:"host"`
+	Port int    `json:"port"`
+}
+
 // ExtInt conveys the external/internal
 // port pairs. Sshd secures external
 // ports, and forwards authenticated
 // connections to localhost:internal port.
 //
 type ExtInt struct {
-	ExternalPort int `json:"externalPort"`
-	InternalPort int `json:"internalPort"`
+	External HostPort `json:"externalHostPort"`
+	Internal HostPort `json:"internalHostPort"`
 }
 
 // AgentLoc conveys to interested parties
@@ -23,7 +28,7 @@ type ExtInt struct {
 // server in the cluster.
 type AgentLoc struct {
 	ID             string `json:"serverId"`
-	Host           string `json:"host"`
+	NatsHost       string `json:"natsHost"`
 	NatsClientPort int    `json:"natsClientPort"`
 
 	Grpc ExtInt `json:"grpc"`
@@ -87,7 +92,7 @@ func slocEqualIgnoreLease(a, b *AgentLoc) bool {
 func natsLocConvert(loc *nats.ServerLoc) *AgentLoc {
 	return &AgentLoc{
 		ID:             loc.ID,
-		Host:           loc.Host,
+		NatsHost:       loc.Host,
 		NatsClientPort: loc.NatsPort,
 		Rank:           loc.Rank,
 		Pid:            os.Getpid(),

@@ -438,7 +438,7 @@ func (m *Membership) start() {
 						curLead.ID,
 						curLead.Rank,
 						curLead.NatsClientPort,
-						curLead.Host,
+						curLead.NatsHost,
 						curLead.Pid,
 						curLead.LeaseExpires.Sub(now))
 
@@ -462,12 +462,12 @@ func (m *Membership) start() {
 								"rank %v; host %v; port %v; pid %v) for %v",
 								m.myLoc.ID,
 								m.myLoc.Rank,
-								m.myLoc.Host,
+								m.myLoc.NatsHost,
 								m.myLoc.NatsClientPort,
 								m.myLoc.Pid,
 								curLead.ID,
 								curLead.Rank,
-								curLead.Host,
+								curLead.NatsHost,
 								curLead.NatsClientPort,
 								curLead.Pid,
 								left)
@@ -730,8 +730,8 @@ func AgentLocLessThan(i, j *AgentLoc) bool {
 	if i.ID != j.ID {
 		return lessThanString(i.ID, j.ID)
 	}
-	if i.Host != j.Host {
-		return lessThanString(i.Host, j.Host)
+	if i.NatsHost != j.NatsHost {
+		return lessThanString(i.NatsHost, j.NatsHost)
 	}
 	if i.NatsClientPort != j.NatsClientPort {
 		return i.NatsClientPort < j.NatsClientPort
@@ -807,7 +807,7 @@ func (m *Membership) setupNatsClient() error {
 		"I am '%s' at '%v:%v'. "+
 		"rank %v",
 		m.myLoc.ID,
-		m.myLoc.Host,
+		m.myLoc.NatsHost,
 		m.myLoc.NatsClientPort,
 		m.myLoc.Rank)
 
@@ -906,7 +906,7 @@ func (m *Membership) locDifferent(b *nats.ServerLoc) bool {
 	if b.Rank != m.myLoc.Rank {
 		return true
 	}
-	if b.Host != m.myLoc.Host {
+	if b.Host != m.myLoc.NatsHost {
 		return true
 	}
 	if b.NatsPort != m.myLoc.NatsClientPort {
@@ -919,7 +919,7 @@ func (m *Membership) setLoc(b *nats.ServerLoc) {
 	m.mu.Lock()
 	m.myLoc.ID = b.ID
 	m.myLoc.Rank = b.Rank
-	m.myLoc.Host = b.Host
+	m.myLoc.NatsHost = b.Host
 	m.myLoc.NatsClientPort = b.NatsPort
 	m.myLoc.Pid = os.Getpid()
 	m.mu.Unlock()

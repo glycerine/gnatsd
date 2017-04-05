@@ -476,7 +476,7 @@ func Test104ReceiveOwnSends(t *testing.T) {
 		// send on subjAllCall
 		sl := AgentLoc{
 			ID:             "abc",
-			Host:           "here",
+			NatsHost:       "here",
 			NatsClientPort: 99,
 			Rank:           -100,
 			LeaseExpires:   now.Add(time.Hour),

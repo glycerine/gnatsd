@@ -38,7 +38,7 @@ func (peer *Peer) ClientInitiateBcastGet(key []byte, includeValue bool, timeout 
 		Key:            key,
 		Who:            who,
 		IncludeValue:   includeValue,
-		ReplyGrpcHost:  peer.GservCfg.Host,
+		ReplyGrpcHost:  peer.GservCfg.ExternalHost,
 		ReplyGrpcXPort: peer.GservCfg.ExternalLsnPort,
 		ReplyGrpcIPort: peer.GservCfg.InternalLsnPort,
 	}
@@ -285,14 +285,14 @@ func (peer *Peer) doGrpcClientSendFileSetRequest(req *api.BcastSetRequest, cs *c
 			//p("fullLoc=%#v", fullLoc)
 		}
 
-		host := fullLoc.Host
-		eport := fullLoc.Grpc.ExternalPort
-		iport := fullLoc.Grpc.InternalPort
+		ehost := fullLoc.Grpc.External.Host
+		eport := fullLoc.Grpc.External.Port
+		iport := fullLoc.Grpc.Internal.Port
 
 		clicfg := &gcli.ClientConfig{
 			AllowNewServer:          peer.SshClientAllowsNewSshdServer,
 			TestAllowOneshotConnect: peer.TestAllowOneshotConnect,
-			ServerHost:              host,
+			ServerHost:              ehost,
 			ServerPort:              eport,
 			ServerInternalHost:      "127.0.0.1",
 			ServerInternalPort:      iport,

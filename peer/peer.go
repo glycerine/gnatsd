@@ -182,7 +182,7 @@ func (peer *Peer) GetGrpcPorts() (xport, iport int) {
 func (peer *Peer) SetGrpcPorts(xport, iport int, host string) {
 	peer.GservCfg.ExternalLsnPort = xport
 	peer.GservCfg.InternalLsnPort = iport
-	peer.GservCfg.Host = host
+	peer.GservCfg.ExternalHost = host
 }
 
 // Start launches an embedded
@@ -405,6 +405,8 @@ func (peer *Peer) setupNatsClient() error {
 		// local and grab the info we need to share
 		peer.mut.Lock()
 		aloc := peer.loc
+		externalHost := peer.GservCfg.ExternalHost
+		internalHost := peer.GservCfg.InternalHost
 		externalPort := peer.GservCfg.ExternalLsnPort
 		internalPort := peer.GservCfg.InternalLsnPort
 		peer.mut.Unlock()
@@ -419,8 +421,10 @@ func (peer *Peer) setupNatsClient() error {
 		*/
 		switch subSubject {
 		case "grpc-port-query":
-			aloc.Grpc.ExternalPort = externalPort
-			aloc.Grpc.InternalPort = internalPort
+			aloc.Grpc.External.Host = externalHost
+			aloc.Grpc.External.Port = externalPort
+			aloc.Grpc.Internal.Host = internalHost
+			aloc.Grpc.Internal.Port = internalPort
 
 			err = nc.Publish(msg.Reply, []byte(aloc.String()))
 			if err != nil {
@@ -438,7 +442,7 @@ func (peer *Peer) setupNatsClient() error {
 
 func agentLoc2RecvCpSubj(a health.AgentLoc) string {
 	return fmt.Sprintf("recv-chkpt;id:%v;host:%v;port:%v;rank:%v;pid:%v",
-		a.ID, a.Host, a.NatsClientPort, a.Rank, a.Pid)
+		a.ID, a.NatsHost, a.NatsClientPort, a.Rank, a.Pid)
 }
 
 var ErrShutdown = fmt.Errorf("shutting down")
@@ -687,9 +691,14 @@ func (peer *Peer) StartBackgroundCheckpointdRecv(myID, myFollowSubj string) {
 
 		// set up the GservCfg
 		peer.GservCfg.MyID = myID
-		if peer.GservCfg.Host == "" {
-			peer.GservCfg.Host = peer.serverOpts.Host
+		if peer.GservCfg.ExternalHost == "" {
+			peer.GservCfg.ExternalHost = peer.serverOpts.Host
 		}
+
+		if peer.GservCfg.InternalHost == "" {
+			peer.GservCfg.InternalHost = "127.0.0.1"
+		}
+
 		peer.GservCfg.SkipEncryption = peer.SkipEncryption
 		peer.GservCfg.SshegoCfg = &tun.SshegoConfig{
 			Username:                peer.serverOpts.Username,
@@ -713,7 +722,7 @@ func (peer *Peer) StartBackgroundCheckpointdRecv(myID, myFollowSubj string) {
 		lsn2.Close()
 		cfg.SshegoSystemMutexPort = port2
 
-		peer.grpcAddr = fmt.Sprintf("%v:%v", peer.GservCfg.Host, peer.GservCfg.ExternalLsnPort)
+		peer.grpcAddr = fmt.Sprintf("%v:%v", peer.GservCfg.ExternalHost, peer.GservCfg.ExternalLsnPort)
 
 		peer.BackgroundReceiveBcastSetAndWriteToBolt()
 
@@ -783,7 +792,7 @@ func (peer *Peer) GetGrpcAddr() string {
 func natsLocConvert(loc *nats.ServerLoc) *health.AgentLoc {
 	return &health.AgentLoc{
 		ID:             loc.ID,
-		Host:           loc.Host,
+		NatsHost:       loc.Host,
 		NatsClientPort: loc.NatsPort,
 		Rank:           loc.Rank,
 		Pid:            loc.Pid,
