@@ -179,10 +179,10 @@ func (peer *Peer) GetGrpcPorts() (xport, iport int) {
 		peer.GservCfg.InternalLsnPort
 }
 
-func (peer *Peer) SetGrpcPorts(xport, iport int, host string) {
+func (peer *Peer) SetGrpcPorts(xport, iport int, xhost string) {
 	peer.GservCfg.ExternalLsnPort = xport
 	peer.GservCfg.InternalLsnPort = iport
-	peer.GservCfg.ExternalHost = host
+	peer.GservCfg.ExternalHost = xhost
 }
 
 // Start launches an embedded
@@ -441,8 +441,8 @@ func (peer *Peer) setupNatsClient() error {
 }
 
 func agentLoc2RecvCpSubj(a health.AgentLoc) string {
-	return fmt.Sprintf("recv-chkpt;id:%v;host:%v;port:%v;rank:%v;pid:%v",
-		a.ID, a.NatsHost, a.NatsClientPort, a.Rank, a.Pid)
+	return fmt.Sprintf("recv-chkpt;id:%v;nats-host:%v;nats-client-port:%v;rank:%v;pid:%v;grpc.ext=%v:%v",
+		a.ID, a.NatsHost, a.NatsClientPort, a.Rank, a.Pid, a.Grpc.External.Host, a.Grpc.External.Port)
 }
 
 var ErrShutdown = fmt.Errorf("shutting down")
