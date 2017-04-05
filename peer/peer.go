@@ -150,7 +150,7 @@ func NewPeer(args, whoami string) (*Peer, error) {
 		SshdReady:                make(chan bool),
 		lastSeenInternalPortAloc: make(map[string]health.AgentLoc),
 
-		// MyID will be fixed in StartBackgroundSshdRecv(),
+		// MyID will be fixed in StartBackgroundCheckpointRecv(),
 		// so empty string suffices for now:
 		GservCfg: gserv.NewServerConfig(""),
 	}
@@ -213,7 +213,7 @@ func (peer *Peer) Start() error {
 		cs, myFollowSubj := list2status(laf)
 		utclog.Printf("peer.Start(): we have clusterStatus: '%s'", &cs)
 
-		peer.StartBackgroundCheckpointdRecv(laf.MyID, myFollowSubj)
+		peer.StartBackgroundCheckpointRecv(laf.MyID, myFollowSubj)
 	}
 	return nil
 }
@@ -651,8 +651,8 @@ func intMax(a, b int) int {
 // Peer.SetGrpcPorts() method should be called to establish
 // which port(s) to listen on.
 //
-func (peer *Peer) StartBackgroundCheckpointdRecv(myID, myFollowSubj string) {
-	utclog.Printf("beginning StartBackgroundCheckpointdRecv(myID='%s', "+
+func (peer *Peer) StartBackgroundCheckpointRecv(myID, myFollowSubj string) {
+	utclog.Printf("beginning StartBackgroundCheckpointRecv(myID='%s', "+
 		"myFollowSubj='%s'). peer.SkipEncryption=%v",
 		myID, myFollowSubj, peer.SkipEncryption)
 
@@ -660,7 +660,7 @@ func (peer *Peer) StartBackgroundCheckpointdRecv(myID, myFollowSubj string) {
 		portx, lsnx := getAvailPort()
 		lsnx.Close()
 		peer.GservCfg.ExternalLsnPort = portx
-		utclog.Printf("warning: detected peer.GservCfg.ExternalLsnPort == 0. You should call peer.SetGrpcPrts() before invoking StartBackgroundSsdhRecv. We picked a random port, %v, for grpc external listen", portx)
+		utclog.Printf("warning: detected peer.GservCfg.ExternalLsnPort == 0. You should call peer.SetGrpcPrts() before invoking StartBackgroundCheckpointRecv. We picked a random port, %v, for grpc external listen", portx)
 	}
 
 	if peer.GservCfg.InternalLsnPort == 0 {
@@ -671,7 +671,7 @@ func (peer *Peer) StartBackgroundCheckpointdRecv(myID, myFollowSubj string) {
 			porti, lsni := getAvailPort()
 			lsni.Close()
 			peer.GservCfg.InternalLsnPort = porti
-			utclog.Printf("warning: detected peer.GservCfg.InternalLsnPort == 0. You should call peer.SetGrpcPrts() before invoking StartBackgroundSsdhRecv. We picked a random port, %v, for grpc internal listen", porti)
+			utclog.Printf("warning: detected peer.GservCfg.InternalLsnPort == 0. You should call peer.SetGrpcPrts() before invoking StartBackgroundCheckpointRecv. We picked a random port, %v, for grpc internal listen", porti)
 		}
 	}
 
@@ -679,7 +679,7 @@ func (peer *Peer) StartBackgroundCheckpointdRecv(myID, myFollowSubj string) {
 		defer func() {
 			peer.Halt.ReqStop.Close()
 			peer.Halt.Done.Close()
-			utclog.Printf("StartBackgroundCheckpointdRecv(myID='%s', "+
+			utclog.Printf("StartBackgroundCheckpointRecv(myID='%s', "+
 				"myFollowSubj='%s') has shutdown.",
 				myID, myFollowSubj)
 		}()
@@ -705,7 +705,7 @@ func (peer *Peer) StartBackgroundCheckpointdRecv(myID, myFollowSubj string) {
 			TestAllowOneshotConnect: peer.TestAllowOneshotConnect,
 		}
 
-		//p("%s StartBackgroundCheckpointdRecv: peer.GservCfg.SkipEncryption = %v", peer.loc.ID, peer.GservCfg.SkipEncryption)
+		//p("%s StartBackgroundCheckpointRecv: peer.GservCfg.SkipEncryption = %v", peer.loc.ID, peer.GservCfg.SkipEncryption)
 
 		// fill default SshegoCfg
 		cfg := peer.GservCfg.SshegoCfg
@@ -830,7 +830,7 @@ func (peer *Peer) StartPeriodicClusterAgentLocQueries() {
 					// for this peer.
 					peer.mut.Lock()
 					peer.lastSeenInternalPortAloc[mem.ID] = aloc
-					utclog.Printf("setting peer.lastSeenInternalPortAloc[mem.ID='%s'] = aloc = %#v", mem.ID, aloc)
+					//utclog.Printf("setting peer.lastSeenInternalPortAloc[mem.ID='%s'] = aloc = %#v", mem.ID, aloc)
 					peer.mut.Unlock()
 				}
 			case <-peer.Halt.ReqStop.Chan:
