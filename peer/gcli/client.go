@@ -51,9 +51,21 @@ func (c *client) runSendFile(path string, data []byte, maxChunkSize int, isBcast
 	startOfRunSendFileNanoUint64 := uint64(startOfRunSendFile.UnixNano())
 
 	c.startNewFile()
-	stream, err := c.peerClient.SendFile(context.Background())
-	if err != nil {
-		utclog.Fatalf("%v.SendFile(_) = _, %v", c.peerClient, err)
+	try := 0
+	tryLimit := 5
+	var err error
+	var stream pb.Peer_SendFileClient
+	for {
+		stream, err = c.peerClient.SendFile(context.Background())
+		if err == nil {
+			break
+		}
+		try++
+		if try > tryLimit {
+			panic(fmt.Sprintf("%v.SendFile(_) = _, %v", c.peerClient, err))
+		}
+		utclog.Printf("on try %v of %v, %v.SendFile() got err='%v'", try, tryLimit, c.peerClient, err)
+		time.Sleep(2 * time.Second)
 	}
 	n := len(data)
 	numChunk := n / maxChunkSize
