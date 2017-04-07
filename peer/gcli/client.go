@@ -62,7 +62,9 @@ func (c *client) runSendFile(path string, data []byte, maxChunkSize int, isBcast
 		}
 		try++
 		if try > tryLimit {
-			panic(fmt.Sprintf("%v.SendFile(_) = _, %v", c.peerClient, err))
+			err = fmt.Errorf("%v.SendFile(_) = _, %v", c.peerClient, err)
+			utclog.Printf("%v", err)
+			return err
 		}
 		utclog.Printf("on try %v of %v, %v.SendFile() got err='%v'", try, tryLimit, c.peerClient, err)
 		time.Sleep(2 * time.Second)
