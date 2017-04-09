@@ -30,6 +30,7 @@ SOFTWARE.
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 
 	tun "github.com/glycerine/sshego"
@@ -59,7 +60,7 @@ func serverSshMain(cfg *tun.SshegoConfig, host string, securedPort, targetPort i
 
 	err := cfg.ValidateConfig()
 	if err != nil {
-		utclog.Fatalf("%s command line flag error: '%s'", ProgramName, err)
+		log.Fatalf("%s command line flag error: '%s'", ProgramName, err)
 	}
 	//p("cfg = %#v", cfg)
 	h, err := tun.NewKnownHosts(cfg.ClientKnownHostsPath, tun.KHJson)
@@ -74,7 +75,7 @@ func serverSshMain(cfg *tun.SshegoConfig, host string, securedPort, targetPort i
 		tun.DelUserAndExit(cfg)
 	}
 
-	utclog.Printf("hnatsd/peer/gserv/ssh.go is starting -esshd with addr: %s", cfg.EmbeddedSSHd.Addr)
+	log.Printf("hnatsd/peer/gserv/ssh.go is starting -esshd with addr: %s", cfg.EmbeddedSSHd.Addr)
 	err = cfg.EmbeddedSSHd.ParseAddr()
 	if err != nil {
 		p("hnatsd/peer/gserv/ssh.go cfg.EmbeddedSSHd.ParseAddr() error = '%s'", err)

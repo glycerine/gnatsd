@@ -138,7 +138,7 @@ func (peer *Peer) ServerHandleBcastGet(msg *nats.Msg) error {
 
 	var bgr api.BcastGetRequest
 	bgr.UnmarshalMsg(msg.Data)
-	utclog.Printf("%s peer recevied subjBcastGet for key '%s'",
+	log.Printf("%s peer recevied subjBcastGet for key '%s'",
 		peer.saver.whoami, string(bgr.Key))
 
 	key := bgr.Key
@@ -169,7 +169,7 @@ func (peer *Peer) ServerHandleBcastGet(msg *nats.Msg) error {
 
 	ki, err := peer.LocalGet(key, includeValue)
 	if err != nil {
-		utclog.Printf("peer.LocalGet('%s' returned error '%v'", string(key), err)
+		log.Printf("peer.LocalGet('%s' returned error '%v'", string(key), err)
 		reply.Err = err.Error()
 	} else {
 		reply.Ki = ki
@@ -245,7 +245,7 @@ func (peer *Peer) BcastSet(ki *api.KeyInv) error {
 	//p("BcastSet sees numPeers = %v", numPeers)
 
 	cs, _ := list2status(peers)
-	//utclog.Printf("BcastSet: we have clusterStatus: '%s'", &cs)
+	//log.Printf("BcastSet: we have clusterStatus: '%s'", &cs)
 
 	req := &api.BcastSetRequest{
 		Ki:     ki,
@@ -307,7 +307,7 @@ func (peer *Peer) doGrpcClientSendFileSetRequest(req *api.BcastSetRequest, cs *c
 
 		//p("%s in doGrpcClientSendFileSetRequest, after clicfg.ClientSendFile()", peer.loc.ID)
 
-		utclog.Printf("%s BcastSet successfully doGrpcClientSendFileSetRequest to external host:port = %v:%v. from fullLoc.Grpc='%#v'", peer.loc.ID, ehost, eport, fullLoc.Grpc)
+		log.Printf("%s BcastSet successfully doGrpcClientSendFileSetRequest to external host:port = %v:%v. from fullLoc.Grpc='%#v'", peer.loc.ID, ehost, eport, fullLoc.Grpc)
 	}
 
 	return nil

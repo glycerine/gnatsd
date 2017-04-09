@@ -25,10 +25,9 @@ import (
 	tun "github.com/glycerine/sshego"
 )
 
-var utclog *log.Logger
-
 func init() {
-	utclog = log.New(os.Stderr, "", log.LUTC|log.LstdFlags|log.Lmicroseconds)
+	flags := log.LUTC | log.LstdFlags | log.Lmicroseconds
+	log.SetFlags(flags)
 }
 
 type LeadAndFollowList struct {
@@ -198,7 +197,7 @@ func (peer *Peer) Start() error {
 	//p("%v peer.Start() done with peer.setupNatsClient() err='%v'", peer.loc.ID, err)
 
 	if err != nil {
-		utclog.Printf("warning: not starting background peer goroutine, as we got err from setupNatsCli: '%v'", err)
+		log.Printf("warning: not starting background peer goroutine, as we got err from setupNatsCli: '%v'", err)
 		return err
 	}
 
@@ -211,7 +210,7 @@ func (peer *Peer) Start() error {
 		laf := list.(*LeadAndFollowList)
 
 		cs, myFollowSubj := list2status(laf)
-		utclog.Printf("peer.Start(): we have clusterStatus: '%s'", &cs)
+		log.Printf("peer.Start(): we have clusterStatus: '%s'", &cs)
 
 		peer.StartBackgroundCheckpointRecv(laf.MyID, myFollowSubj)
 	}
@@ -322,14 +321,14 @@ func (peer *Peer) setupNatsClient() error {
 	setScrip, err := nc.Subscribe(peer.subjBcastSet, func(msg *nats.Msg) {
 		var bsr api.BcastSetRequest
 		bsr.UnmarshalMsg(msg.Data)
-		utclog.Printf("peer received subjBcastSet(fromID='%s') for key '%s'",
+		log.Printf("peer received subjBcastSet(fromID='%s') for key '%s'",
 			string(bsr.Ki.Key), bsr.FromID)
 
 		var reply api.BcastSetReply
 
 		err := peer.LocalSet(bsr.Ki)
 		if err != nil {
-			utclog.Printf("peer.LocalSet(key='%s') returned error '%v'", string(bsr.Ki.Key), err)
+			log.Printf("peer.LocalSet(key='%s') returned error '%v'", string(bsr.Ki.Key), err)
 			reply.Err = err.Error()
 		}
 		mm, err := reply.MarshalMsg(nil)
@@ -342,7 +341,7 @@ func (peer *Peer) setupNatsClient() error {
 
 	// reporting
 	nc.Subscribe(peer.subjMemberLost, func(msg *nats.Msg) {
-		utclog.Printf("peer recevied subjMemberLost: "+
+		log.Printf("peer recevied subjMemberLost: "+
 			"Received on [%s]: '%s'",
 			msg.Subject,
 			string(msg.Data))
@@ -356,7 +355,7 @@ func (peer *Peer) setupNatsClient() error {
 
 	// reporting
 	nc.Subscribe(peer.subjMemberAdded, func(msg *nats.Msg) {
-		utclog.Printf("peer recevied subjMemberAdded: Received on [%s]: '%s'",
+		log.Printf("peer recevied subjMemberAdded: Received on [%s]: '%s'",
 			msg.Subject, string(msg.Data))
 
 		var laf LeadAndFollowList
@@ -372,7 +371,7 @@ func (peer *Peer) setupNatsClient() error {
 	// reporting
 	// problem: reporting every 5msec, not good
 	nc.Subscribe(peer.subjMembership, func(msg *nats.Msg) {
-		/*utclog.Printf("peer received subjMembership: "+
+		/*log.Printf("peer received subjMembership: "+
 		"Received on [%s]: '%s'",
 		msg.Subject,
 		string(msg.Data))
@@ -412,7 +411,7 @@ func (peer *Peer) setupNatsClient() error {
 		peer.mut.Unlock()
 
 		/* reporting every 10msec problem:
-		utclog.Printf("peer '%s' received on subSubject %s: '%s', where I have peer.loc='%s'",
+		log.Printf("peer '%s' received on subSubject %s: '%s', where I have peer.loc='%s'",
 			aloc.ID,
 			subSubject,
 			string(msg.Data),
@@ -428,7 +427,7 @@ func (peer *Peer) setupNatsClient() error {
 
 			err = nc.Publish(msg.Reply, []byte(aloc.String()))
 			if err != nil {
-				utclog.Printf("warning: '%s' publish to '%s' got error '%v'",
+				log.Printf("warning: '%s' publish to '%s' got error '%v'",
 					subSubject,
 					msg.Reply, err)
 			}
@@ -480,12 +479,12 @@ type Saver interface {
 // recent state from any previous lead.
 //
 func (peer *Peer) LeadTransferCheckpoint(key, chkptData []byte, when time.Time) error {
-	utclog.Printf("top of LeadTransferCheckpoint")
+	log.Printf("top of LeadTransferCheckpoint")
 	var list interface{}
 	select {
 	case <-peer.Halt.ReqStop.Chan:
 		// shutting down.
-		utclog.Printf("shutting down on request from peer.Halt.ReqStop.Chan")
+		log.Printf("shutting down on request from peer.Halt.ReqStop.Chan")
 		return ErrShutdown
 
 	case list = <-peer.LeadAndFollowBchan.Ch:
@@ -495,32 +494,32 @@ func (peer *Peer) LeadTransferCheckpoint(key, chkptData []byte, when time.Time) 
 	laf := list.(*LeadAndFollowList)
 
 	cs, _ := list2status(laf)
-	utclog.Printf("LeadTransferCheckpoint(): we have clusterStatus: '%s'", &cs)
+	log.Printf("LeadTransferCheckpoint(): we have clusterStatus: '%s'", &cs)
 
 	if len(chkptData) == 0 {
 		// the first time, we get the latest from
 		// the cluster. Whether follow or lead
 		// it doesn't matter.
-		utclog.Printf("LeadTransferCheckpoint sees len chkptData of zero, doing GetLatest on key '%s'", string(key))
+		log.Printf("LeadTransferCheckpoint sees len chkptData of zero, doing GetLatest on key '%s'", string(key))
 
 		ki, err := peer.GetLatest(key, true)
 		if err != nil {
 			return err
 		}
 
-		utclog.Printf("LeadTransferCheckpoint got back from GetLatest ki.Key='%s'; ki.When='%s'; ki.Blake2b='%x'. len(ki.Val)=%v. ki.Who='%s'", string(ki.Key), ki.When, ki.Blake2b, len(ki.Val), ki.Who)
+		log.Printf("LeadTransferCheckpoint got back from GetLatest ki.Key='%s'; ki.When='%s'; ki.Blake2b='%x'. len(ki.Val)=%v. ki.Who='%s'", string(ki.Key), ki.When, ki.Blake2b, len(ki.Val), ki.Who)
 
 		// checkpoint it... unless it was from ourselves!
 		if ki.Who != peer.loc.ID && ki.Who != peer.GservCfg.SshegoCfg.EmbeddedSSHdHostDbPath {
 			// checkpoint it
 
-			utclog.Printf("ki.Who='%s' != peer.loc.ID='%s', doing LocalSet(ki.Key='%s'. checksum='%x')", ki.Who, peer.loc.ID, string(ki.Key), ki.Blake2b)
+			log.Printf("ki.Who='%s' != peer.loc.ID='%s', doing LocalSet(ki.Key='%s'. checksum='%x')", ki.Who, peer.loc.ID, string(ki.Key), ki.Blake2b)
 			err = peer.LocalSet(ki)
 			if err != nil {
 				return err
 			}
 		} else {
-			utclog.Printf("ki.Who='%s' == peer.loc.ID='%s' or peer.GservCfg.SshegoCfg.EmbeddedSSHdHostDbPath='%s', so skipping LocalSet().doing LocalSet(ki.Key='%s'. checksum='%x')", ki.Who, peer.loc.ID, peer.GservCfg.SshegoCfg.EmbeddedSSHdHostDbPath, string(ki.Key), ki.Blake2b)
+			log.Printf("ki.Who='%s' == peer.loc.ID='%s' or peer.GservCfg.SshegoCfg.EmbeddedSSHdHostDbPath='%s', so skipping LocalSet().doing LocalSet(ki.Key='%s'. checksum='%x')", ki.Who, peer.loc.ID, peer.GservCfg.SshegoCfg.EmbeddedSSHdHostDbPath, string(ki.Key), ki.Blake2b)
 		}
 		return nil
 	}
@@ -531,7 +530,7 @@ func (peer *Peer) LeadTransferCheckpoint(key, chkptData []byte, when time.Time) 
 		return ErrAmFollower
 	}
 
-	utclog.Printf("MyID:'%v' I AM LEAD. I have %v follows.",
+	log.Printf("MyID:'%v' I AM LEAD. I have %v follows.",
 		laf.MyID, len(cs.follow))
 
 	// Since we are lead, we send this checkpoint out.
@@ -652,7 +651,7 @@ func intMax(a, b int) int {
 // which port(s) to listen on.
 //
 func (peer *Peer) StartBackgroundCheckpointRecv(myID, myFollowSubj string) {
-	utclog.Printf("beginning StartBackgroundCheckpointRecv(myID='%s', "+
+	log.Printf("beginning StartBackgroundCheckpointRecv(myID='%s', "+
 		"myFollowSubj='%s'). peer.SkipEncryption=%v",
 		myID, myFollowSubj, peer.SkipEncryption)
 
@@ -660,7 +659,7 @@ func (peer *Peer) StartBackgroundCheckpointRecv(myID, myFollowSubj string) {
 		portx, lsnx := getAvailPort()
 		lsnx.Close()
 		peer.GservCfg.ExternalLsnPort = portx
-		utclog.Printf("warning: detected peer.GservCfg.ExternalLsnPort == 0. You should call peer.SetGrpcPrts() before invoking StartBackgroundCheckpointRecv. We picked a random port, %v, for grpc external listen", portx)
+		log.Printf("warning: detected peer.GservCfg.ExternalLsnPort == 0. You should call peer.SetGrpcPrts() before invoking StartBackgroundCheckpointRecv. We picked a random port, %v, for grpc external listen", portx)
 	}
 
 	if peer.GservCfg.InternalLsnPort == 0 {
@@ -671,7 +670,7 @@ func (peer *Peer) StartBackgroundCheckpointRecv(myID, myFollowSubj string) {
 			porti, lsni := getAvailPort()
 			lsni.Close()
 			peer.GservCfg.InternalLsnPort = porti
-			utclog.Printf("warning: detected peer.GservCfg.InternalLsnPort == 0. You should call peer.SetGrpcPrts() before invoking StartBackgroundCheckpointRecv. We picked a random port, %v, for grpc internal listen", porti)
+			log.Printf("warning: detected peer.GservCfg.InternalLsnPort == 0. You should call peer.SetGrpcPrts() before invoking StartBackgroundCheckpointRecv. We picked a random port, %v, for grpc internal listen", porti)
 		}
 	}
 
@@ -679,7 +678,7 @@ func (peer *Peer) StartBackgroundCheckpointRecv(myID, myFollowSubj string) {
 		defer func() {
 			peer.Halt.ReqStop.Close()
 			peer.Halt.Done.Close()
-			utclog.Printf("StartBackgroundCheckpointRecv(myID='%s', "+
+			log.Printf("StartBackgroundCheckpointRecv(myID='%s', "+
 				"myFollowSubj='%s') has shutdown.",
 				myID, myFollowSubj)
 		}()
@@ -830,7 +829,7 @@ func (peer *Peer) StartPeriodicClusterAgentLocQueries() {
 					// for this peer.
 					peer.mut.Lock()
 					peer.lastSeenInternalPortAloc[mem.ID] = aloc
-					//utclog.Printf("setting peer.lastSeenInternalPortAloc[mem.ID='%s'] = aloc = %#v", mem.ID, aloc)
+					//log.Printf("setting peer.lastSeenInternalPortAloc[mem.ID='%s'] = aloc = %#v", mem.ID, aloc)
 					peer.mut.Unlock()
 				}
 			case <-peer.Halt.ReqStop.Chan:

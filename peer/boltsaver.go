@@ -2,6 +2,7 @@ package peer
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"sync"
 	"time"
@@ -54,7 +55,7 @@ func NewBoltSaver(filepath string, who string) (*BoltSaver, error) {
 	if err != nil {
 		return nil, err
 	}
-	utclog.Printf("NewBoltSaver: BOLTDB opened successfully '%s'", filepath)
+	log.Printf("NewBoltSaver: BOLTDB opened successfully '%s'", filepath)
 
 	b := &BoltSaver{
 		db:       db,
