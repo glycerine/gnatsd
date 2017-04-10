@@ -276,7 +276,12 @@ func configureLogger(s *server.Server, opts *server.Options) {
 		if err != nil || (stat.Mode()&os.ModeCharDevice) == 0 {
 			colors = false
 		}
-		log = logger.NewStdLogger(opts.Logtime, opts.Debug, opts.Trace, colors, true, 0)
+		// hnatds: use the Go standard library's log facility
+		// for ease in embedding.
+		log = logger.NewStdLogLogger(opts.Logtime, opts.Debug, opts.Trace, colors, true, 0)
+
+		// original gnatsd invoked:
+		//log = logger.NewStdLogger(opts.Logtime, opts.Debug, opts.Trace, colors, true, 0)
 	}
 
 	s.SetLogger(log, opts.Debug, opts.Trace)
