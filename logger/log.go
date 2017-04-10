@@ -24,7 +24,7 @@ type Logger struct {
 // NewStdLogger creates a logger with output directed to Stderr
 func NewStdLogger(time, debug, trace, colors, pid bool, flags int) *Logger {
 	if time {
-		flags = log.LstdFlags | log.Lmicroseconds
+		flags = log.LstdFlags | log.Lmicroseconds | log.LUTC
 	}
 
 	pre := ""

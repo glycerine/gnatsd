@@ -36,15 +36,32 @@ func main() {
 	cfg.Dump(cfg.Db, os.Stdout)
 }
 
+var ErrStopLooping = fmt.Errorf("found key, can stop looping")
+
 func (cfg *ViewBoltConfig) Dump(db *bolt.DB, w io.Writer) error {
-	fmt.Fprintf(w, "\n")
 	indent := "    "
+
+	if cfg.DumpKey == "" {
+		fmt.Fprintf(w, "\n")
+	}
 
 	return db.View(func(tx *bolt.Tx) error {
 		return tx.ForEach(func(name []byte, buck *bolt.Bucket) error {
 			switch {
 			case 0 == bytes.Compare(name, peer.BoltDataBucketName):
-				if cfg.ShowData {
+				if cfg.DumpKey != "" {
+					buck.ForEach(func(k, v []byte) error {
+						if string(k) == cfg.DumpKey {
+							os.Stdout.Write(v)
+							os.Stdout.Sync()
+							// It is okay to abort txn now.
+							// And pointless to keep scanning.
+							return ErrStopLooping
+						}
+						return nil
+					})
+
+				} else if cfg.ShowData {
 					fmt.Fprintf(w, "* 'data' bucket:\n")
 					j := 0
 					buck.ForEach(func(k, v []byte) error {
@@ -55,6 +72,9 @@ func (cfg *ViewBoltConfig) Dump(db *bolt.DB, w io.Writer) error {
 					})
 				}
 			case 0 == bytes.Compare(name, peer.BoltMetaBucketName):
+				if cfg.DumpKey != "" {
+					return nil
+				}
 				fmt.Fprintf(w, "* 'meta' bucket:\n")
 				j := 0
 				buck.ForEach(func(k, v []byte) error {

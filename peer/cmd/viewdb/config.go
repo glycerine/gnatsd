@@ -11,6 +11,7 @@ import (
 type ViewBoltConfig struct {
 	DbPath   string
 	ShowData bool
+	DumpKey  string
 
 	Bopt *bolt.Options
 	Db   *bolt.DB
@@ -19,6 +20,7 @@ type ViewBoltConfig struct {
 // DefineFlags should be called before myflags.Parse().
 func (c *ViewBoltConfig) DefineFlags(fs *flag.FlagSet) {
 
+	fs.StringVar(&c.DumpKey, "key", "", "single key to dump as msgpack to stdout")
 	fs.StringVar(&c.DbPath, "db", "", "path to our boltdb file")
 	fs.BoolVar(&c.ShowData, "data", false, "show the data")
 }
