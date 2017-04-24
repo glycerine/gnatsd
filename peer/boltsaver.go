@@ -16,9 +16,10 @@ var BoltMetaBucketName = []byte("meta") // bucket
 var BoltSizeBucketName = []byte("size") // bucket
 
 type BoltSaver struct {
-	db       *bolt.DB
-	filepath string
-	whoami   string
+	db                    *bolt.DB
+	filepath              string
+	whoami                string
+	compactTxMaxSizeBytes int64
 
 	// only one op at a time
 	mut sync.Mutex
@@ -61,6 +62,8 @@ func NewBoltSaver(filepath string, who string) (*BoltSaver, error) {
 		db:       db,
 		filepath: filepath,
 		whoami:   who,
+
+		compactTxMaxSizeBytes: 1024 * 1024 * 4,
 	}
 	err = b.InitDbIfNeeded()
 	return b, err
