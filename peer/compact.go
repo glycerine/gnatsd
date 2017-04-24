@@ -41,19 +41,21 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 // INVAR: b.db must be already open.
-func (b *BoltSaver) Compact() (report string, err error) {
-
-	b.mut.Lock()
-	defer b.mut.Unlock()
+func (b *BoltSaver) Compact(lockNeeded bool) error {
+	//p("Compact is running")
+	if lockNeeded {
+		b.mut.Lock()
+		defer b.mut.Unlock()
+	}
 
 	// Ensure source file exists.
 	fi, err := os.Stat(b.filepath)
 	if os.IsNotExist(err) {
-		return "", fmt.Errorf("file not found '%s'", b.filepath)
+		return fmt.Errorf("file not found '%s'", b.filepath)
 	} else if err != nil {
-		return "", err
+		return err
 	}
-	initialSize := fi.Size()
+	//p("file '%s' has size %v", b.filepath, fi.Size())
 
 	dstPath := b.filepath + ".compressed"
 	os.Remove(dstPath)
@@ -61,33 +63,40 @@ func (b *BoltSaver) Compact() (report string, err error) {
 	// Open destination database.
 	dst, err := bolt.Open(dstPath, fi.Mode(), nil)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	// Run compaction.
-	if err := b.compactOneByOne(dst, b.db); err != nil {
+	if err := b.compactInBatches(dst, b.db); err != nil {
 		dst.Close()
-		return "", err
+		return err
 	}
 
 	// Report stats on new size.
-	fi, err = os.Stat(dstPath)
+	fi2, err := os.Stat(dstPath)
 	if err != nil {
-		return "", err
-	} else if fi.Size() == 0 {
-		return "", fmt.Errorf("zero db size")
+		return err
+	} else if fi2.Size() == 0 {
+		return fmt.Errorf("zero db size")
 	}
-	report = fmt.Sprintf("BoltSaver.Compact() did: %d -> %d bytes (gain=%.2fx)\n", initialSize, fi.Size(), float64(initialSize)/float64(fi.Size()))
+	//p("BoltSaver.Compact() did: %d -> %d bytes (gain=%.2fx)\n", fi.Size(), fi2.Size(), float64(fi.Size())/float64(fi2.Size()))
 
 	dst.Close()
 	b.Close()
 
+	//p("about to rename '%s' -> '%s'", dstPath, b.filepath)
+
 	// now move into place atomically
 	err = os.Rename(dstPath, b.filepath)
 	if err != nil {
-		report += fmt.Sprintf("error in BoltSaver.Compact() on os.Rename from '%s' to '%s' got err: '%v'", dstPath, b.filepath, err)
+		err2 := b.reOpen()
+		err = fmt.Errorf("error in BoltSaver.Compact() on os.Rename from '%s' to '%s' got err: '%v'", dstPath, b.filepath, err)
+		if err2 != nil {
+			err = fmt.Errorf("%s. And: %s", err.Error(), err2.Error())
+		}
+		return err
 	}
-	return report, b.reOpen()
+	return b.reOpen()
 }
 
 func (b *BoltSaver) reOpen() error {
@@ -103,7 +112,7 @@ func (b *BoltSaver) reOpen() error {
 	return nil
 }
 
-func (b *BoltSaver) compactOneByOne(dst, src *bolt.DB) error {
+func (b *BoltSaver) compactInBatches(dst, src *bolt.DB) error {
 	// commit regularly, or we'll run out of memory for large datasets if using one transaction.
 	var size int64
 	tx, err := dst.Begin(true)

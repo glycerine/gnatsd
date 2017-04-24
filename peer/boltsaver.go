@@ -20,6 +20,8 @@ type BoltSaver struct {
 	filepath              string
 	whoami                string
 	compactTxMaxSizeBytes int64
+	numSetsBeforeCompact  int64
+	setCount              int64
 
 	// only one op at a time
 	mut sync.Mutex
@@ -32,7 +34,7 @@ func (b *BoltSaver) Close() {
 	}
 }
 
-func NewBoltSaver(filepath string, who string) (*BoltSaver, error) {
+func NewBoltSaver(filepath string, who string, numSetsBeforeCompact int64) (*BoltSaver, error) {
 
 	if len(filepath) == 0 {
 		return nil, fmt.Errorf("filepath must not be empty string")
@@ -63,6 +65,7 @@ func NewBoltSaver(filepath string, who string) (*BoltSaver, error) {
 		filepath: filepath,
 		whoami:   who,
 
+		numSetsBeforeCompact:  numSetsBeforeCompact,
 		compactTxMaxSizeBytes: 1024 * 1024 * 4,
 	}
 	err = b.InitDbIfNeeded()
@@ -114,7 +117,7 @@ func (b *BoltSaver) LocalSet(ki *api.KeyInv) error {
 		return err
 	}
 
-	return b.db.Update(func(tx *bolt.Tx) error {
+	err = b.db.Update(func(tx *bolt.Tx) error {
 
 		// store meta
 		metabuck := tx.Bucket(BoltMetaBucketName)
@@ -136,6 +139,16 @@ func (b *BoltSaver) LocalSet(ki *api.KeyInv) error {
 		return databuck.Put(ki.Key, ki.Val)
 	})
 
+	if err == nil {
+		b.setCount++
+		if b.numSetsBeforeCompact > 0 && b.setCount >= b.numSetsBeforeCompact {
+			err = b.Compact(false)
+			if err == nil {
+				b.setCount = 0
+			}
+		}
+	}
+	return err
 }
 
 func (b *BoltSaver) LocalGet(key []byte, includeValue bool) (ki *api.KeyInv, err error) {

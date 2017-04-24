@@ -117,7 +117,7 @@ func Test102LocalSet(t *testing.T) {
 		// want peer0 to be lead, so we give it lower rank.
 		peer0cfg := strings.Join([]string{"-rank=0", "-health", "-p", fmt.Sprintf("%v", nPeerPort0), cluster0}, " ")
 
-		p0, err := NewPeer(peer0cfg, "p0")
+		p0, err := NewPeer(peer0cfg, "p0", 0)
 		panicOn(err)
 		defer os.Remove("p0.boltdb")
 

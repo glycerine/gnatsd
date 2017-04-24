@@ -88,11 +88,11 @@ func UtilTestSetupThree(callmePreStart func(peer *Peer)) (p0, p1, p2 *Peer, peer
 
 	peer2cfg := strings.Join([]string{"-rank=6", "-health", "-p", fmt.Sprintf("%v", nPeerPort5), cluster2, routes1}, " ")
 	var err error
-	p0, err = NewPeer(peer0cfg, "p0")
+	p0, err = NewPeer(peer0cfg, "p0", 0)
 	panicOn(err)
-	p1, err = NewPeer(peer1cfg, "p1")
+	p1, err = NewPeer(peer1cfg, "p1", 0)
 	panicOn(err)
-	p2, err = NewPeer(peer2cfg, "p2")
+	p2, err = NewPeer(peer2cfg, "p2", 0)
 	panicOn(err)
 
 	p0.SshClientAllowsNewSshdServer = true

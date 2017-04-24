@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"encoding/json"
+
 	"github.com/glycerine/hnatsd/health"
 	"github.com/glycerine/hnatsd/logger"
 	"github.com/glycerine/hnatsd/server"
@@ -125,9 +126,12 @@ func has(haystack []string, needle string) bool {
 // Peer.SetGrpcPorts() method should be called to establish
 // which port(s) to listen on.
 //
-func NewPeer(args, whoami string) (*Peer, error) {
+// If we save every 30 seconds, then numSetsBeforeCompact int64 == 1000
+// means compact the boltdb after every ~8 hours of writes.
+//
+func NewPeer(args, whoami string, numSetsBeforeCompact int64) (*Peer, error) {
 
-	saver, err := NewBoltSaver(whoami+".boltdb", whoami)
+	saver, err := NewBoltSaver(whoami+".boltdb", whoami, numSetsBeforeCompact)
 	if err != nil {
 		return nil, err
 	}
