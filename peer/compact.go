@@ -9,16 +9,19 @@ import (
 	"github.com/boltdb/bolt"
 )
 
-// Compact does these steps:
-// close the db
-// copy the .boltdb file to .boltdb.to_be_compacted
-// compact the db file from .boltdb.to_be_compacted -> .boltdb.compact
-// mv .boltdb.compact overtop of the .boltdb file
-// open the db again.
+// Compact does these steps to reduce the
+// space fragmentation that happens in a bolt database.
 //
-// adapted from the compaction code in
+// 0) open a fresh .compressed bolt db file.
+// 1) read each object from the bolt db and write it to the fresh -> .compressed bolt db file.
+// 2) close the both files.
+// 3) rename the .compressed file to be the original db file name.
+//    os.Rename is atomic.
+// 4) re-open the newly compact-ed db file
+//
+// The routines below were adapted from the compaction code in
 // https://github.com/boltdb/bolt/blob/master/cmd/bolt/main.go
-// which is provided under the following MIT license.
+// which is used under the following MIT license.
 /*
 The MIT License (MIT)
 
@@ -85,14 +88,11 @@ func (b *BoltSaver) Compact(lockNeeded bool) error {
 	dst.Close()
 	b.Close()
 
-	//p("about to rename '%s' -> '%s'", dstPath, b.filepath)
-
-	// have to delete the old file to actually get it to shrink.
-	// There is a small window here. If we crash during the next 10 msec,
-	// then the file left named .compressed instead of what it should be.
-	// This is the tradeoff for being able to actually shrink the file.
-	os.Remove(b.filepath)
+	// We think os.Remove is actually *not* needed to get disk shrinkage.
+	// os.Remove(b.filepath)
 	// Ignore errors.
+
+	//p("about to rename '%s' -> '%s'", dstPath, b.filepath)
 
 	// now move into place the compacted file.
 	err = os.Rename(dstPath, b.filepath)
