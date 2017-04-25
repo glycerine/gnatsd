@@ -46,7 +46,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 // INVAR: b.db must be already open.
 func (b *BoltSaver) Compact(lockNeeded bool) error {
-	//p("Compact is running")
+
 	if lockNeeded {
 		b.mut.Lock()
 		defer b.mut.Unlock()
@@ -59,7 +59,6 @@ func (b *BoltSaver) Compact(lockNeeded bool) error {
 	} else if err != nil {
 		return err
 	}
-	//p("file '%s' has size %v", b.filepath, fi.Size())
 
 	dstPath := b.filepath + ".compressed"
 	os.Remove(dstPath)
@@ -87,12 +86,6 @@ func (b *BoltSaver) Compact(lockNeeded bool) error {
 
 	dst.Close()
 	b.Close()
-
-	// We think os.Remove is actually *not* needed to get disk shrinkage.
-	// os.Remove(b.filepath)
-	// Ignore errors.
-
-	//p("about to rename '%s' -> '%s'", dstPath, b.filepath)
 
 	// now move into place the compacted file.
 	err = os.Rename(dstPath, b.filepath)
