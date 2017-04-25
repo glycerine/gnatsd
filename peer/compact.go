@@ -86,7 +86,14 @@ func (b *BoltSaver) Compact(lockNeeded bool) error {
 
 	//p("about to rename '%s' -> '%s'", dstPath, b.filepath)
 
-	// now move into place atomically
+	// have to delete the old file to actually get it to shrink.
+	// There is a small window here. If we crash during the next 10 msec,
+	// then the file left named .compressed instead of what it should be.
+	// This is the tradeoff for being able to actually shrink the file.
+	os.Remove(b.filepath)
+	// Ignore errors.
+
+	// now move into place the compacted file.
 	err = os.Rename(dstPath, b.filepath)
 	if err != nil {
 		err2 := b.reOpen()
