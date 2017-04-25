@@ -2,6 +2,7 @@ package peer
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -79,7 +80,7 @@ func (b *BoltSaver) Compact(lockNeeded bool) error {
 	} else if fi2.Size() == 0 {
 		return fmt.Errorf("zero db size")
 	}
-	//p("BoltSaver.Compact() did: %d -> %d bytes (gain=%.2fx)\n", fi.Size(), fi2.Size(), float64(fi.Size())/float64(fi2.Size()))
+	log.Printf("BoltSaver.Compact() did: %d -> %d bytes (gain=%.2fx)\n", fi.Size(), fi2.Size(), float64(fi.Size())/float64(fi2.Size()))
 
 	dst.Close()
 	b.Close()

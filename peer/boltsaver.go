@@ -141,11 +141,11 @@ func (b *BoltSaver) LocalSet(ki *api.KeyInv) error {
 
 	if err == nil {
 		b.setCount++
-		if b.numSetsBeforeCompact > 0 && b.setCount >= b.numSetsBeforeCompact {
+		if b.numSetsBeforeCompact > 0 &&
+			(b.setCount%b.numSetsBeforeCompact == 0 ||
+				b.setCount == 1) {
+
 			err = b.Compact(false)
-			if err == nil {
-				b.setCount = 0
-			}
 		}
 	}
 	return err
