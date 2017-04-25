@@ -68,10 +68,10 @@ func (b *BoltSaver) Compact(lockNeeded bool) error {
 	if err != nil {
 		return err
 	}
+	defer dst.Close()
 
 	// Run compaction.
 	if err := b.compactInBatches(dst, b.db); err != nil {
-		dst.Close()
 		return err
 	}
 
